@@ -1,0 +1,408 @@
+// Edget — Prisma schema
+// PostgreSQL. Run `npx prisma migrate dev` after setting DATABASE_URL to create
+// these tables in your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / users
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  DISPATCHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  // Optional — some account holders are represented by a single name.
+  lastName     String   @default("")
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(DISPATCHER)
+  // Per-user preference: when true, list/detail reads also include rows
+  // seeded as demo data (isDemo: true on Customer/Driver/Equipment/Load).
+  // Off by default so demo data never leaks into a normal account's view.
+  showMockData Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sessions     Session[]
+  documents    Document[]
+  customerDocuments CustomerDocument[]
+  driverDocuments   DriverDocument[]
+  loadActivities    LoadActivity[]
+  loadComments      LoadComment[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Core dispatch entities
+// ---------------------------------------------------------------------------
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+model Customer {
+  id           String         @id @default(cuid())
+  companyName  String
+  contactName  String
+  phone        String
+  email        String
+  status       CustomerStatus @default(ACTIVE)
+  paymentTerms String?
+  notes        String?
+  // Seeded demo/mock data, hidden unless the viewing user has opted into
+  // showMockData (see User.showMockData). Never set by the app itself.
+  isDemo       Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  loads        Load[]
+  contacts     CustomerContact[]
+  documents    CustomerDocument[]
+
+  @@index([isDemo])
+  @@map("customers")
+}
+
+// Multiple contacts per customer (beyond the quick-edit contactName/phone/
+// email above, which stays as the at-a-glance primary contact for list
+// views and the quick-edit modal). Managed on the customer detail page.
+model CustomerContact {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  title      String?
+  phone      String?
+  email      String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@map("customer_contacts")
+}
+
+// Customer-level documents (contracts, credit applications) — same storage
+// abstraction as Load documents (src/lib/storage.ts), scoped to a customer
+// instead of a load. Kept as its own model rather than a nullable-loadId
+// Document row so both stay simple, non-polymorphic tables.
+model CustomerDocument {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label         String
+  fileName      String
+  storageKey    String
+  fileSizeBytes Int
+  mimeType      String
+  uploadedAt    DateTime @default(now())
+  uploadedById  String?
+  uploadedBy    User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@map("customer_documents")
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_DUTY
+  OFF_DUTY
+}
+
+model Driver {
+  id                     String       @id @default(cuid())
+  firstName              String
+  lastName               String
+  phone                  String
+  licenseNo              String
+  licenseExpiration      DateTime
+  medicalCertExpiration  DateTime?
+  endorsements           String[]     @default([])
+  status                 DriverStatus @default(AVAILABLE)
+  isDemo                 Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  loads                  Load[]
+  documents              DriverDocument[]
+
+  @@index([isDemo])
+  @@map("drivers")
+}
+
+enum DriverDocumentType {
+  CDL
+  MEDICAL_CERT
+  MVR
+}
+
+model DriverDocument {
+  id            String             @id @default(cuid())
+  driverId      String
+  driver        Driver             @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  type          DriverDocumentType
+  fileName      String
+  storageKey    String
+  fileSizeBytes Int
+  mimeType      String
+  uploadedAt    DateTime           @default(now())
+  uploadedById  String?
+  uploadedBy    User?              @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([driverId, type])
+  @@map("driver_documents")
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
+// Admin-manageable (see /roster "Types" tab) rather than a fixed enum, so
+// dispatchers can add/rename/retire equipment types without a code change.
+// `code` is what Equipment.typeCode / Load.equipmentTypeCode store — kept
+// short (originally seeded from DAT's standard V/R/F/PO conventions) so
+// loads posted here still map cleanly onto a future DAT Load Board /
+// Freight Posting integration. `icon` and `tone` key into a small curated
+// set on the frontend (see EQUIPMENT_TYPE_TONES in LoadCard.tsx) rather
+// than storing arbitrary free-form colors.
+model EquipmentType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  label     String
+  icon      String   @default("box")
+  tone      String   @default("van")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  equipment Equipment[]
+  loads     Load[]
+
+  @@map("equipment_types")
+}
+
+model Equipment {
+  id                  String            @id @default(cuid())
+  unitNumber          String            @unique
+  typeCode            String
+  equipmentType       EquipmentType     @relation(fields: [typeCode], references: [code], onUpdate: Cascade)
+  status              EquipmentStatus   @default(AVAILABLE)
+  nextMaintenance     DateTime
+  isDemo              Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  loads               Load[]
+  maintenanceRecords  EquipmentMaintenanceRecord[]
+
+  @@index([typeCode])
+  @@index([isDemo])
+  @@map("equipment")
+}
+
+// Real service history, not just the single "next due" date above.
+model EquipmentMaintenanceRecord {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  date        DateTime
+  description String
+  cost        Int?
+  performedBy String?
+  createdAt   DateTime  @default(now())
+
+  @@index([equipmentId])
+  @@map("equipment_maintenance_records")
+}
+
+enum LoadStatus {
+  DRAFT
+  ASSIGNED
+  DISPATCHED
+  IN_TRANSIT
+  DELIVERED
+  BILLED
+}
+
+enum PayoutStatus {
+  NOT_BILLED
+  PENDING
+  PAID
+}
+
+model Load {
+  id                String            @id @default(cuid())
+  loadNumber        String            @unique
+  // Optional (not required) so a Customer can be deleted once it has no
+  // *active* loads without violating referential integrity against its
+  // completed/billed history — those loads keep existing with customerId
+  // set to null rather than blocking the delete or cascading it.
+  customerId        String?
+  customer          Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  origin            String
+  destination       String
+  pickupTime        DateTime
+  deliveryTime      DateTime
+  status            LoadStatus        @default(DRAFT)
+  rate              Int // cents-free integer USD for simplicity; swap to Decimal if sub-dollar precision is needed
+  weight            Int // lbs
+  commodity         String
+  equipmentTypeCode String
+  equipmentType     EquipmentType     @relation(fields: [equipmentTypeCode], references: [code], onUpdate: Cascade)
+
+  driverId    String?
+  driver      Driver?    @relation(fields: [driverId], references: [id])
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+
+  driverPay    Int
+  payoutStatus PayoutStatus @default(NOT_BILLED)
+  isDemo       Boolean      @default(false)
+
+  documents         Document[]
+  externalPostings  ExternalPosting[]
+  activities        LoadActivity[]
+  comments          LoadComment[]
+  payments          Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A driver/equipment cannot be double-booked on overlapping time windows.
+  // Enforced in application code (src/lib/conflicts.ts) at assignment time;
+  // indexed here so those lookups stay fast as load volume grows.
+  @@index([driverId, pickupTime, deliveryTime])
+  @@index([equipmentId, pickupTime, deliveryTime])
+  @@index([status])
+  @@index([equipmentTypeCode])
+  @@index([isDemo])
+  @@map("loads")
+}
+
+enum DocumentType {
+  BOL
+  POD
+  RATE_CONFIRMATION
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  loadId        String
+  load          Load         @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  fileName      String
+  storageKey    String
+  fileSizeBytes Int
+  mimeType      String
+  uploadedAt    DateTime     @default(now())
+  uploadedById  String?
+  uploadedBy    User?        @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  // Versioned: a new upload for a type doesn't overwrite the previous one.
+  // The most recent row (by uploadedAt) per (loadId, type) is treated as
+  // "current" in the app; older rows stay queryable as history.
+  @@index([loadId, type])
+  @@map("documents")
+}
+
+// ---------------------------------------------------------------------------
+// Load audit trail, comments, and billing ledger (upgrade roadmap Phase 5)
+// ---------------------------------------------------------------------------
+
+model LoadActivity {
+  id          String   @id @default(cuid())
+  loadId      String
+  load        Load     @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  type        String // e.g. CREATED, STATUS_CHANGE, ASSIGNED, DOCUMENT_UPLOADED, UPDATED
+  message     String
+  actorUserId String?
+  actorUser   User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([loadId])
+  @@map("load_activities")
+}
+
+model LoadComment {
+  id           String   @id @default(cuid())
+  loadId       String
+  load         Load     @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  authorUserId String
+  authorUser   User     @relation(fields: [authorUserId], references: [id])
+  body         String
+  createdAt    DateTime @default(now())
+
+  @@index([loadId])
+  @@map("load_comments")
+}
+
+// Individual payment entries toward a load's driverPay. amountPaid (sum of
+// these) vs driverPay drives the computed Not Billed / Partially Paid / Paid
+// status shown in the UI — payoutStatus itself stays in sync as a queryable
+// cache (kept in sync by the payments API) so existing filters/CSV/dashboard
+// code that already keys off it doesn't need a parallel code path.
+model Payment {
+  id        String   @id @default(cuid())
+  loadId    String
+  load      Load     @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  amount    Int
+  paidAt    DateTime
+  method    String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([loadId])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Integration readiness (Phase 2 groundwork — see spec Section 3)
+// Unused by the MVP UI today. Present so a future DAT Load Board / Freight
+// Posting integration is a plug-in against this schema, not a migration.
+// ---------------------------------------------------------------------------
+
+model ExternalPosting {
+  id         String   @id @default(cuid())
+  loadId     String
+  load       Load     @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  provider   String // e.g. "DAT"
+  externalId String? // the load's ID in the external system, once posted
+  status     String  @default("NOT_POSTED") // NOT_POSTED | POSTED | SYNC_ERROR
+  syncedAt   DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([loadId])
+  @@map("external_postings")
+}
+
+model Integration {
+  id         String   @id @default(cuid())
+  provider   String   @unique // e.g. "DAT"
+  apiKeyHash String? // never store raw API keys; hash/encrypt at rest
+  isEnabled  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("integrations")
+}
