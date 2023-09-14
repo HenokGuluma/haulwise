@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: haulwise
+      POSTGRES_PASSWORD: haulwise
+      POSTGRES_DB: haulwise
+    ports:
+      - "5433:5432"
+    volumes:
+      - haulwise_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U haulwise"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional: run the app itself in Docker too. For local development it's usually
+  # simpler to run `npm run dev` on the host and only use Docker for Postgres — this
+  # service is here for a production-like run (`docker compose --profile app up`).
+  app:
+    build: .
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://haulwise:haulwise@db:5432/haulwise
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
+volumes:
+  haulwise_db_data:
