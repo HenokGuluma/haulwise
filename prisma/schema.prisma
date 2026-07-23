@@ -1,0 +1,217 @@
+// Haulwise — Prisma schema
+// PostgreSQL. Run `npx prisma migrate dev` after setting DATABASE_URL to create
+// these tables in your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / users
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  DISPATCHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(DISPATCHER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Core dispatch entities
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id          String   @id @default(cuid())
+  companyName String
+  contactName String
+  phone       String
+  email       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  loads       Load[]
+
+  @@map("customers")
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_DUTY
+  OFF_DUTY
+}
+
+model Driver {
+  id                String       @id @default(cuid())
+  firstName         String
+  lastName          String
+  phone             String
+  licenseNo         String
+  licenseExpiration DateTime
+  status            DriverStatus @default(AVAILABLE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  loads             Load[]
+
+  @@map("drivers")
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
+// Type codes follow DAT's standard equipment conventions (V, R, F, PO, ...) so
+// loads posted here map cleanly onto DAT's Load Board / Freight Posting API
+// later without a data-cleanup pass. See EquipmentTypeCode below.
+enum EquipmentTypeCode {
+  V   // Dry Van
+  R   // Reefer
+  F   // Flatbed
+  PO  // Power Only
+}
+
+model Equipment {
+  id              String            @id @default(cuid())
+  unitNumber      String            @unique
+  typeCode        EquipmentTypeCode
+  status          EquipmentStatus   @default(AVAILABLE)
+  nextMaintenance DateTime
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  loads           Load[]
+
+  @@map("equipment")
+}
+
+enum LoadStatus {
+  DRAFT
+  ASSIGNED
+  DISPATCHED
+  IN_TRANSIT
+  DELIVERED
+  BILLED
+}
+
+enum PayoutStatus {
+  NOT_BILLED
+  PENDING
+  PAID
+}
+
+model Load {
+  id                String            @id @default(cuid())
+  loadNumber        String            @unique
+  customerId        String
+  customer          Customer          @relation(fields: [customerId], references: [id])
+  origin            String
+  destination       String
+  pickupTime        DateTime
+  deliveryTime      DateTime
+  status            LoadStatus        @default(DRAFT)
+  rate              Int // cents-free integer USD for simplicity; swap to Decimal if sub-dollar precision is needed
+  weight            Int // lbs
+  commodity         String
+  equipmentTypeCode EquipmentTypeCode
+
+  driverId    String?
+  driver      Driver?    @relation(fields: [driverId], references: [id])
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+
+  driverPay    Int
+  payoutStatus PayoutStatus @default(NOT_BILLED)
+
+  documents         Document[]
+  externalPostings  ExternalPosting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A driver/equipment cannot be double-booked on overlapping time windows.
+  // Enforced in application code (src/lib/conflicts.ts) at assignment time;
+  // indexed here so those lookups stay fast as load volume grows.
+  @@index([driverId, pickupTime, deliveryTime])
+  @@index([equipmentId, pickupTime, deliveryTime])
+  @@index([status])
+  @@map("loads")
+}
+
+enum DocumentType {
+  BOL
+  POD
+  RATE_CONFIRMATION
+}
+
+model Document {
+  id         String       @id @default(cuid())
+  loadId     String
+  load       Load         @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  type       DocumentType
+  fileName   String
+  uploadedAt DateTime     @default(now())
+
+  // One document per type per load (uploading again replaces it) — matches the
+  // MVP scope (attach POD/BOL/rate confirmation to a load), not a versioned
+  // document history.
+  @@unique([loadId, type])
+  @@map("documents")
+}
+
+// ---------------------------------------------------------------------------
+// Integration readiness (Phase 2 groundwork — see spec Section 3)
+// Unused by the MVP UI today. Present so a future DAT Load Board / Freight
+// Posting integration is a plug-in against this schema, not a migration.
+// ---------------------------------------------------------------------------
+
+model ExternalPosting {
+  id         String   @id @default(cuid())
+  loadId     String
+  load       Load     @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  provider   String // e.g. "DAT"
+  externalId String? // the load's ID in the external system, once posted
+  status     String  @default("NOT_POSTED") // NOT_POSTED | POSTED | SYNC_ERROR
+  syncedAt   DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([loadId])
+  @@map("external_postings")
+}
+
+model Integration {
+  id         String   @id @default(cuid())
+  provider   String   @unique // e.g. "DAT"
+  apiKeyHash String? // never store raw API keys; hash/encrypt at rest
+  isEnabled  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("integrations")
+}
