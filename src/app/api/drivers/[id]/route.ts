@@ -4,6 +4,16 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { driverUpdateSchema } from "@/lib/validation";
 import { getStorageDriver } from "@/lib/storage";
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser();
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const driver = await prisma.driver.findUnique({ where: { id: params.id } });
+  if (!driver) return NextResponse.json({ error: "Driver not found." }, { status: 404 });
+
+  return NextResponse.json({ driver });
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });

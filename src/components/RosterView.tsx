@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Icon, Pill, Button, IconButton, ConfirmDialog, useToast } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { DriverFormModal } from "@/components/modals/DriverFormModal";
@@ -58,7 +58,24 @@ export function RosterView({
 
   const toast = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const canDelete = user.role === "ADMIN";
+
+  // Deep-link support: /roster?tab=drivers&driverId=<id> (or equipmentId=)
+  // from the command palette or the Dashboard's "Needs attention" feed.
+  useEffect(() => {
+    const wantTab = searchParams.get("tab");
+    if (wantTab === "drivers" || wantTab === "equipment") setTab(wantTab);
+
+    const driverId = searchParams.get("driverId");
+    if (driverId) {
+      api.get<{ driver: Driver }>(`/api/drivers/${driverId}`).then((res) => setDetailDriver(res.driver)).catch(() => {});
+    }
+    const equipmentId = searchParams.get("equipmentId");
+    if (equipmentId) {
+      api.get<{ equipment: Equipment }>(`/api/equipment/${equipmentId}`).then((res) => setDetailEquipment(res.equipment)).catch(() => {});
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchDrivers = useCallback((params: FetchPageParams) => fetchTablePage<Driver>("/api/drivers", params), []);
   const fetchEquipment = useCallback((params: FetchPageParams) => fetchTablePage<Equipment>("/api/equipment", params), []);

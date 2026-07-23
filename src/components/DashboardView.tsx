@@ -88,13 +88,13 @@ export function DashboardView({
                 </div>
               ))}
               {expiringDrivers.map(({ d, days }) => (
-                <div key={d.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push("/roster")}>
+                <div key={d.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push(`/roster?tab=drivers&driverId=${d.id}`)}>
                   <Icon name="alertTriangle" />
                   <div><strong>{d.firstName} {d.lastName}</strong>&apos;s license {days < 0 ? "expired" : `expires in ${days} day${days === 1 ? "" : "s"}`}.</div>
                 </div>
               ))}
               {maintenanceEquip.map(({ e, days }) => (
-                <div key={e.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push("/roster")}>
+                <div key={e.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push(`/roster?tab=equipment&equipmentId=${e.id}`)}>
                   <Icon name="wrench" />
                   <div><strong>{e.unitNumber}</strong> maintenance {days < 0 ? "is overdue" : `due in ${days} day${days === 1 ? "" : "s"}`}.</div>
                 </div>

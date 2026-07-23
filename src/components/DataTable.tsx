@@ -262,12 +262,12 @@ export function DataTable<T>({
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           {toolbarExtra}
           <div className="dt-menu-anchor">
-            <button type="button" className="icon-btn" title="Row density" onClick={() => updateDensity(density === "comfortable" ? "compact" : "comfortable")}>
+            <button type="button" className="icon-btn" title="Row density" aria-label="Toggle row density" onClick={() => updateDensity(density === "comfortable" ? "compact" : "comfortable")}>
               <Icon name="list" size={14} />
             </button>
           </div>
           <div className="dt-menu-anchor">
-            <button type="button" className="icon-btn" title="Show/hide columns" onClick={() => setOpenMenu(openMenu === "columns" ? null : "columns")}>
+            <button type="button" className="icon-btn" title="Show/hide columns" aria-label="Show or hide columns" onClick={() => setOpenMenu(openMenu === "columns" ? null : "columns")}>
               <Icon name="columns" size={14} />
             </button>
             {openMenu === "columns" && (
@@ -357,11 +357,11 @@ export function DataTable<T>({
             ))}
           </select>
           <div className="dt-pagination-nav">
-            <button type="button" className="icon-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} title="Previous page">
+            <button type="button" className="icon-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} title="Previous page" aria-label="Previous page">
               <Icon name="arrowRight" size={13} className="dt-chevron-left" />
             </button>
             <span className="dt-pagination-page">Page {page} of {totalPages}</span>
-            <button type="button" className="icon-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} title="Next page">
+            <button type="button" className="icon-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} title="Next page" aria-label="Next page">
               <Icon name="arrowRight" size={13} />
             </button>
           </div>

@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/auth";
 import { equipmentUpdateSchema } from "@/lib/validation";
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser();
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const equipment = await prisma.equipment.findUnique({ where: { id: params.id } });
+  if (!equipment) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
+
+  return NextResponse.json({ equipment });
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });

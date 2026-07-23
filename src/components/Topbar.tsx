@@ -1,27 +1,41 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { IconButton, Button } from "@/components/ui";
+import { Button, Icon } from "@/components/ui";
 
 const VIEW_META: Record<string, { title: string; sub: string }> = {
   "/dashboard": { title: "Dashboard", sub: "Today's operational overview" },
   "/board": { title: "Dispatch Board", sub: "Drag loads between stages to update status" },
   "/loads": { title: "Loads", sub: "Every load, searchable and filterable" },
+  "/customers": { title: "Customers", sub: "Accounts, contacts, and load history" },
   "/roster": { title: "Drivers & Equipment", sub: "Manage your fleet and roster" },
   "/documents": { title: "Documents & Billing", sub: "Attachments, driver pay, and payout status" },
 };
 
-export function Topbar({ onNewLoad }: { onNewLoad: () => void }) {
+export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMenuClick: () => void }) {
   const pathname = usePathname() || "/dashboard";
   const meta = VIEW_META[pathname] ?? { title: "Haulwise", sub: "" };
 
   return (
     <div className="topbar">
+      <button type="button" className="topbar-menu-btn" onClick={onMenuClick} aria-label="Open menu" title="Open menu">
+        <Icon name="list" size={18} />
+      </button>
       <div>
         <div className="topbar-title">{meta.title}</div>
         <div className="topbar-sub">{meta.sub}</div>
       </div>
       <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => window.dispatchEvent(new Event("haulwise:open-command-palette"))}
+          title="Search everything (Cmd/Ctrl+K)"
+        >
+          <Icon name="search" size={13} />
+          Search
+          <kbd className="cmdk-esc" style={{ marginLeft: 2 }}>⌘K</kbd>
+        </button>
         <Button variant="primary" icon="plus" onClick={onNewLoad}>New Load</Button>
       </div>
     </div>

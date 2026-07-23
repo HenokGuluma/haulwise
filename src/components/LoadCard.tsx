@@ -4,11 +4,21 @@ import { useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
 import { Icon } from "@/components/ui";
 import { fmtMoney, fmtDate } from "@/lib/format";
-import type { Load, Driver, Equipment } from "@/types";
+import type { Load, Driver, Equipment, LoadStatus } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
 }
+
+const STATUS_LABELS: Record<LoadStatus, string> = {
+  DRAFT: "Draft",
+  ASSIGNED: "Assigned",
+  DISPATCHED: "Dispatched",
+  IN_TRANSIT: "In Transit",
+  DELIVERED: "Delivered",
+  BILLED: "Billed",
+};
+const ALL_STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
 
 export function LoadCard({
   load,
@@ -17,6 +27,7 @@ export function LoadCard({
   onOpen,
   onAssign,
   onQuickAssign,
+  onMoveTo,
   dragging,
   onDragStart,
   onDragEnd,
@@ -27,6 +38,7 @@ export function LoadCard({
   onOpen: () => void;
   onAssign: () => void;
   onQuickAssign: (driverId: string, equipmentId: string) => void;
+  onMoveTo: (status: LoadStatus) => void;
   dragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
@@ -34,6 +46,7 @@ export function LoadCard({
   const [quickOpen, setQuickOpen] = useState(false);
   const [qDriver, setQDriver] = useState("");
   const [qEquipment, setQEquipment] = useState("");
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
 
   return (
     <div
@@ -45,7 +58,29 @@ export function LoadCard({
     >
       <div className="lc-top">
         <span className="lc-id mono">{load.loadNumber}</span>
-        <span className="lc-rate mono">{fmtMoney(load.rate)}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span className="lc-rate mono">{fmtMoney(load.rate)}</span>
+          <span className="dt-menu-anchor" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="icon-btn"
+              style={{ width: 20, height: 20 }}
+              title="Move to… (keyboard alternative to drag-and-drop)"
+              aria-label="Move to another status"
+              onClick={() => setMoveMenuOpen((o) => !o)}
+            >
+              <Icon name="columns" size={11} />
+            </button>
+            {moveMenuOpen && (
+              <div className="dt-menu dt-menu-right">
+                {ALL_STATUSES.filter((s) => s !== load.status).map((s) => (
+                  <button key={s} type="button" className="dt-menu-item" style={{ width: "100%" }} onClick={() => { onMoveTo(s); setMoveMenuOpen(false); }}>
+                    Move to {STATUS_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </span>
+        </span>
       </div>
       <div className="lc-route">
         {load.origin} <span style={{ color: "var(--muted)", fontWeight: 500 }}>→</span> {load.destination}
@@ -84,7 +119,7 @@ export function LoadCard({
             >
               <Icon name="checkCircle" size={13} />
             </button>
-            <button className="icon-btn" onClick={() => setQuickOpen(false)} title="Cancel"><Icon name="x" size={13} /></button>
+            <button className="icon-btn" onClick={() => setQuickOpen(false)} title="Cancel" aria-label="Cancel quick assign"><Icon name="x" size={13} /></button>
           </div>
         ) : (
           <>

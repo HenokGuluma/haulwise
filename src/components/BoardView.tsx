@@ -91,20 +91,13 @@ export function BoardView({
     localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
   }
 
-  async function handleDrop(status: LoadStatus, e: React.DragEvent) {
-    setOverCol(null);
-    const id = e.dataTransfer.getData("text/plain") || dragId;
-    if (!id) return;
-    const load = loads.find((l) => l.id === id);
-    setDragId(null);
-    if (!load || load.status === status) return;
-
+  async function changeStatus(load: Load, status: LoadStatus) {
+    if (load.status === status) return;
     if (REQUIRES_ASSIGNMENT.has(status) && (!load.driverId || !load.equipmentId)) {
       toast.error(`${load.loadNumber} needs a driver and equipment assigned before moving to ${STATUS_LABELS[status]}.`);
       setAssignLoad(load);
       return;
     }
-
     try {
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { status });
       patchLocal(res.load);
@@ -112,6 +105,16 @@ export function BoardView({
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't update status.");
     }
+  }
+
+  // Keyboard-accessible alternative to drag-and-drop — native HTML5 DnD
+  // (used for the drag path below) isn't operable by keyboard.
+  function handleDrop(status: LoadStatus, e: React.DragEvent) {
+    setOverCol(null);
+    const id = e.dataTransfer.getData("text/plain") || dragId;
+    setDragId(null);
+    const load = id ? loads.find((l) => l.id === id) : undefined;
+    if (load) changeStatus(load, status);
   }
 
   async function quickAssign(load: Load, driverId: string, equipmentId: string) {
@@ -170,7 +173,7 @@ export function BoardView({
           {presets.map((p) => (
             <span key={p.name} className="dt-menu-anchor" style={{ display: "inline-flex" }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setFilters(p.filters)}>{p.name}</button>
-              <button className="icon-btn" style={{ width: 22, height: 22, marginLeft: 2 }} title="Remove preset" onClick={() => deletePreset(p.name)}>
+              <button className="icon-btn" style={{ width: 22, height: 22, marginLeft: 2 }} title="Remove preset" aria-label="Remove preset" onClick={() => deletePreset(p.name)}>
                 <Icon name="x" size={10} />
               </button>
             </span>
@@ -225,6 +228,7 @@ export function BoardView({
                     onOpen={() => setDetailLoadId(load.id)}
                     onAssign={() => setAssignLoad(load)}
                     onQuickAssign={(driverId, equipmentId) => quickAssign(load, driverId, equipmentId)}
+                    onMoveTo={(status) => changeStatus(load, status)}
                     onDragStart={(e) => {
                       setDragId(load.id);
                       e.dataTransfer.setData("text/plain", load.id);

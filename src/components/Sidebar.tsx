@@ -18,9 +18,13 @@ const NAV_ITEMS = [
 export function Sidebar({
   user,
   counts,
+  mobileOpen = false,
+  onCloseMobile,
 }: {
   user: SessionUser;
   counts: Partial<Record<(typeof NAV_ITEMS)[number]["href"], number>>;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -32,7 +36,7 @@ export function Sidebar({
   }
 
   return (
-    <div className="sidebar">
+    <div className={"sidebar" + (mobileOpen ? " open" : "")}>
       <div className="brand">
         <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
           <rect width="100" height="100" rx="22" style={{ fill: "var(--amber)" }} />
@@ -44,6 +48,9 @@ export function Sidebar({
           <div className="brand-name">Haulwise</div>
           <div className="brand-sub">Dispatch</div>
         </div>
+        <button className="sidebar-close" onClick={onCloseMobile} aria-label="Close menu" title="Close menu">
+          <Icon name="x" size={16} />
+        </button>
       </div>
 
       <div className="nav-group">
@@ -51,7 +58,7 @@ export function Sidebar({
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const count = counts[item.href];
           return (
-            <Link key={item.href} href={item.href} className={"nav-item" + (active ? " active" : "")}>
+            <Link key={item.href} href={item.href} className={"nav-item" + (active ? " active" : "")} onClick={onCloseMobile}>
               <Icon name={item.icon} />
               {item.label}
               {count !== undefined && <span className="nav-count">{count}</span>}

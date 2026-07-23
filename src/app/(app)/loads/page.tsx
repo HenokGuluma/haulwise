@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -15,11 +16,13 @@ export default async function LoadsPage() {
   ]);
 
   return (
-    <LoadsView
-      user={user}
-      customers={JSON.parse(JSON.stringify(customers)) as Customer[]}
-      drivers={JSON.parse(JSON.stringify(drivers)) as Driver[]}
-      equipment={JSON.parse(JSON.stringify(equipment)) as Equipment[]}
-    />
+    <Suspense>
+      <LoadsView
+        user={user}
+        customers={JSON.parse(JSON.stringify(customers)) as Customer[]}
+        drivers={JSON.parse(JSON.stringify(drivers)) as Driver[]}
+        equipment={JSON.parse(JSON.stringify(equipment)) as Equipment[]}
+      />
+    </Suspense>
   );
 }

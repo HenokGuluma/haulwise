@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { statusClass } from "@/lib/format";
 
 /* =========================================================================
@@ -185,11 +185,47 @@ function useEscape(onEscape: () => void) {
   }, [onEscape]);
 }
 
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Traps Tab/Shift+Tab within the dialog and restores focus to the trigger element on unmount. */
+function useFocusTrap(containerRef: React.RefObject<HTMLElement>) {
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    (focusable[0] ?? container).focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !container) return;
+      const items = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((el) => el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    container.addEventListener("keydown", onKeyDown);
+    return () => {
+      container.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [containerRef]);
+}
+
 export function Drawer({ onClose, children, width }: { onClose: () => void; children: React.ReactNode; width?: number }) {
   useEscape(onClose);
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref);
   return (
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="drawer" style={width ? { width } : undefined} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={ref} className="drawer" role="dialog" aria-modal="true" tabIndex={-1} style={width ? { width } : undefined} onMouseDown={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -198,9 +234,11 @@ export function Drawer({ onClose, children, width }: { onClose: () => void; chil
 
 export function ModalBox({ onClose, children, width }: { onClose: () => void; children: React.ReactNode; width?: number }) {
   useEscape(onClose);
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref);
   return (
     <div className="overlay center" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-box" style={width ? { width } : undefined} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={ref} className="modal-box" role="dialog" aria-modal="true" tabIndex={-1} style={width ? { width } : undefined} onMouseDown={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>

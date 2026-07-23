@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { StatusPill, IconButton } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { AssignModal } from "@/components/modals/AssignModal";
 import { LoadFormModal } from "@/components/modals/LoadFormModal";
 import { fmtMoney, fmtDate, statusLabel } from "@/lib/format";
-import { fetchTablePage } from "@/lib/api-client";
+import { api, fetchTablePage } from "@/lib/api-client";
 import type { Load, Customer, Driver, Equipment, SessionUser, LoadStatus } from "@/types";
 
 const STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
@@ -33,6 +33,15 @@ export function LoadsView({
   const [previewLoads, setPreviewLoads] = useState<Load[]>([]);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Deep-link support: /loads?open=<id> (from the command palette, or a
+  // future external link) opens that load's detail drawer directly.
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId) return;
+    api.get<{ load: Load }>(`/api/loads/${openId}`).then((res) => setDetailLoad(res.load)).catch(() => {});
+  }, [searchParams]);
 
   // Lightweight, unpaginated snapshot of active loads used only for the
   // AssignModal's client-side conflict preview — the server re-checks

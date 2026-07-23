@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -13,13 +14,15 @@ export default async function RosterPage() {
   });
 
   return (
-    <RosterView
-      user={user}
-      activeLoadCounts={{
-        byDriver: countBy(loads, "driverId"),
-        byEquipment: countBy(loads, "equipmentId"),
-      }}
-    />
+    <Suspense>
+      <RosterView
+        user={user}
+        activeLoadCounts={{
+          byDriver: countBy(loads, "driverId"),
+          byEquipment: countBy(loads, "equipmentId"),
+        }}
+      />
+    </Suspense>
   );
 }
 
