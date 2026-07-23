@@ -1,12 +1,14 @@
-// Storage abstraction for uploaded documents (BOL/POD/rate confirmations).
-// Two implementations behind the same interface, selected via
-// STORAGE_DRIVER=local|s3 (defaults to local):
+// Storage abstraction for uploaded documents (BOL/POD/rate confirmations,
+// customer/driver files). Three implementations behind the same interface,
+// selected via STORAGE_DRIVER=local|vercel-blob|s3 (defaults to local):
 //
 // - local: writes to a gitignored ./uploads directory. Works for local dev
 //   and for the Docker Compose self-hosted deployment path (mount a volume
 //   at /app/uploads there for persistence across container restarts).
 //   Does NOT work on serverless platforms like Vercel — there is no
 //   persistent writable disk shared across function invocations.
+// - vercel-blob: real, functional — backed by a private Vercel Blob store
+//   (BLOB_READ_WRITE_TOKEN). This is what production uses.
 // - s3: structurally ready for any S3-compatible bucket (AWS S3, Cloudflare
 //   R2, Supabase Storage all speak the same REST API) but stubbed — it
 //   validates config and throws until real credentials are wired up and the
@@ -18,6 +20,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { put as blobPut, get as blobGet, del as blobDel } from "@vercel/blob";
 
 export type StoredFile = { key: string; sizeBytes: number; mimeType: string };
 
@@ -61,6 +64,34 @@ class LocalDiskStorage implements StorageDriver {
   }
 }
 
+class VercelBlobStorage implements StorageDriver {
+  async put(key: string, buffer: Buffer, mimeType: string): Promise<StoredFile> {
+    await blobPut(key, buffer, { access: "private", contentType: mimeType, addRandomSuffix: false });
+    return { key, sizeBytes: buffer.byteLength, mimeType };
+  }
+
+  async get(key: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    try {
+      const result = await blobGet(key, { access: "private" });
+      if (!result || !result.stream) return null;
+      const reader = result.stream.getReader();
+      const chunks: Buffer[] = [];
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(Buffer.from(value));
+      }
+      return { buffer: Buffer.concat(chunks), mimeType: result.blob.contentType || "application/octet-stream" };
+    } catch {
+      return null;
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    await blobDel(key).catch(() => {});
+  }
+}
+
 class StubS3Storage implements StorageDriver {
   private requireConfig() {
     if (!process.env.S3_BUCKET) {
@@ -90,7 +121,9 @@ let driver: StorageDriver | null = null;
 
 export function getStorageDriver(): StorageDriver {
   if (!driver) {
-    driver = process.env.STORAGE_DRIVER === "s3" ? new StubS3Storage() : new LocalDiskStorage();
+    if (process.env.STORAGE_DRIVER === "s3") driver = new StubS3Storage();
+    else if (process.env.STORAGE_DRIVER === "vercel-blob") driver = new VercelBlobStorage();
+    else driver = new LocalDiskStorage();
   }
   return driver;
 }
