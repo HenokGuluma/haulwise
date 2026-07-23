@@ -681,7 +681,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
 .panel-title { font-weight: 700; font-size: 15.5px; }
 .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
-.panel-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+.panel-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 /* ---------------- Form elements ---------------- */
 .field { margin-bottom: 14px; }
