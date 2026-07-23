@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma, EquipmentStatus, EquipmentTypeCode } from "@prisma/client";
+import { Prisma, EquipmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { equipmentCreateSchema } from "@/lib/validation";
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const { page, pageSize, sortBy, sortDir, search, filters } = parseListParams(searchParams);
 
   const statusFilter = filters.status as EquipmentStatus[] | undefined;
-  const typeFilter = filters.typeCode as EquipmentTypeCode[] | undefined;
+  const typeFilter = filters.typeCode;
   const where: Prisma.EquipmentWhereInput = {
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     typeCode: typeFilter && typeFilter.length > 0 ? { in: typeFilter } : undefined,
@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
   if (existing) {
     return NextResponse.json({ error: "A unit with this number already exists." }, { status: 409 });
   }
+
+  const type = await prisma.equipmentType.findUnique({ where: { code: parsed.data.typeCode } });
+  if (!type) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
 
   const equipment = await prisma.equipment.create({ data: parsed.data });
   return NextResponse.json({ equipment }, { status: 201 });

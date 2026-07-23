@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
-import { EQUIPMENT_TYPES } from "@/lib/dat";
+import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { Equipment, EquipmentStatus, EquipmentTypeCode } from "@/types";
 
@@ -16,12 +16,20 @@ export function EquipmentFormModal({
   onSaved: (equipment: Equipment) => void;
 }) {
   const isEdit = !!equipment;
+  const equipmentTypes = useEquipmentTypes();
   const [form, setForm] = useState({
     unitNumber: equipment?.unitNumber ?? "",
-    typeCode: (equipment?.typeCode ?? "V") as EquipmentTypeCode,
+    typeCode: (equipment?.typeCode ?? "") as EquipmentTypeCode,
     status: (equipment?.status ?? "AVAILABLE") as EquipmentStatus,
     nextMaintenance: equipment ? equipment.nextMaintenance.slice(0, 10) : "",
   });
+
+  // Default to the first available type once the list loads (create mode only).
+  useEffect(() => {
+    if (!isEdit && !form.typeCode && equipmentTypes.length > 0) {
+      set("typeCode", equipmentTypes[0].code);
+    }
+  }, [equipmentTypes]); // eslint-disable-line react-hooks/exhaustive-deps
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -33,6 +41,7 @@ export function EquipmentFormModal({
   function validate() {
     const e: Record<string, string> = {};
     if (!form.unitNumber.trim()) e.unitNumber = "Required.";
+    if (!form.typeCode) e.typeCode = "Select an equipment type.";
     if (!form.nextMaintenance) e.nextMaintenance = "Required.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -69,7 +78,8 @@ export function EquipmentFormModal({
         <div className="field-row">
           <Field label="Type">
             <select className="input" value={form.typeCode} onChange={(e) => set("typeCode", e.target.value as EquipmentTypeCode)}>
-              {EQUIPMENT_TYPES.map((t) => (
+              {equipmentTypes.length === 0 && <option value="">Loading…</option>}
+              {equipmentTypes.map((t) => (
                 <option key={t.code} value={t.code}>{t.label} ({t.code})</option>
               ))}
             </select>

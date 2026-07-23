@@ -42,6 +42,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if ("error" in roleCheck) return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.status });
   }
 
+  if (patch.equipmentTypeCode) {
+    const equipmentType = await prisma.equipmentType.findUnique({ where: { code: patch.equipmentTypeCode } });
+    if (!equipmentType) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
+  }
+
   const nextStatus = patch.status ?? existing.status;
   const nextPickup = patch.pickupTime ?? existing.pickupTime;
   const nextDelivery = patch.deliveryTime ?? existing.deliveryTime;

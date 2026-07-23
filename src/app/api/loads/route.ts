@@ -98,6 +98,9 @@ export async function POST(req: NextRequest) {
   const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
   if (!customer) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
+  const equipmentType = await prisma.equipmentType.findUnique({ where: { code: data.equipmentTypeCode } });
+  if (!equipmentType) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
+
   const loadNumber = await nextLoadNumber();
 
   const load = await prisma.load.create({

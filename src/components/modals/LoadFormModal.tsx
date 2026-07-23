@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Field, ModalBox, PanelHead, Button, Banner } from "@/components/ui";
 import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
-import { EQUIPMENT_TYPES } from "@/lib/dat";
+import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
 
@@ -58,7 +58,7 @@ export function LoadFormModal({
     weight: seed ? String(seed.weight) : "",
     rate: seed ? String(seed.rate) : "",
     commodity: seed?.commodity ?? "",
-    equipmentTypeCode: seed?.equipmentTypeCode ?? "V",
+    equipmentTypeCode: seed?.equipmentTypeCode ?? "",
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -66,11 +66,19 @@ export function LoadFormModal({
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [oversizedAck, setOversizedAck] = useState(false);
+  const equipmentTypes = useEquipmentTypes();
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     if (key === "rate" || key === "weight") setOversizedAck(false);
   }
+
+  // Default to the first available type once the list loads (new loads only).
+  useEffect(() => {
+    if (!form.equipmentTypeCode && equipmentTypes.length > 0) {
+      set("equipmentTypeCode", equipmentTypes[0].code);
+    }
+  }, [equipmentTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD || Number(form.weight) > WEIGHT_WARN_THRESHOLD;
   const transitHours = form.pickupTime && form.deliveryTime
@@ -98,6 +106,7 @@ export function LoadFormModal({
     if (!form.rate || Number(form.rate) <= 0) e.rate = "Enter a rate greater than 0.";
     if (!form.weight || Number(form.weight) <= 0) e.weight = "Enter a weight greater than 0.";
     if (!form.commodity.trim()) e.commodity = "Commodity is required.";
+    if (!form.equipmentTypeCode) e.equipmentTypeCode = "Select an equipment type.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -197,9 +206,10 @@ export function LoadFormModal({
           <Field label="Commodity" error={errors.commodity}>
             <input className={"input" + (errors.commodity ? " err" : "")} placeholder="e.g. Packaged Foods" value={form.commodity} onChange={(e) => set("commodity", e.target.value)} />
           </Field>
-          <Field label="Equipment Type" hint="Uses DAT-standard codes for future integration.">
-            <select className="input" value={form.equipmentTypeCode} onChange={(e) => set("equipmentTypeCode", e.target.value as EquipmentTypeCode)}>
-              {EQUIPMENT_TYPES.map((t) => (
+          <Field label="Equipment Type" error={errors.equipmentTypeCode}>
+            <select className={"input" + (errors.equipmentTypeCode ? " err" : "")} value={form.equipmentTypeCode} onChange={(e) => set("equipmentTypeCode", e.target.value)}>
+              {equipmentTypes.length === 0 && <option value="">Loading…</option>}
+              {equipmentTypes.map((t) => (
                 <option key={t.code} value={t.code}>{t.label} ({t.code})</option>
               ))}
             </select>

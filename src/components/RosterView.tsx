@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon, Pill, Button, IconButton, ConfirmDialog, useToast } from "@/components/ui";
-import { DataTable, type FetchPageParams } from "@/components/DataTable";
+import { DataTable, type FetchPageParams, type FetchPageResult } from "@/components/DataTable";
 import { DriverFormModal } from "@/components/modals/DriverFormModal";
 import { EquipmentFormModal } from "@/components/modals/EquipmentFormModal";
+import { EquipmentTypeFormModal } from "@/components/modals/EquipmentTypeFormModal";
 import { DriverDetailDrawer } from "@/components/modals/DriverDetailDrawer";
 import { EquipmentDetailDrawer } from "@/components/modals/EquipmentDetailDrawer";
 import { daysUntil } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
-import type { Driver, Equipment, SessionUser, DriverStatus, EquipmentStatus, EquipmentTypeCode } from "@/types";
+import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
+import { equipmentToneColors } from "@/lib/equipment-types";
+import type { Driver, Equipment, SessionUser, DriverStatus, EquipmentStatus, EquipmentTypeListRow } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
@@ -34,7 +37,6 @@ function serviceLabel(days: number, kind: "license" | "maintenance") {
 
 const DRIVER_STATUSES: DriverStatus[] = ["AVAILABLE", "ON_DUTY", "OFF_DUTY"];
 const EQUIPMENT_STATUSES: EquipmentStatus[] = ["AVAILABLE", "IN_USE", "MAINTENANCE"];
-const EQUIPMENT_TYPES: EquipmentTypeCode[] = ["V", "R", "F", "PO"];
 
 export function RosterView({
   user,
@@ -45,16 +47,20 @@ export function RosterView({
   initialEquipment?: Equipment[];
   activeLoadCounts: { byDriver: Record<string, number>; byEquipment: Record<string, number> };
 }) {
-  const [tab, setTab] = useState<"drivers" | "equipment">("drivers");
+  const [tab, setTab] = useState<"drivers" | "equipment" | "types">("drivers");
   const [driverForm, setDriverForm] = useState<{ open: boolean; driver?: Driver }>({ open: false });
   const [equipmentForm, setEquipmentForm] = useState<{ open: boolean; equipment?: Equipment }>({ open: false });
+  const [typeForm, setTypeForm] = useState<{ open: boolean; type?: EquipmentTypeListRow }>({ open: false });
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const [detailDriver, setDetailDriver] = useState<Driver | null>(null);
   const [detailEquipment, setDetailEquipment] = useState<Equipment | null>(null);
   const [driverCount, setDriverCount] = useState(0);
   const [equipmentCount, setEquipmentCount] = useState(0);
+  const [typeCount, setTypeCount] = useState(0);
   const [driverReload, setDriverReload] = useState(0);
   const [equipmentReload, setEquipmentReload] = useState(0);
+  const [typeReload, setTypeReload] = useState(0);
+  const equipmentTypes = useEquipmentTypes(typeReload);
 
   const toast = useToast();
   const router = useRouter();
@@ -79,6 +85,18 @@ export function RosterView({
 
   const fetchDrivers = useCallback((params: FetchPageParams) => fetchTablePage<Driver>("/api/drivers", params), []);
   const fetchEquipment = useCallback((params: FetchPageParams) => fetchTablePage<Equipment>("/api/equipment", params), []);
+  // Equipment types are a small, unpaginated admin list — fetch the full set
+  // and slice/filter client-side so the management tab can reuse DataTable.
+  const fetchTypes = useCallback(async (params: FetchPageParams): Promise<FetchPageResult<EquipmentTypeListRow>> => {
+    const res = await api.get<{ rows: EquipmentTypeListRow[] }>("/api/equipment-types");
+    let rows = res.rows;
+    if (params.search.trim()) {
+      const q = params.search.trim().toLowerCase();
+      rows = rows.filter((t) => t.code.toLowerCase().includes(q) || t.label.toLowerCase().includes(q));
+    }
+    const start = (params.page - 1) * params.pageSize;
+    return { rows: rows.slice(start, start + params.pageSize), total: rows.length };
+  }, []);
 
   async function deleteDriver(id: string) {
     try {
@@ -102,19 +120,32 @@ export function RosterView({
     }
   }
 
+  async function deleteType(id: string) {
+    try {
+      await api.del(`/api/equipment-types/${id}`);
+      toast.success("Equipment type deleted.");
+      setTypeReload((k) => k + 1);
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete equipment type.");
+    }
+  }
+
   return (
     <div>
       <div className="tabbar">
         <button className={"tab" + (tab === "drivers" ? " active" : "")} onClick={() => setTab("drivers")}>Drivers ({driverCount})</button>
         <button className={"tab" + (tab === "equipment" ? " active" : "")} onClick={() => setTab("equipment")}>Equipment ({equipmentCount})</button>
+        <button className={"tab" + (tab === "types" ? " active" : "")} onClick={() => setTab("types")}>Types ({typeCount})</button>
       </div>
 
       <div style={{ display: "flex", marginBottom: 14 }}>
         <div style={{ marginLeft: "auto" }}>
           {tab === "drivers" ? (
             <Button variant="primary" icon="plus" onClick={() => setDriverForm({ open: true })}>Add Driver</Button>
-          ) : (
+          ) : tab === "equipment" ? (
             <Button variant="primary" icon="plus" onClick={() => setEquipmentForm({ open: true })}>Add Equipment</Button>
+          ) : (
+            <Button variant="primary" icon="plus" onClick={() => setTypeForm({ open: true })}>Add Type</Button>
           )}
         </div>
       </div>
@@ -191,7 +222,7 @@ export function RosterView({
             },
           ]}
         />
-      ) : (
+      ) : tab === "equipment" ? (
         <DataTable<Equipment>
           tableId="roster-equipment"
           fetchPage={fetchEquipment}
@@ -220,7 +251,7 @@ export function RosterView({
               key: "typeCode",
               label: "Type",
               sortable: true,
-              filterOptions: EQUIPMENT_TYPES.map((t) => ({ value: t, label: t })),
+              filterOptions: equipmentTypes.map((t) => ({ value: t.code, label: t.label })),
               render: (e) => e.typeCode,
             },
             {
@@ -267,6 +298,77 @@ export function RosterView({
             },
           ]}
         />
+      ) : (
+        <DataTable<EquipmentTypeListRow>
+          tableId="roster-equipment-types"
+          fetchPage={fetchTypes}
+          reloadKey={typeReload}
+          rowKey={(t) => t.id}
+          onRowClick={(t) => setTypeForm({ open: true, type: t })}
+          onTotalChange={setTypeCount}
+          searchPlaceholder="Search types…"
+          emptyIcon="layers"
+          emptyTitle="No equipment types match"
+          csvFilename="haulwise-equipment-types.csv"
+          columns={[
+            {
+              key: "code",
+              label: "Type",
+              render: (t) => {
+                const c = equipmentToneColors(t.tone);
+                return (
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="lc-avatar" style={{ background: c.bg, color: c.fg }}>
+                      <Icon name={t.icon} size={14} />
+                    </span>
+                    <span>
+                      <div style={{ fontWeight: 600 }}>{t.label}</div>
+                      <div className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>{t.code}</div>
+                    </span>
+                  </span>
+                );
+              },
+              exportValue: (t) => t.label,
+            },
+            {
+              key: "equipmentCount",
+              label: "Units",
+              align: "right",
+              render: (t) => t.equipmentCount,
+              exportValue: (t) => t.equipmentCount,
+            },
+            {
+              key: "loadCount",
+              label: "Loads",
+              align: "right",
+              render: (t) => t.loadCount,
+              exportValue: (t) => t.loadCount,
+            },
+            {
+              key: "actions",
+              label: "",
+              align: "right",
+              render: (t) => {
+                const inUse = t.equipmentCount > 0 || t.loadCount > 0;
+                return (
+                  <span style={{ display: "flex", gap: 4, justifyContent: "flex-end" }} onClick={(ev) => ev.stopPropagation()}>
+                    <IconButton icon="edit" title="Edit type" onClick={() => setTypeForm({ open: true, type: t })} />
+                    <IconButton
+                      icon="trash"
+                      title={!canDelete ? "Admin only" : inUse ? `In use by ${t.equipmentCount} unit(s) and ${t.loadCount} load(s)` : "Delete type"}
+                      onClick={canDelete && !inUse ? () => setConfirm({
+                        title: "Delete equipment type",
+                        message: `Remove "${t.label}" (${t.code})? This cannot be undone.`,
+                        onConfirm: () => deleteType(t.id),
+                      }) : undefined}
+                      style={!canDelete || inUse ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                    />
+                  </span>
+                );
+              },
+            },
+          ]}
+        />
       )}
 
       {driverForm.open && (
@@ -289,6 +391,18 @@ export function RosterView({
             toast.success(equipmentForm.equipment ? "Equipment updated." : "Equipment added to fleet.");
             setEquipmentForm({ open: false });
             setEquipmentReload((k) => k + 1);
+          }}
+        />
+      )}
+
+      {typeForm.open && (
+        <EquipmentTypeFormModal
+          type={typeForm.type}
+          onClose={() => setTypeForm({ open: false })}
+          onSaved={() => {
+            toast.success(typeForm.type ? "Equipment type updated." : "Equipment type added.");
+            setTypeForm({ open: false });
+            setTypeReload((k) => k + 1);
           }}
         />
       )}

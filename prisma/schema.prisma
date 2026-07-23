@@ -169,20 +169,33 @@ enum EquipmentStatus {
   MAINTENANCE
 }
 
-// Type codes follow DAT's standard equipment conventions (V, R, F, PO, ...) so
-// loads posted here map cleanly onto DAT's Load Board / Freight Posting API
-// later without a data-cleanup pass. See EquipmentTypeCode below.
-enum EquipmentTypeCode {
-  V   // Dry Van
-  R   // Reefer
-  F   // Flatbed
-  PO  // Power Only
+// Admin-manageable (see /roster "Types" tab) rather than a fixed enum, so
+// dispatchers can add/rename/retire equipment types without a code change.
+// `code` is what Equipment.typeCode / Load.equipmentTypeCode store — kept
+// short (originally seeded from DAT's standard V/R/F/PO conventions) so
+// loads posted here still map cleanly onto a future DAT Load Board /
+// Freight Posting integration. `icon` and `tone` key into a small curated
+// set on the frontend (see EQUIPMENT_TYPE_TONES in LoadCard.tsx) rather
+// than storing arbitrary free-form colors.
+model EquipmentType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  label     String
+  icon      String   @default("box")
+  tone      String   @default("van")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  equipment Equipment[]
+  loads     Load[]
+
+  @@map("equipment_types")
 }
 
 model Equipment {
   id                  String            @id @default(cuid())
   unitNumber          String            @unique
-  typeCode            EquipmentTypeCode
+  typeCode            String
+  equipmentType       EquipmentType     @relation(fields: [typeCode], references: [code], onUpdate: Cascade)
   status              EquipmentStatus   @default(AVAILABLE)
   nextMaintenance     DateTime
   createdAt           DateTime          @default(now())
@@ -190,6 +203,7 @@ model Equipment {
   loads               Load[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
 
+  @@index([typeCode])
   @@map("equipment")
 }
 
@@ -240,7 +254,8 @@ model Load {
   rate              Int // cents-free integer USD for simplicity; swap to Decimal if sub-dollar precision is needed
   weight            Int // lbs
   commodity         String
-  equipmentTypeCode EquipmentTypeCode
+  equipmentTypeCode String
+  equipmentType     EquipmentType     @relation(fields: [equipmentTypeCode], references: [code], onUpdate: Cascade)
 
   driverId    String?
   driver      Driver?    @relation(fields: [driverId], references: [id])
@@ -265,6 +280,7 @@ model Load {
   @@index([driverId, pickupTime, deliveryTime])
   @@index([equipmentId, pickupTime, deliveryTime])
   @@index([status])
+  @@index([equipmentTypeCode])
   @@map("loads")
 }
 

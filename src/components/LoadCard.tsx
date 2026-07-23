@@ -4,7 +4,8 @@ import { useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
 import { Icon } from "@/components/ui";
 import { fmtMoney, fmtDate } from "@/lib/format";
-import type { Load, Driver, Equipment, LoadStatus, EquipmentTypeCode } from "@/types";
+import { equipmentToneColors } from "@/lib/equipment-types";
+import type { Load, Driver, Equipment, LoadStatus, EquipmentType } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
@@ -20,19 +21,11 @@ const STATUS_LABELS: Record<LoadStatus, string> = {
 };
 const ALL_STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
 
-// A small visual identity per equipment type — icon + tone — so a column of
-// cards reads at a glance instead of requiring the type-code text every time.
-const EQUIPMENT_VISUAL: Record<EquipmentTypeCode, { icon: string; tone: string; label: string }> = {
-  V: { icon: "box", tone: "van", label: "Dry Van" },
-  R: { icon: "snowflake", tone: "reefer", label: "Reefer" },
-  F: { icon: "layers", tone: "flatbed", label: "Flatbed" },
-  PO: { icon: "zap", tone: "power", label: "Power Only" },
-};
-
 export function LoadCard({
   load,
   drivers,
   equipment,
+  equipmentTypes,
   onOpen,
   onAssign,
   onQuickAssign,
@@ -44,6 +37,7 @@ export function LoadCard({
   load: Load;
   drivers: Driver[];
   equipment: Equipment[];
+  equipmentTypes: EquipmentType[];
   onOpen: () => void;
   onAssign: () => void;
   onQuickAssign: (driverId: string, equipmentId: string) => void;
@@ -57,7 +51,14 @@ export function LoadCard({
   const [qEquipment, setQEquipment] = useState("");
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
 
-  const visual = EQUIPMENT_VISUAL[load.equipmentTypeCode];
+  // Admin-managed types load async — fall back to a generic box badge until
+  // they arrive, or if a load references a type code that's since been removed.
+  const matchedType = equipmentTypes.find((t) => t.code === load.equipmentTypeCode);
+  const visual = {
+    icon: matchedType?.icon ?? "box",
+    label: matchedType?.label ?? load.equipmentTypeCode,
+    ...equipmentToneColors(matchedType?.tone ?? "slate"),
+  };
 
   return (
     <div
@@ -68,8 +69,8 @@ export function LoadCard({
       onClick={onOpen}
     >
       <div className="lc-top">
-        <span className={"lc-equip-badge lc-equip-" + visual.tone} title={visual.label}>
-          <Icon name={visual.icon} size={15} />
+        <span className="lc-equip-badge" style={{ background: visual.bg, color: visual.fg }} title={visual.label}>
+          <Icon name={visual.icon} size={24} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="lc-id mono">{load.loadNumber}</div>

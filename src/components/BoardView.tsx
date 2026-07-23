@@ -9,7 +9,7 @@ import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { LoadFormModal } from "@/components/modals/LoadFormModal";
 import { fmtMoney } from "@/lib/format";
 import { api, ApiRequestError } from "@/lib/api-client";
-import { EQUIPMENT_TYPES } from "@/lib/dat";
+import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import type { Load, Driver, Equipment, Customer, SessionUser, LoadStatus } from "@/types";
 
 const STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
@@ -59,6 +59,7 @@ export function BoardView({
 }) {
   const [loads, setLoads] = useState(initialLoads);
   useEffect(() => setLoads(initialLoads), [initialLoads]);
+  const equipmentTypes = useEquipmentTypes();
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<LoadStatus | null>(null);
@@ -173,7 +174,7 @@ export function BoardView({
         </select>
         <select className="input" style={{ width: 140 }} value={filters.equipmentTypeCode} onChange={(e) => setFilters((f) => ({ ...f, equipmentTypeCode: e.target.value }))}>
           <option value="">All equipment</option>
-          {EQUIPMENT_TYPES.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
+          {equipmentTypes.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
         </select>
         {hasFilters && <button className="btn btn-ghost btn-sm" onClick={() => setFilters(EMPTY_FILTERS)}>Clear</button>}
 
@@ -234,6 +235,7 @@ export function BoardView({
                     load={load}
                     drivers={drivers}
                     equipment={equipment}
+                    equipmentTypes={equipmentTypes}
                     dragging={dragId === load.id}
                     onOpen={() => setDetailLoadId(load.id)}
                     onAssign={() => setAssignLoad(load)}

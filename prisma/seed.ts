@@ -1,4 +1,4 @@
-import { PrismaClient, LoadStatus, EquipmentTypeCode, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
+import { PrismaClient, LoadStatus, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
 
@@ -86,14 +86,27 @@ async function main() {
     drivers.push(await prisma.driver.create({ data: d }));
   }
 
+  // --- Equipment types -------------------------------------------------------
+  // Also seeded by the equipment_types migration, but upserted here too so a
+  // `prisma db push` + `seed` flow (no migration history) still has them.
+  const equipmentTypeData = [
+    { code: "V", label: "Dry Van", icon: "box", tone: "van" },
+    { code: "R", label: "Reefer", icon: "snowflake", tone: "reefer" },
+    { code: "F", label: "Flatbed", icon: "layers", tone: "flatbed" },
+    { code: "PO", label: "Power Only", icon: "zap", tone: "power" },
+  ];
+  for (const t of equipmentTypeData) {
+    await prisma.equipmentType.upsert({ where: { code: t.code }, update: {}, create: t });
+  }
+
   // --- Equipment -----------------------------------------------------------
   const equipmentData = [
-    { unitNumber: "TRL-104", typeCode: EquipmentTypeCode.V, status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(45) },
-    { unitNumber: "TRL-118", typeCode: EquipmentTypeCode.R, status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(8) },
-    { unitNumber: "TRL-092", typeCode: EquipmentTypeCode.F, status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(120) },
-    { unitNumber: "TRK-221", typeCode: EquipmentTypeCode.PO, status: EquipmentStatus.MAINTENANCE, nextMaintenance: daysFromNow(-2) },
-    { unitNumber: "TRL-137", typeCode: EquipmentTypeCode.V, status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(75) },
-    { unitNumber: "TRL-146", typeCode: EquipmentTypeCode.R, status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(3) },
+    { unitNumber: "TRL-104", typeCode: "V", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(45) },
+    { unitNumber: "TRL-118", typeCode: "R", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(8) },
+    { unitNumber: "TRL-092", typeCode: "F", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(120) },
+    { unitNumber: "TRK-221", typeCode: "PO", status: EquipmentStatus.MAINTENANCE, nextMaintenance: daysFromNow(-2) },
+    { unitNumber: "TRL-137", typeCode: "V", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(75) },
+    { unitNumber: "TRL-146", typeCode: "R", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(3) },
   ];
   const equipment = [];
   for (const e of equipmentData) {
@@ -114,7 +127,7 @@ async function main() {
     ["Indianapolis, IN", "Louisville, KY"],
   ];
   const commodities = ["Packaged Foods", "Steel Coils", "Building Materials", "Beverages", "Auto Parts", "Retail Goods", "Paper Products", "Machinery Parts"];
-  const equipTypes = [EquipmentTypeCode.V, EquipmentTypeCode.R, EquipmentTypeCode.F, EquipmentTypeCode.PO];
+  const equipTypes = ["V", "R", "F", "PO"];
 
   type Plan = { status: LoadStatus; pu: number; del: number; assign: boolean; docs?: boolean; paid?: "yes" | "pending" };
   const plan: Plan[] = [

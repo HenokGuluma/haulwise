@@ -23,6 +23,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
 
+  if (parsed.data.typeCode) {
+    const type = await prisma.equipmentType.findUnique({ where: { code: parsed.data.typeCode } });
+    if (!type) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
+  }
+
   const equipment = await prisma.equipment
     .update({ where: { id: params.id }, data: parsed.data })
     .catch(() => null);

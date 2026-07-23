@@ -1,11 +1,15 @@
 import { z } from "zod";
+import { EQUIPMENT_TYPE_ICONS, EQUIPMENT_TYPE_TONES } from "@/lib/equipment-types";
 
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
 
-const equipmentTypeCode = z.enum(["V", "R", "F", "PO"]);
+// Equipment types are admin-managed (see /api/equipment-types) rather than a
+// fixed set, so this just needs to be a non-empty code — existence against
+// the database is checked in the route handler, same as customerId.
+const equipmentTypeCode = z.string().trim().min(1, "Select an equipment type.");
 
 export const loadCreateSchema = z
   .object({
@@ -77,6 +81,15 @@ export const equipmentCreateSchema = z.object({
 });
 
 export const equipmentUpdateSchema = equipmentCreateSchema.partial();
+
+export const equipmentTypeCreateSchema = z.object({
+  code: z.string().trim().min(1, "Code is required.").max(10, "Keep the code short (10 characters max).").regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, - and _ only."),
+  label: z.string().trim().min(1, "Label is required.").max(60),
+  icon: z.enum(EQUIPMENT_TYPE_ICONS).default("box"),
+  tone: z.enum(EQUIPMENT_TYPE_TONES).default("slate"),
+});
+
+export const equipmentTypeUpdateSchema = equipmentTypeCreateSchema.partial();
 
 export const documentUploadSchema = z.object({
   type: z.enum(["BOL", "POD", "RATE_CONFIRMATION"]),

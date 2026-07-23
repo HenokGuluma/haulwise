@@ -10,7 +10,9 @@ export type LoadStatus = "DRAFT" | "ASSIGNED" | "DISPATCHED" | "IN_TRANSIT" | "D
 export type DriverStatus = "AVAILABLE" | "ON_DUTY" | "OFF_DUTY";
 export type EquipmentStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
 export type PayoutStatus = "NOT_BILLED" | "PENDING" | "PAID";
-export type EquipmentTypeCode = "V" | "R" | "F" | "PO";
+// Admin-managed (see EquipmentType below) rather than a fixed union — any
+// non-empty string that exists in the equipment_types table is valid.
+export type EquipmentTypeCode = string;
 export type DocumentType = "BOL" | "POD" | "RATE_CONFIRMATION";
 export type CustomerStatus = "ACTIVE" | "INACTIVE" | "PROSPECT";
 
@@ -71,6 +73,21 @@ export type Driver = {
   medicalCertExpiration: string | null;
   endorsements: string[];
   status: DriverStatus;
+};
+
+export type EquipmentType = {
+  id: string;
+  code: string;
+  label: string;
+  icon: string;
+  tone: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type EquipmentTypeListRow = EquipmentType & {
+  equipmentCount: number;
+  loadCount: number;
 };
 
 export type Equipment = {
