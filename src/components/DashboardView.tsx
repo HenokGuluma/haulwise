@@ -116,7 +116,49 @@ export function DashboardView({
         <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="dollarSign" iconTone="amber" tone="success" highlight />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, alignItems: "start" }}>
+      <div className="analytics-grid">
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+              <Icon name="trendingUp" size={16} />
+            </span>
+            Revenue &amp; volume over time
+          </div>
+          <RevenueTrendChart data={analytics.monthly} />
+        </div>
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--purple-bg)", color: "var(--purple)" }}>
+              <Icon name="pieChart" size={16} />
+            </span>
+            Loads by status
+          </div>
+          <StatusBreakdownChart data={analytics.statusBreakdown} />
+        </div>
+      </div>
+
+      <div className="analytics-grid-row2">
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
+              <Icon name="briefcase" size={16} />
+            </span>
+            Top customers by revenue
+          </div>
+          <TopCustomersChart data={analytics.topCustomers} />
+        </div>
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--amber-bg)", color: "var(--amber-ink)" }}>
+              <Icon name="barChart" size={16} />
+            </span>
+            Equipment volume (last 12 months)
+          </div>
+          <EquipmentVolumeChart data={analytics.equipmentVolume} />
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, alignItems: "start", marginTop: 16 }}>
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
             <div className="section-title" style={{ marginBottom: 0 }}>
@@ -193,48 +235,6 @@ export function DashboardView({
               ))
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="analytics-grid">
-        <div className="card chart-card">
-          <div className="section-title">
-            <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
-              <Icon name="trendingUp" size={16} />
-            </span>
-            Revenue &amp; volume over time
-          </div>
-          <RevenueTrendChart data={analytics.monthly} />
-        </div>
-        <div className="card chart-card">
-          <div className="section-title">
-            <span className="section-title-icon" style={{ background: "var(--purple-bg)", color: "var(--purple)" }}>
-              <Icon name="pieChart" size={16} />
-            </span>
-            Loads by status
-          </div>
-          <StatusBreakdownChart data={analytics.statusBreakdown} />
-        </div>
-      </div>
-
-      <div className="analytics-grid-row2">
-        <div className="card chart-card">
-          <div className="section-title">
-            <span className="section-title-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
-              <Icon name="briefcase" size={16} />
-            </span>
-            Top customers by revenue
-          </div>
-          <TopCustomersChart data={analytics.topCustomers} />
-        </div>
-        <div className="card chart-card">
-          <div className="section-title">
-            <span className="section-title-icon" style={{ background: "var(--amber-bg)", color: "var(--amber-ink)" }}>
-              <Icon name="barChart" size={16} />
-            </span>
-            Equipment volume (last 12 months)
-          </div>
-          <EquipmentVolumeChart data={analytics.equipmentVolume} />
         </div>
       </div>
 
