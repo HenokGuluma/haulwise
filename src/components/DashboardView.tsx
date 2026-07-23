@@ -7,17 +7,48 @@ import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, daysUntil, statusLabel } from "@/lib/format";
 import type { Load, Driver, Equipment, SessionUser } from "@/types";
 
-function KPI({ label, value, tone, deltaIcon, deltaText, highlight }: { label: string; value: string | number; tone?: "success" | "danger"; deltaIcon?: string; deltaText?: string; highlight?: boolean }) {
+const KPI_TONES: Record<string, { bg: string; fg: string }> = {
+  accent: { bg: "var(--accent-bg)", fg: "var(--accent)" },
+  success: { bg: "var(--success-bg)", fg: "var(--success)" },
+  route: { bg: "var(--route-bg)", fg: "var(--route)" },
+  amber: { bg: "var(--amber-bg)", fg: "var(--amber-ink)" },
+};
+
+function KPI({
+  label,
+  value,
+  icon,
+  iconTone = "accent",
+  tone,
+  deltaIcon,
+  deltaText,
+  highlight,
+}: {
+  label: string;
+  value: string | number;
+  icon: string;
+  iconTone?: keyof typeof KPI_TONES;
+  tone?: "success" | "danger";
+  deltaIcon?: string;
+  deltaText?: string;
+  highlight?: boolean;
+}) {
+  const c = KPI_TONES[iconTone];
   return (
     <div className={"kpi-card" + (highlight ? " highlight" : "")}>
-      <div className="kpi-label">{label}</div>
-      <div className="kpi-value">{value}</div>
-      {deltaText && (
-        <div className="kpi-delta" style={{ color: tone === "danger" ? "var(--danger)" : tone === "success" ? "var(--success)" : "var(--muted)" }}>
-          {deltaIcon && <Icon name={deltaIcon} size={12} />}
-          {deltaText}
-        </div>
-      )}
+      <span className="kpi-icon-badge" style={{ background: c.bg, color: c.fg }}>
+        <Icon name={icon} size={28} />
+      </span>
+      <div className="kpi-body">
+        <div className="kpi-label">{label}</div>
+        <div className="kpi-value">{value}</div>
+        {deltaText && (
+          <div className="kpi-delta" style={{ color: tone === "danger" ? "var(--danger)" : tone === "success" ? "var(--success)" : "var(--muted)" }}>
+            {deltaIcon && <Icon name={deltaIcon} size={12} />}
+            {deltaText}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -64,16 +95,21 @@ export function DashboardView({
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 22 }}>
-        <KPI label="Active Loads" value={active.length} />
-        <KPI label="In Transit" value={inTransit.length} tone="success" deltaIcon="truck" deltaText="on the road now" />
-        <KPI label="Delivered This Week" value={deliveredThisWeek.length} />
-        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} tone="success" highlight />
+        <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" />
+        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" tone="success" deltaIcon="truck" deltaText="on the road now" />
+        <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" />
+        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="dollarSign" iconTone="amber" tone="success" highlight />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, alignItems: "start" }}>
-        <div className="card" style={{ padding: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>Needs attention</div>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>
+              <span className="section-title-icon" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
+                <Icon name="alertTriangle" size={16} />
+              </span>
+              Needs attention
+            </div>
             {attentionCount > 0 && <span className="pill pill-danger" style={{ marginLeft: "auto" }}>{attentionCount} items</span>}
           </div>
 
@@ -103,8 +139,13 @@ export function DashboardView({
           )}
         </div>
 
-        <div className="card" style={{ padding: 18 }}>
-          <div className="section-title">Today</div>
+        <div className="card" style={{ padding: 20 }}>
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+              <Icon name="calendar" size={16} />
+            </span>
+            Today
+          </div>
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 6 }}>Pickups ({pickupsToday.length})</div>
             {pickupsToday.length === 0 ? (

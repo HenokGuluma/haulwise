@@ -70,7 +70,7 @@ export function LoadCard({
     >
       <div className="lc-top">
         <span className="lc-equip-badge" style={{ background: visual.bg, color: visual.fg }} title={visual.label}>
-          <Icon name={visual.icon} size={34} />
+          <Icon name={visual.icon} size={52} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="lc-id mono">{load.loadNumber}</div>

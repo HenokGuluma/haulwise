@@ -312,15 +312,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   box-shadow: var(--shadow-sm);
 }
 .kpi-card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
-  padding: 16px 18px; box-shadow: var(--shadow-sm);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg, 16px);
+  padding: 18px 20px; box-shadow: var(--shadow-sm);
   animation: rise 0.45s ease both;
+  display: flex; align-items: center; gap: 16px;
 }
 .kpi-card.highlight { background: var(--amber-bg); border-color: var(--amber); }
 .kpi-card.highlight .kpi-value { color: var(--amber-ink); }
-.kpi-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.kpi-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
-.kpi-delta { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.kpi-icon-badge {
+  width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.kpi-body { flex: 1; min-width: 0; }
+.kpi-label { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-value { font-size: 30px; margin-top: 5px; }
+.kpi-delta { font-size: 12.5px; margin-top: 6px; display: flex; align-items: center; gap: 4px; font-weight: 600; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -376,7 +382,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* ---------------- Dispatch board ---------------- */
 .board-scroll {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px;
 }
 .board-col {
   background: var(--board-col-bg); border-radius: var(--radius-md);
@@ -399,33 +405,33 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .board-col-body.drag-over { background: var(--accent-bg); border-radius: 10px; }
 
 .load-card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
   cursor: grab; box-shadow: var(--shadow-sm);
   transition: box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 .load-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--scrollbar-thumb-hover); }
 .load-card.dragging { opacity: 0.4; }
-.load-card .lc-top { display: flex; align-items: center; gap: 12px; }
-.load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.25; }
-.load-card .lc-customer { font-size: 12.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.load-card .lc-rate { font-family: var(--font-mono), monospace; font-size: 15px; font-weight: 700; color: var(--ink); }
+.load-card .lc-top { display: flex; align-items: center; gap: 14px; }
+.load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.load-card .lc-customer { font-size: 13px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.load-card .lc-rate { font-family: var(--font-mono), monospace; font-size: 16px; font-weight: 700; color: var(--ink); }
 
 .lc-equip-badge {
-  width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
+  width: 96px; height: 96px; border-radius: 22px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
 
 .load-card .lc-route {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13.5px; font-weight: 600; margin-top: 13px; line-height: 1.3; color: var(--ink-soft);
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14.5px; font-weight: 600; margin-top: 14px; line-height: 1.3; color: var(--ink-soft);
 }
 .load-card .lc-route-pin { color: var(--muted); flex-shrink: 0; }
 .load-card .lc-route-arrow { color: var(--muted); font-weight: 500; }
-.load-card .lc-meta { display: flex; align-items: center; gap: 6px; margin-top: 9px; font-size: 12px; color: var(--muted); }
-.load-card .lc-assign { display: flex; align-items: center; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line-soft); }
+.load-card .lc-meta { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.load-card .lc-assign { display: flex; align-items: center; gap: 8px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .load-card .lc-avatar {
-  width: 24px; height: 24px; border-radius: 7px; background: var(--slate-bg); color: var(--slate);
-  font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 8px; background: var(--slate-bg); color: var(--slate);
+  font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
 .load-card .lc-unassigned {
   font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 7px; padding: 3px 8px;
@@ -633,7 +639,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* ---------------- Misc ---------------- */
 .divider { height: 1px; background: var(--line); margin: 16px 0; }
-.section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px; }
+.section-title {
+  font-family: var(--font-heading), var(--font-inter), sans-serif;
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title-icon {
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
 .doc-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--slate-bg); color: var(--ink-soft); font-size: 11.5px; padding: 4px 9px; border-radius: 8px; }
 .doc-chip svg { width: 12px; height: 12px; }
 .doc-chip.filled { background: var(--success-bg); color: var(--success); }
