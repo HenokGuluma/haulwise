@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { demoScope } from "@/lib/demo-scope";
 
 const LIMIT = 6;
 
@@ -12,9 +13,11 @@ export async function GET(req: NextRequest) {
   const q = (new URL(req.url).searchParams.get("q") || "").trim();
   if (!q) return NextResponse.json({ loads: [], drivers: [], equipment: [], customers: [] });
 
+  const scope = demoScope(auth.user);
   const [loads, drivers, equipment, customers] = await Promise.all([
     prisma.load.findMany({
       where: {
+        ...scope,
         OR: [
           { loadNumber: { contains: q, mode: "insensitive" } },
           { origin: { contains: q, mode: "insensitive" } },
@@ -26,6 +29,7 @@ export async function GET(req: NextRequest) {
     }),
     prisma.driver.findMany({
       where: {
+        ...scope,
         OR: [
           { firstName: { contains: q, mode: "insensitive" } },
           { lastName: { contains: q, mode: "insensitive" } },
@@ -36,12 +40,13 @@ export async function GET(req: NextRequest) {
       take: LIMIT,
     }),
     prisma.equipment.findMany({
-      where: { unitNumber: { contains: q, mode: "insensitive" } },
+      where: { ...scope, unitNumber: { contains: q, mode: "insensitive" } },
       select: { id: true, unitNumber: true, typeCode: true, status: true },
       take: LIMIT,
     }),
     prisma.customer.findMany({
       where: {
+        ...scope,
         OR: [
           { companyName: { contains: q, mode: "insensitive" } },
           { contactName: { contains: q, mode: "insensitive" } },

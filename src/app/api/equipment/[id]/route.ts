@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/auth";
 import { equipmentUpdateSchema } from "@/lib/validation";
+import { demoScope } from "@/lib/demo-scope";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const equipment = await prisma.equipment.findUnique({ where: { id: params.id } });
+  const equipment = await prisma.equipment.findUnique({ where: { id: params.id, ...demoScope(auth.user) } });
   if (!equipment) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
 
   return NextResponse.json({ equipment });

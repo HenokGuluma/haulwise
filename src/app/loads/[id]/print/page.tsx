@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { fmtMoney, fmtDateTime, statusLabel } from "@/lib/format";
 import { AutoPrint } from "@/components/AutoPrint";
+import { demoScope } from "@/lib/demo-scope";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const load = await prisma.load.findUnique({ where: { id: params.id }, select: { loadNumber: true } });
@@ -28,7 +29,7 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
   if (!user) redirect("/login");
 
   const load = await prisma.load.findUnique({
-    where: { id: params.id },
+    where: { id: params.id, ...demoScope(user) },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
   if (!load) notFound();

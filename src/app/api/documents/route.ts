@@ -3,6 +3,7 @@ import { Prisma, DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { parseListParams } from "@/lib/pagination";
+import { demoScope } from "@/lib/demo-scope";
 
 const SORT_MAP: Record<string, keyof Prisma.DocumentOrderByWithRelationInput> = {
   uploadedAt: "uploadedAt",
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
 
   const typeFilter = filters.type as DocumentType[] | undefined;
   const where: Prisma.DocumentWhereInput = {
+    load: demoScope(auth.user),
     type: typeFilter && typeFilter.length > 0 ? { in: typeFilter } : undefined,
     OR: search
       ? [

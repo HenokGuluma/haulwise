@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { driverCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
+import { demoScope } from "@/lib/demo-scope";
 
 // Native Postgres enum sorts by declared order (AVAILABLE, ON_DUTY, OFF_DUTY),
 // so `status: dir` already gives pipeline order, not alphabetical.
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
 
   const statusFilter = filters.status as DriverStatus[] | undefined;
   const where: Prisma.DriverWhereInput = {
+    ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     OR: search
       ? [

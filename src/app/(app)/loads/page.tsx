@@ -3,16 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoadsView } from "@/components/LoadsView";
+import { demoScope } from "@/lib/demo-scope";
 import type { Customer, Driver, Equipment } from "@/types";
 
 export default async function LoadsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  const scope = demoScope(user);
   const [customers, drivers, equipment] = await Promise.all([
-    prisma.customer.findMany({ orderBy: { companyName: "asc" } }),
-    prisma.driver.findMany({ orderBy: { firstName: "asc" } }),
-    prisma.equipment.findMany({ orderBy: { unitNumber: "asc" } }),
+    prisma.customer.findMany({ where: scope, orderBy: { companyName: "asc" } }),
+    prisma.driver.findMany({ where: scope, orderBy: { firstName: "asc" } }),
+    prisma.equipment.findMany({ where: scope, orderBy: { unitNumber: "asc" } }),
   ]);
 
   return (

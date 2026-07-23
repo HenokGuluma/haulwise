@@ -193,6 +193,18 @@ export type SessionUser = {
   name: string;
   email: string;
   role: Role;
+  showMockData: boolean;
 };
 
 export type ApiError = { error: string; conflicts?: unknown[] };
+
+export type MonthlyAnalyticsPoint = { month: string; label: string; revenue: number; loads: number };
+export type StatusBreakdownPoint = { status: string; label: string; count: number };
+export type TopCustomerPoint = { name: string; revenue: number };
+export type EquipmentVolumePoint = { label: string; tone: string; loads: number };
+export type AnalyticsData = {
+  monthly: MonthlyAnalyticsPoint[];
+  statusBreakdown: StatusBreakdownPoint[];
+  topCustomers: TopCustomerPoint[];
+  equipmentVolume: EquipmentVolumePoint[];
+};

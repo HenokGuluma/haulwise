@@ -6,6 +6,7 @@ import { findConflicts } from "@/lib/conflicts";
 import { getStorageDriver } from "@/lib/storage";
 import { logActivity } from "@/lib/activity";
 import { statusLabel } from "@/lib/format";
+import { demoScope } from "@/lib/demo-scope";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -13,7 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const load = await prisma.load.findUnique({ where: { id: params.id }, include: LOAD_INCLUDE });
+  const load = await prisma.load.findUnique({ where: { id: params.id, ...demoScope(auth.user) }, include: LOAD_INCLUDE });
   if (!load) return NextResponse.json({ error: "Load not found." }, { status: 404 });
   return NextResponse.json({ load });
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { customerCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
+import { demoScope } from "@/lib/demo-scope";
 
 const ACTIVE_STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"];
 
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
 
   const statusFilter = filters.status as CustomerStatus[] | undefined;
   const where: Prisma.CustomerWhereInput = {
+    ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     OR: search
       ? [

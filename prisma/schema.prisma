@@ -26,6 +26,10 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role     @default(DISPATCHER)
+  // Per-user preference: when true, list/detail reads also include rows
+  // seeded as demo data (isDemo: true on Customer/Driver/Equipment/Load).
+  // Off by default so demo data never leaks into a normal account's view.
+  showMockData Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   sessions     Session[]
@@ -68,12 +72,16 @@ model Customer {
   status       CustomerStatus @default(ACTIVE)
   paymentTerms String?
   notes        String?
+  // Seeded demo/mock data, hidden unless the viewing user has opted into
+  // showMockData (see User.showMockData). Never set by the app itself.
+  isDemo       Boolean        @default(false)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   loads        Load[]
   contacts     CustomerContact[]
   documents    CustomerDocument[]
 
+  @@index([isDemo])
   @@map("customers")
 }
 
@@ -132,11 +140,13 @@ model Driver {
   medicalCertExpiration  DateTime?
   endorsements           String[]     @default([])
   status                 DriverStatus @default(AVAILABLE)
+  isDemo                 Boolean      @default(false)
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
   loads                  Load[]
   documents              DriverDocument[]
 
+  @@index([isDemo])
   @@map("drivers")
 }
 
@@ -198,12 +208,14 @@ model Equipment {
   equipmentType       EquipmentType     @relation(fields: [typeCode], references: [code], onUpdate: Cascade)
   status              EquipmentStatus   @default(AVAILABLE)
   nextMaintenance     DateTime
+  isDemo              Boolean           @default(false)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   loads               Load[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
 
   @@index([typeCode])
+  @@index([isDemo])
   @@map("equipment")
 }
 
@@ -264,6 +276,7 @@ model Load {
 
   driverPay    Int
   payoutStatus PayoutStatus @default(NOT_BILLED)
+  isDemo       Boolean      @default(false)
 
   documents         Document[]
   externalPostings  ExternalPosting[]
@@ -281,6 +294,7 @@ model Load {
   @@index([equipmentId, pickupTime, deliveryTime])
   @@index([status])
   @@index([equipmentTypeCode])
+  @@index([isDemo])
   @@map("loads")
 }
 

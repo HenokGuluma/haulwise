@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RosterView } from "@/components/RosterView";
+import { demoScope } from "@/lib/demo-scope";
 
 export default async function RosterPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const loads = await prisma.load.findMany({
-    where: { status: { in: ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] } },
+    where: { ...demoScope(user), status: { in: ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] } },
     select: { id: true, driverId: true, equipmentId: true },
   });
 

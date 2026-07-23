@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Icon, StatusPill } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, daysUntil, statusLabel } from "@/lib/format";
+import { useAnalytics } from "@/lib/useAnalytics";
+import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
+import { StatusBreakdownChart } from "@/components/charts/StatusBreakdownChart";
+import { TopCustomersChart } from "@/components/charts/TopCustomersChart";
+import { EquipmentVolumeChart } from "@/components/charts/EquipmentVolumeChart";
 import type { Load, Driver, Equipment, SessionUser } from "@/types";
 
 const KPI_TONES: Record<string, { bg: string; fg: string }> = {
@@ -77,6 +82,7 @@ export function DashboardView({
   useEffect(() => setLoads(initialLoads), [initialLoads]);
   const [detailLoadId, setDetailLoadId] = useState<string | null>(null);
   const router = useRouter();
+  const { data: analytics } = useAnalytics();
 
   const active = loads.filter((l) => l.status !== "DELIVERED" && l.status !== "BILLED");
   const inTransit = loads.filter((l) => l.status === "IN_TRANSIT");
@@ -187,6 +193,48 @@ export function DashboardView({
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="analytics-grid">
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+              <Icon name="trendingUp" size={16} />
+            </span>
+            Revenue &amp; volume over time
+          </div>
+          <RevenueTrendChart data={analytics.monthly} />
+        </div>
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--purple-bg)", color: "var(--purple)" }}>
+              <Icon name="pieChart" size={16} />
+            </span>
+            Loads by status
+          </div>
+          <StatusBreakdownChart data={analytics.statusBreakdown} />
+        </div>
+      </div>
+
+      <div className="analytics-grid-row2">
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
+              <Icon name="briefcase" size={16} />
+            </span>
+            Top customers by revenue
+          </div>
+          <TopCustomersChart data={analytics.topCustomers} />
+        </div>
+        <div className="card chart-card">
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--amber-bg)", color: "var(--amber-ink)" }}>
+              <Icon name="barChart" size={16} />
+            </span>
+            Equipment volume (last 12 months)
+          </div>
+          <EquipmentVolumeChart data={analytics.equipmentVolume} />
         </div>
       </div>
 

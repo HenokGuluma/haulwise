@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { demoScope } from "@/lib/demo-scope";
 
 /**
  * Loads with an outstanding driver-pay balance, bucketed by days since
@@ -13,7 +14,7 @@ export async function GET() {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const loads = await prisma.load.findMany({
-    where: { status: { in: ["DELIVERED", "BILLED"] }, payoutStatus: { not: "PAID" } },
+    where: { ...demoScope(auth.user), status: { in: ["DELIVERED", "BILLED"] }, payoutStatus: { not: "PAID" } },
     include: { customer: true, payments: true },
     orderBy: { deliveryTime: "asc" },
   });

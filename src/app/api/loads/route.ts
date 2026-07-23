@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { loadCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
 import { logActivity } from "@/lib/activity";
+import { demoScope } from "@/lib/demo-scope";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
   const equipmentIdFilter = filters.equipmentId;
 
   const where: Prisma.LoadWhereInput = {
+    ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     customerId: customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined,
     driverId: driverIdFilter && driverIdFilter.length > 0 ? { in: driverIdFilter } : undefined,

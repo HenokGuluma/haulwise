@@ -10,6 +10,7 @@ const VIEW_META: Record<string, { title: string; sub: string }> = {
   "/customers": { title: "Customers", sub: "Accounts, contacts, and load history" },
   "/roster": { title: "Drivers & Equipment", sub: "Manage your fleet and roster" },
   "/documents": { title: "Documents & Billing", sub: "Attachments, driver pay, and payout status" },
+  "/settings": { title: "Settings", sub: "Account preferences and demo data" },
 };
 
 export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMenuClick: () => void }) {

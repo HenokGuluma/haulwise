@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: "briefcase" },
   { href: "/roster", label: "Drivers & Equipment", icon: "users" },
   { href: "/documents", label: "Documents & Billing", icon: "fileText" },
+  { href: "/settings", label: "Settings", icon: "settings" },
 ] as const;
 
 export function Sidebar({

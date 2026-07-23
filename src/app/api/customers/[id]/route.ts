@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/auth";
 import { customerUpdateSchema } from "@/lib/validation";
 import { getStorageDriver } from "@/lib/storage";
+import { demoScope } from "@/lib/demo-scope";
 
 const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as const;
 
@@ -11,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const customer = await prisma.customer.findUnique({
-    where: { id: params.id },
+    where: { id: params.id, ...demoScope(auth.user) },
     include: {
       contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
       documents: { orderBy: { uploadedAt: "desc" }, include: { uploadedBy: { select: { id: true, name: true } } } },

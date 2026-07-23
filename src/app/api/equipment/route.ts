@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { equipmentCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
+import { demoScope } from "@/lib/demo-scope";
 
 const SORT_MAP: Record<string, keyof Prisma.EquipmentOrderByWithRelationInput> = {
   unitNumber: "unitNumber",
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
   const statusFilter = filters.status as EquipmentStatus[] | undefined;
   const typeFilter = filters.typeCode;
   const where: Prisma.EquipmentWhereInput = {
+    ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     typeCode: typeFilter && typeFilter.length > 0 ? { in: typeFilter } : undefined,
     unitNumber: search ? { contains: search, mode: "insensitive" } : undefined,

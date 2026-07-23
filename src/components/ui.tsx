@@ -7,7 +7,8 @@ import {
   Pencil, Trash2, ArrowRight, ArrowLeft, RefreshCw, Package, Wrench, LogOut,
   Sun, Moon, Briefcase, Box, Snowflake, Layers, Zap, Copy, ChevronLeft,
   ChevronRight, ChevronUp, ChevronDown, MapPin, GripVertical, Warehouse,
-  Route, DollarSign, Sparkles, type LucideIcon,
+  Route, DollarSign, Sparkles, Settings, Database, TrendingUp, PieChart,
+  BarChart3, type LucideIcon,
 } from "lucide-react";
 import { statusClass } from "@/lib/format";
 
@@ -58,6 +59,11 @@ const ICONS: Record<string, LucideIcon> = {
   route: Route,
   dollarSign: DollarSign,
   sparkles: Sparkles,
+  settings: Settings,
+  database: Database,
+  trendingUp: TrendingUp,
+  pieChart: PieChart,
+  barChart: BarChart3,
 };
 
 export function Icon({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {

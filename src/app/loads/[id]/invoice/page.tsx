@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { fmtMoney, fmtDate } from "@/lib/format";
 import { AutoPrint } from "@/components/AutoPrint";
+import { demoScope } from "@/lib/demo-scope";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const load = await prisma.load.findUnique({ where: { id: params.id }, select: { loadNumber: true } });
@@ -28,7 +29,7 @@ export default async function LoadInvoicePage({ params }: { params: { id: string
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const load = await prisma.load.findUnique({ where: { id: params.id }, include: { customer: true } });
+  const load = await prisma.load.findUnique({ where: { id: params.id, ...demoScope(user) }, include: { customer: true } });
   if (!load) notFound();
 
   return (

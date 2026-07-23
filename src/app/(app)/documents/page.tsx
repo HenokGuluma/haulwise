@@ -2,16 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DocumentsView } from "@/components/DocumentsView";
+import { demoScope } from "@/lib/demo-scope";
 
 export default async function DocumentsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  const scope = demoScope(user);
   const [payAgg, pendingAgg, withDocs, loadCount] = await Promise.all([
-    prisma.load.aggregate({ where: { payoutStatus: { not: "NOT_BILLED" } }, _sum: { driverPay: true } }),
-    prisma.load.aggregate({ where: { payoutStatus: "PENDING" }, _sum: { driverPay: true } }),
-    prisma.load.count({ where: { documents: { some: {} } } }),
-    prisma.load.count(),
+    prisma.load.aggregate({ where: { ...scope, payoutStatus: { not: "NOT_BILLED" } }, _sum: { driverPay: true } }),
+    prisma.load.aggregate({ where: { ...scope, payoutStatus: "PENDING" }, _sum: { driverPay: true } }),
+    prisma.load.count({ where: { ...scope, documents: { some: {} } } }),
+    prisma.load.count({ where: scope }),
   ]);
 
   return (

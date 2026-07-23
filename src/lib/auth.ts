@@ -13,6 +13,7 @@ export type SessionUser = {
   name: string;
   email: string;
   role: Role;
+  showMockData: boolean;
 };
 
 /** Verifies credentials and returns the matching user, or null. */
@@ -64,6 +65,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     name: session.user.name,
     email: session.user.email,
     role: session.user.role,
+    showMockData: session.user.showMockData,
   };
 }
 

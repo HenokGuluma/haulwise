@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { toCSV, fmtDate } from "@/lib/format";
+import { demoScope } from "@/lib/demo-scope";
 
 export async function GET(req: NextRequest) {
   const auth = await requireUser();
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Prisma.LoadWhereInput = {};
+  const where: Prisma.LoadWhereInput = { ...demoScope(auth.user) };
   if (from || to) {
     where.deliveryTime = {
       gte: from ? new Date(from) : undefined,
