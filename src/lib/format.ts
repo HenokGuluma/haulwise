@@ -1,3 +1,9 @@
+export function fmtBytes(n: number): string {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+  return (n / (1024 * 1024)).toFixed(1) + " MB";
+}
+
 export function fmtMoney(n: number): string {
   return "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
@@ -14,6 +20,19 @@ export function fmtDateTime(d: Date | string): string {
     " · " +
     date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
   );
+}
+
+export function fmtRelative(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "1 day ago";
+  if (diffDays < 30) return diffDays + " days ago";
+  const months = Math.floor(diffDays / 30);
+  if (months < 12) return months + (months === 1 ? " month ago" : " months ago");
+  const years = Math.floor(months / 12);
+  return years + (years === 1 ? " year ago" : " years ago");
 }
 
 export function daysUntil(d: Date | string): number {

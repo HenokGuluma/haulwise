@@ -1,7 +1,27 @@
 import { PrismaClient, LoadStatus, EquipmentTypeCode, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { getStorageDriver } from "../src/lib/storage";
 
 const prisma = new PrismaClient();
+
+/** A tiny, real (if minimal) single-page PDF — enough for a browser to open and preview. */
+function fakePdf(label: string): Buffer {
+  const text = `Haulwise seed document — ${label}`;
+  return Buffer.from(
+    `%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 120]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj
+4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj
+5 0 obj<</Length ${text.length + 24}>>stream
+BT /F1 12 Tf 12 60 Td (${text}) Tj ET
+endstream
+endobj
+trailer<</Size 6/Root 1 0 R>>
+%%EOF`,
+    "latin1"
+  );
+}
 
 function daysFromNow(n: number, hour = 8): Date {
   const d = new Date();
@@ -17,7 +37,7 @@ async function main() {
   const adminPassword = await bcrypt.hash("admin123", 10);
   const dispatcherPassword = await bcrypt.hash("dispatch123", 10);
 
-  await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: "admin@haulwise.local" },
     update: {},
     create: {
@@ -152,12 +172,26 @@ async function main() {
     });
 
     if (p.docs) {
-      await prisma.document.createMany({
-        data: [
-          { loadId: load.id, type: DocumentType.BOL, fileName: "bill-of-lading.pdf" },
-          { loadId: load.id, type: DocumentType.POD, fileName: "proof-of-delivery.pdf" },
-        ],
-      });
+      const storage = getStorageDriver();
+      for (const [type, fileName] of [
+        [DocumentType.BOL, "bill-of-lading.pdf"],
+        [DocumentType.POD, "proof-of-delivery.pdf"],
+      ] as const) {
+        const buffer = fakePdf(`${load.loadNumber} ${type}`);
+        const storageKey = `loads/${load.id}/${type}/seed-${fileName}`;
+        await storage.put(storageKey, buffer, "application/pdf");
+        await prisma.document.create({
+          data: {
+            loadId: load.id,
+            type,
+            fileName,
+            storageKey,
+            fileSizeBytes: buffer.byteLength,
+            mimeType: "application/pdf",
+            uploadedById: admin.id,
+          },
+        });
+      }
     }
   }
 

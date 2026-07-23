@@ -4,7 +4,7 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { loadUpdateSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
 
-const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: true } as const;
+const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();

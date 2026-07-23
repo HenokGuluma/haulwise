@@ -2,16 +2,150 @@
 
 import { useRef, useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
-import { StatusPill, Drawer, PanelHead, Button, Icon, ConfirmDialog } from "@/components/ui";
+import { StatusPill, Drawer, PanelHead, Button, Icon, IconButton, ConfirmDialog } from "@/components/ui";
 import { useToast } from "@/components/ui";
-import { fmtMoney, fmtDateTime, statusLabel, payoutLabel } from "@/lib/format";
-import { api, ApiRequestError } from "@/lib/api-client";
-import type { Load, SessionUser, DocumentType } from "@/types";
+import { fmtMoney, fmtDateTime, fmtBytes, fmtRelative, statusLabel, payoutLabel } from "@/lib/format";
+import { api, uploadFile, ApiRequestError } from "@/lib/api-client";
+import type { Load, LoadDocument, SessionUser, DocumentType } from "@/types";
 
 const STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"] as const;
 const REQUIRES_ASSIGNMENT = new Set(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 const DOC_TYPES: DocumentType[] = ["BOL", "POD", "RATE_CONFIRMATION"];
 const DOC_LABELS: Record<DocumentType, string> = { BOL: "BOL", POD: "POD", RATE_CONFIRMATION: "Rate Confirmation" };
+const ACCEPTED_EXT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
+
+function DocumentSlot({
+  loadId,
+  type,
+  label,
+  docs,
+  canDelete,
+  onChanged,
+}: {
+  loadId: string;
+  type: DocumentType;
+  label: string;
+  docs: LoadDocument[];
+  canDelete: boolean;
+  onChanged: () => void;
+}) {
+  const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const current = docs[0] ?? null;
+  const history = docs.slice(1);
+
+  async function doUpload(file: File) {
+    const formData = new FormData();
+    formData.append("type", type);
+    formData.append("file", file);
+    setUploading(true);
+    setProgress(0);
+    try {
+      await uploadFile(`/api/loads/${loadId}/documents`, formData, setProgress);
+      toast.success(label + " uploaded.");
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeDoc(docId: string) {
+    try {
+      await api.del(`/api/loads/${loadId}/documents/${docId}`);
+      toast.info("Document removed.");
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can remove documents.");
+    }
+  }
+
+  const fileUrl = (docId: string) => `/api/loads/${loadId}/documents/${docId}`;
+
+  return (
+    <div
+      className={"doc-slot" + (dragOver ? " drag-over" : "")}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) doUpload(file);
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_EXT}
+        style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doUpload(f); }}
+      />
+
+      <div className="doc-slot-head">
+        <span className="doc-slot-label">{label}</span>
+        {current && !uploading && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()}>Replace</button>
+        )}
+      </div>
+
+      {uploading ? (
+        <div className="doc-slot-progress">
+          <div className="doc-slot-progress-track"><div className="doc-slot-progress-bar" style={{ width: progress + "%" }} /></div>
+          <span className="mono">{progress}%</span>
+        </div>
+      ) : current ? (
+        <div className="doc-slot-file">
+          {current.mimeType.startsWith("image/") ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <a href={fileUrl(current.id)} target="_blank" rel="noreferrer" className="doc-thumb">
+              <img src={fileUrl(current.id)} alt={current.fileName} />
+            </a>
+          ) : (
+            <a href={fileUrl(current.id)} target="_blank" rel="noreferrer" className="doc-thumb doc-thumb-pdf">
+              <Icon name="fileText" size={18} />
+            </a>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <a href={fileUrl(current.id)} target="_blank" rel="noreferrer" className="doc-slot-filename">{current.fileName}</a>
+            <div className="doc-slot-meta">
+              {fmtBytes(current.fileSizeBytes)} · {fmtRelative(current.uploadedAt)}{current.uploadedBy ? " · " + current.uploadedBy.name : ""}
+            </div>
+            {history.length > 0 && (
+              <button type="button" className="doc-slot-history-toggle" onClick={() => setShowHistory((s) => !s)}>
+                {showHistory ? "Hide" : "View"} {history.length} earlier version{history.length === 1 ? "" : "s"}
+              </button>
+            )}
+          </div>
+          {canDelete && <IconButton icon="trash" title="Delete this version" onClick={() => removeDoc(current.id)} />}
+        </div>
+      ) : (
+        <div className="doc-slot-empty" onClick={() => inputRef.current?.click()}>
+          <Icon name="upload" size={15} />
+          <span>Drop file or click to upload</span>
+        </div>
+      )}
+
+      {showHistory && history.length > 0 && (
+        <div className="doc-slot-history">
+          {history.map((d) => (
+            <div key={d.id} className="doc-slot-history-item">
+              <a href={fileUrl(d.id)} target="_blank" rel="noreferrer">{d.fileName}</a>
+              <span className="doc-slot-meta">{fmtBytes(d.fileSizeBytes)} · {fmtRelative(d.uploadedAt)}</span>
+              {canDelete && <IconButton icon="trash" title="Delete this version" onClick={() => removeDoc(d.id)} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function LoadDetailDrawer({
   load,
@@ -31,14 +165,17 @@ export function LoadDetailDrawer({
   onEdit: (load: Load) => void;
 }) {
   const toast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingDocType, setPendingDocType] = useState<DocumentType | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const idx = STATUSES.indexOf(load.status);
   const nextStatus = idx >= 0 && idx < STATUSES.length - 1 ? STATUSES[idx + 1] : null;
   const prevStatus = idx > 0 ? STATUSES[idx - 1] : null;
+
+  async function refreshLoad() {
+    const res = await api.get<{ load: Load }>(`/api/loads/${load.id}`);
+    onUpdated(res.load);
+  }
 
   async function advance() {
     if (!nextStatus) return;
@@ -73,38 +210,6 @@ export function LoadDetailDrawer({
     }
   }
 
-  function triggerUpload(type: DocumentType) {
-    setPendingDocType(type);
-    fileInputRef.current?.click();
-  }
-
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !pendingDocType) return;
-    try {
-      await api.post(`/api/loads/${load.id}/documents`, { type: pendingDocType, fileName: file.name });
-      const res = await api.get<{ load: Load }>(`/api/loads/${load.id}`);
-      onUpdated(res.load);
-      toast.success(DOC_LABELS[pendingDocType] + " attached to " + load.loadNumber + ".");
-    } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Upload failed.");
-    } finally {
-      setPendingDocType(null);
-    }
-  }
-
-  async function removeDoc(type: DocumentType) {
-    try {
-      await api.del(`/api/loads/${load.id}/documents?type=${type}`);
-      const res = await api.get<{ load: Load }>(`/api/loads/${load.id}`);
-      onUpdated(res.load);
-      toast.info(DOC_LABELS[type] + " removed.");
-    } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can remove documents.");
-    }
-  }
-
   async function togglePayout() {
     const next = load.payoutStatus === "PAID" ? "PENDING" : "PAID";
     try {
@@ -126,7 +231,6 @@ export function LoadDetailDrawer({
 
   return (
     <Drawer onClose={onClose} width={480}>
-      <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFile} />
       <PanelHead title={load.loadNumber} sub={load.customer.companyName} onClose={onClose} />
       <div className="panel-body">
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -181,22 +285,18 @@ export function LoadDetailDrawer({
         </div>
 
         <div className="section-title">Documents</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {DOC_TYPES.map((type) => {
-            const doc = load.documents.find((d) => d.type === type);
-            return doc ? (
-              <span key={type} className="doc-chip filled">
-                <Icon name="checkCircle" /> {DOC_LABELS[type]}
-                <button onClick={() => removeDoc(type)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, marginLeft: 3, display: "flex" }} title="Remove">
-                  <Icon name="x" size={11} />
-                </button>
-              </span>
-            ) : (
-              <button key={type} className="doc-chip" style={{ cursor: "pointer", border: "1px dashed var(--line)" }} onClick={() => triggerUpload(type)}>
-                <Icon name="upload" /> Upload {DOC_LABELS[type]}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+          {DOC_TYPES.map((type) => (
+            <DocumentSlot
+              key={type}
+              loadId={load.id}
+              type={type}
+              label={DOC_LABELS[type]}
+              docs={load.documents.filter((d) => d.type === type)}
+              canDelete={user.role === "ADMIN"}
+              onChanged={refreshLoad}
+            />
+          ))}
         </div>
 
         <div className="section-title">Billing</div>

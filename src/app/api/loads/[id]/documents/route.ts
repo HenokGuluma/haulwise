@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
-import { documentUploadSchema } from "@/lib/validation";
+import { requireUser } from "@/lib/auth";
+import { getStorageDriver, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "@/lib/storage";
 import { z } from "zod";
 
 const DOCUMENT_TYPES = ["BOL", "POD", "RATE_CONFIRMATION"] as const;
+const typeSchema = z.enum(DOCUMENT_TYPES);
 
-// NOTE: this stores document *metadata* (type + file name), matching the MVP
-// scope in the spec ("Upload POD / BOL / rate confirmation to a load"). Wiring
-// this to actual file storage (S3-compatible bucket, per the spec's tech
-// stack) is a drop-in change here — swap the fileName-only write for an
-// upload to storage plus a stored URL, without touching the rest of the app.
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
+}
+
+// Stores the actual file (not just a filename) via the storage abstraction
+// (src/lib/storage.ts) and versions it — a new upload for a type doesn't
+// delete the previous one, it just becomes the new "current" row.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -18,32 +21,39 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const load = await prisma.load.findUnique({ where: { id: params.id } });
   if (!load) return NextResponse.json({ error: "Load not found." }, { status: 404 });
 
-  const body = await req.json().catch(() => null);
-  const parsed = documentUploadSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
+  const formData = await req.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: "Expected multipart/form-data." }, { status: 400 });
+
+  const typeParsed = typeSchema.safeParse(formData.get("type"));
+  if (!typeParsed.success) return NextResponse.json({ error: "Missing or invalid document type." }, { status: 400 });
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) return NextResponse.json({ error: "Missing file." }, { status: 400 });
+
+  if (!ALLOWED_DOCUMENT_MIME_TYPES.has(file.type)) {
+    return NextResponse.json({ error: "Only PDF, PNG, and JPG files are supported." }, { status: 400 });
+  }
+  if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    return NextResponse.json({ error: "File is too large (15MB max)." }, { status: 400 });
   }
 
-  const document = await prisma.document.upsert({
-    where: { loadId_type: { loadId: load.id, type: parsed.data.type } },
-    update: { fileName: parsed.data.fileName, uploadedAt: new Date() },
-    create: { loadId: load.id, type: parsed.data.type, fileName: parsed.data.fileName },
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const storageKey = `loads/${load.id}/${typeParsed.data}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+
+  await getStorageDriver().put(storageKey, buffer, file.type);
+
+  const document = await prisma.document.create({
+    data: {
+      loadId: load.id,
+      type: typeParsed.data,
+      fileName: file.name,
+      storageKey,
+      fileSizeBytes: buffer.byteLength,
+      mimeType: file.type,
+      uploadedById: auth.user.id,
+    },
+    include: { uploadedBy: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json({ document }, { status: 201 });
-}
-
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-
-  const { searchParams } = new URL(req.url);
-  const typeParam = searchParams.get("type");
-  const parsed = z.enum(DOCUMENT_TYPES).safeParse(typeParam);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Missing or invalid document type." }, { status: 400 });
-  }
-
-  await prisma.document.deleteMany({ where: { loadId: params.id, type: parsed.data } });
-  return NextResponse.json({ ok: true });
 }

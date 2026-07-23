@@ -29,6 +29,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   sessions     Session[]
+  documents    Document[]
 
   @@map("users")
 }
@@ -171,17 +172,22 @@ enum DocumentType {
 }
 
 model Document {
-  id         String       @id @default(cuid())
-  loadId     String
-  load       Load         @relation(fields: [loadId], references: [id], onDelete: Cascade)
-  type       DocumentType
-  fileName   String
-  uploadedAt DateTime     @default(now())
+  id            String       @id @default(cuid())
+  loadId        String
+  load          Load         @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  fileName      String
+  storageKey    String
+  fileSizeBytes Int
+  mimeType      String
+  uploadedAt    DateTime     @default(now())
+  uploadedById  String?
+  uploadedBy    User?        @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
-  // One document per type per load (uploading again replaces it) — matches the
-  // MVP scope (attach POD/BOL/rate confirmation to a load), not a versioned
-  // document history.
-  @@unique([loadId, type])
+  // Versioned: a new upload for a type doesn't overwrite the previous one.
+  // The most recent row (by uploadedAt) per (loadId, type) is treated as
+  // "current" in the app; older rows stay queryable as history.
+  @@index([loadId, type])
   @@map("documents")
 }
 

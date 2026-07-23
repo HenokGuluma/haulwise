@@ -10,7 +10,7 @@ export default async function BoardPage() {
 
   const [loads, drivers, equipment, customers] = await Promise.all([
     prisma.load.findMany({
-      include: { customer: true, driver: true, equipment: true, documents: true },
+      include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
       orderBy: { pickupTime: "asc" },
     }),
     prisma.driver.findMany({ orderBy: { firstName: "asc" } }),

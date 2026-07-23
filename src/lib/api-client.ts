@@ -41,6 +41,25 @@ export type TablePageParams = {
   filters: Record<string, string[]>;
 };
 
+/** XHR-based upload (fetch has no upload-progress event) with a progress callback. */
+export function uploadFile<T>(url: string, formData: FormData, onProgress?: (pct: number) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let data: Record<string, unknown> = {};
+      try { data = JSON.parse(xhr.responseText); } catch { /* empty/non-JSON body */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data as T);
+      else reject(new ApiRequestError((data.error as string) || "Upload failed.", xhr.status));
+    };
+    xhr.onerror = () => reject(new ApiRequestError("Network error during upload.", 0));
+    xhr.send(formData);
+  });
+}
+
 export async function fetchTablePage<T>(url: string, params: TablePageParams): Promise<{ rows: T[]; total: number }> {
   const qs = new URLSearchParams();
   qs.set("page", String(params.page));

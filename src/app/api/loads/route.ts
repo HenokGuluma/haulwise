@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   const [rows, total] = await Promise.all([
     prisma.load.findMany({
       where,
-      include: { customer: true, driver: true, equipment: true, documents: true },
+      include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       driverPay: Math.round(data.rate * 0.68),
       status: "DRAFT",
     },
-    include: { customer: true, driver: true, equipment: true, documents: true },
+    include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
 
   return NextResponse.json({ load }, { status: 201 });

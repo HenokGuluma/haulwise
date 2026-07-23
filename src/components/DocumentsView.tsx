@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon, Button, useToast } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
-import { fmtMoney, payoutLabel } from "@/lib/format";
+import { fmtMoney, fmtBytes, fmtDateTime, payoutLabel } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import type { Load, SessionUser, DocumentType, PayoutStatus } from "@/types";
 
@@ -23,6 +23,56 @@ function hasDoc(load: Load, type: DocumentType) {
 }
 
 const PAYOUT_STATUSES: PayoutStatus[] = ["NOT_BILLED", "PENDING", "PAID"];
+const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
+  { value: "BOL", label: "BOL" },
+  { value: "POD", label: "POD" },
+  { value: "RATE_CONFIRMATION", label: "Rate Confirmation" },
+];
+
+type DocumentLibraryRow = {
+  id: string;
+  type: DocumentType;
+  fileName: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedBy: { id: string; name: string } | null;
+  load: { id: string; loadNumber: string; customer: { companyName: string } };
+};
+
+function DocumentLibrary() {
+  const fetchPage = useCallback((params: FetchPageParams) => fetchTablePage<DocumentLibraryRow>("/api/documents", params), []);
+
+  return (
+    <DataTable<DocumentLibraryRow>
+      tableId="document-library"
+      fetchPage={fetchPage}
+      rowKey={(d) => d.id}
+      onRowClick={(d) => window.open(`/api/loads/${d.load.id}/documents/${d.id}`, "_blank")}
+      searchPlaceholder="Search files, load numbers, customers…"
+      emptyIcon="fileText"
+      emptyTitle="No documents uploaded yet"
+      emptyHint="Documents uploaded to any load will show up here."
+      csvFilename="haulwise-document-library.csv"
+      initialSort={{ by: "uploadedAt", dir: "desc" }}
+      columns={[
+        { key: "loadNumber", label: "Load", render: (d) => <span className="mono" style={{ fontWeight: 600 }}>{d.load.loadNumber}</span>, exportValue: (d) => d.load.loadNumber },
+        { key: "customer", label: "Customer", render: (d) => d.load.customer.companyName, exportValue: (d) => d.load.customer.companyName },
+        {
+          key: "type",
+          label: "Type",
+          sortable: true,
+          filterOptions: DOC_TYPE_OPTIONS,
+          render: (d) => DOC_TYPE_OPTIONS.find((o) => o.value === d.type)?.label ?? d.type,
+        },
+        { key: "fileName", label: "File", render: (d) => <span style={{ color: "var(--accent)" }}>{d.fileName}</span> },
+        { key: "uploadedAt", label: "Uploaded", sortable: true, render: (d) => fmtDateTime(d.uploadedAt), exportValue: (d) => fmtDateTime(d.uploadedAt) },
+        { key: "uploadedBy", label: "Uploaded By", render: (d) => d.uploadedBy?.name ?? "—", exportValue: (d) => d.uploadedBy?.name ?? "" },
+        { key: "fileSizeBytes", label: "Size", sortable: true, align: "right", render: (d) => fmtBytes(d.fileSizeBytes), exportValue: (d) => d.fileSizeBytes },
+      ]}
+    />
+  );
+}
 
 export function DocumentsView({
   user,
@@ -34,6 +84,7 @@ export function DocumentsView({
 }) {
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [tab, setTab] = useState<"ledger" | "library">("ledger");
 
   const toast = useToast();
   const router = useRouter();
@@ -74,6 +125,11 @@ export function DocumentsView({
         </div>
       </div>
 
+      <div className="tabbar">
+        <button className={"tab" + (tab === "ledger" ? " active" : "")} onClick={() => setTab("ledger")}>Billing Ledger</button>
+        <button className={"tab" + (tab === "library" ? " active" : "")} onClick={() => setTab("library")}>Document Library</button>
+      </div>
+
       <div style={{ display: "flex", marginBottom: 12 }}>
         <div style={{ marginLeft: "auto" }}>
           <a href="/api/billing" download>
@@ -82,6 +138,9 @@ export function DocumentsView({
         </div>
       </div>
 
+      {tab === "library" ? (
+        <DocumentLibrary />
+      ) : (
       <DataTable<Load>
         tableId="billing-ledger"
         fetchPage={fetchPage}
@@ -134,6 +193,7 @@ export function DocumentsView({
           },
         ]}
       />
+      )}
 
       {detailLoad && (
         <LoadDetailDrawer

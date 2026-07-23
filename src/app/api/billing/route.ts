@@ -8,7 +8,7 @@ export async function GET() {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const loads = await prisma.load.findMany({
-    include: { customer: true, documents: true },
+    include: { customer: true, documents: { orderBy: { uploadedAt: "desc" } } },
     orderBy: { pickupTime: "desc" },
   });
 

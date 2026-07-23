@@ -41,9 +41,15 @@ export type Equipment = {
 
 export type LoadDocument = {
   id: string;
+  loadId: string;
   type: DocumentType;
   fileName: string;
+  storageKey: string;
+  fileSizeBytes: number;
+  mimeType: string;
   uploadedAt: string;
+  uploadedById: string | null;
+  uploadedBy: { id: string; name: string } | null;
 };
 
 export type Load = {

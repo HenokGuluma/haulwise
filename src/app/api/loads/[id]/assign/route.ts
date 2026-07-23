@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       equipmentId,
       status: load.status === "DRAFT" ? "ASSIGNED" : load.status,
     },
-    include: { customer: true, driver: true, equipment: true, documents: true },
+    include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
 
   return NextResponse.json({ load: updated });
