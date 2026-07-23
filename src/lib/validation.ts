@@ -73,3 +73,27 @@ export const documentUploadSchema = z.object({
   type: z.enum(["BOL", "POD", "RATE_CONFIRMATION"]),
   fileName: z.string().trim().min(1),
 });
+
+const customerStatus = z.enum(["ACTIVE", "INACTIVE", "PROSPECT"]);
+
+export const customerCreateSchema = z.object({
+  companyName: z.string().trim().min(1, "Company name is required."),
+  contactName: z.string().trim().min(1, "Contact name is required."),
+  phone: z.string().trim().min(1, "Phone is required."),
+  email: z.string().trim().email("Enter a valid email."),
+  status: customerStatus.default("ACTIVE"),
+  paymentTerms: z.string().trim().max(100).optional().nullable(),
+  notes: z.string().trim().max(4000).optional().nullable(),
+});
+
+export const customerUpdateSchema = customerCreateSchema.partial();
+
+export const customerContactSchema = z.object({
+  name: z.string().trim().min(1, "Name is required."),
+  title: z.string().trim().max(100).optional().nullable(),
+  phone: z.string().trim().max(50).optional().nullable(),
+  email: z.string().trim().email().optional().nullable().or(z.literal("")),
+  isPrimary: z.boolean().optional(),
+});
+
+export const customerContactUpdateSchema = customerContactSchema.partial();

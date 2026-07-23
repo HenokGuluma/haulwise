@@ -12,6 +12,31 @@ export type EquipmentStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
 export type PayoutStatus = "NOT_BILLED" | "PENDING" | "PAID";
 export type EquipmentTypeCode = "V" | "R" | "F" | "PO";
 export type DocumentType = "BOL" | "POD" | "RATE_CONFIRMATION";
+export type CustomerStatus = "ACTIVE" | "INACTIVE" | "PROSPECT";
+
+export type CustomerContact = {
+  id: string;
+  customerId: string;
+  name: string;
+  title: string | null;
+  phone: string | null;
+  email: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+};
+
+export type CustomerDocument = {
+  id: string;
+  customerId: string;
+  label: string;
+  fileName: string;
+  storageKey: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedById: string | null;
+  uploadedBy: { id: string; name: string } | null;
+};
 
 export type Customer = {
   id: string;
@@ -19,6 +44,21 @@ export type Customer = {
   contactName: string;
   phone: string;
   email: string;
+  status: CustomerStatus;
+  paymentTerms: string | null;
+  notes: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CustomerWithDetail = Customer & {
+  contacts: CustomerContact[];
+  documents: CustomerDocument[];
+};
+
+export type CustomerListRow = Customer & {
+  totalLoadCount: number;
+  activeLoadCount: number;
 };
 
 export type Driver = {
@@ -55,8 +95,8 @@ export type LoadDocument = {
 export type Load = {
   id: string;
   loadNumber: string;
-  customerId: string;
-  customer: Customer;
+  customerId: string | null;
+  customer: Customer | null;
   origin: string;
   destination: string;
   pickupTime: string;

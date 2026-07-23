@@ -12,7 +12,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     prisma.load.count(),
     prisma.driver.count(),
     prisma.equipment.count(),
-    prisma.customer.findMany({ orderBy: { companyName: "asc" } }),
+    prisma.customer.findMany({
+      orderBy: { companyName: "asc" },
+      select: { id: true, companyName: true, contactName: true, phone: true, email: true, status: true, paymentTerms: true, notes: true },
+    }),
   ]);
 
   const counts = {

@@ -14,7 +14,7 @@ export async function GET() {
 
   const csv = toCSV(loads, [
     { label: "Load #", get: (l) => l.loadNumber },
-    { label: "Customer", get: (l) => l.customer.companyName },
+    { label: "Customer", get: (l) => l.customer?.companyName ?? "Deleted customer" },
     { label: "Status", get: (l) => l.status },
     { label: "Delivery Date", get: (l) => fmtDate(l.deliveryTime) },
     { label: "Rate", get: (l) => l.rate },

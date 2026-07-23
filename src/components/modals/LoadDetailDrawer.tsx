@@ -231,7 +231,7 @@ export function LoadDetailDrawer({
 
   return (
     <Drawer onClose={onClose} width={480}>
-      <PanelHead title={load.loadNumber} sub={load.customer.companyName} onClose={onClose} />
+      <PanelHead title={load.loadNumber} sub={load.customer?.companyName ?? "Deleted customer"} onClose={onClose} />
       <div className="panel-body">
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <StatusPill status={load.status} label={statusLabel(load.status)} />

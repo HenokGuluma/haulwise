@@ -46,7 +46,7 @@ export function LoadCard({
       </div>
       <div className="lc-meta" style={{ marginTop: 3 }}>
         <Icon name="package" size={12} />
-        <span>{load.customer.companyName} · {load.equipmentTypeCode}</span>
+        <span>{load.customer?.companyName ?? "Deleted customer"} · {load.equipmentTypeCode}</span>
       </div>
       <div className="lc-assign">
         {load.driver ? (

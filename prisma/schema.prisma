@@ -30,6 +30,7 @@ model User {
   updatedAt    DateTime @updatedAt
   sessions     Session[]
   documents    Document[]
+  customerDocuments CustomerDocument[]
 
   @@map("users")
 }
@@ -49,17 +50,67 @@ model Session {
 // Core dispatch entities
 // ---------------------------------------------------------------------------
 
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
 model Customer {
-  id          String   @id @default(cuid())
-  companyName String
-  contactName String
-  phone       String
-  email       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  loads       Load[]
+  id           String         @id @default(cuid())
+  companyName  String
+  contactName  String
+  phone        String
+  email        String
+  status       CustomerStatus @default(ACTIVE)
+  paymentTerms String?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  loads        Load[]
+  contacts     CustomerContact[]
+  documents    CustomerDocument[]
 
   @@map("customers")
+}
+
+// Multiple contacts per customer (beyond the quick-edit contactName/phone/
+// email above, which stays as the at-a-glance primary contact for list
+// views and the quick-edit modal). Managed on the customer detail page.
+model CustomerContact {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  title      String?
+  phone      String?
+  email      String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@map("customer_contacts")
+}
+
+// Customer-level documents (contracts, credit applications) — same storage
+// abstraction as Load documents (src/lib/storage.ts), scoped to a customer
+// instead of a load. Kept as its own model rather than a nullable-loadId
+// Document row so both stay simple, non-polymorphic tables.
+model CustomerDocument {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label         String
+  fileName      String
+  storageKey    String
+  fileSizeBytes Int
+  mimeType      String
+  uploadedAt    DateTime @default(now())
+  uploadedById  String?
+  uploadedBy    User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@map("customer_documents")
 }
 
 enum DriverStatus {
@@ -130,8 +181,12 @@ enum PayoutStatus {
 model Load {
   id                String            @id @default(cuid())
   loadNumber        String            @unique
-  customerId        String
-  customer          Customer          @relation(fields: [customerId], references: [id])
+  // Optional (not required) so a Customer can be deleted once it has no
+  // *active* loads without violating referential integrity against its
+  // completed/billed history — those loads keep existing with customerId
+  // set to null rather than blocking the delete or cascading it.
+  customerId        String?
+  customer          Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
   origin            String
   destination       String
   pickupTime        DateTime

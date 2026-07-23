@@ -36,9 +36,11 @@ export async function GET(req: NextRequest) {
   const { page, pageSize, sortBy, sortDir, search, filters } = parseListParams(searchParams);
 
   const statusFilter = filters.status as LoadStatus[] | undefined;
+  const customerIdFilter = filters.customerId;
 
   const where: Prisma.LoadWhereInput = {
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
+    customerId: customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined,
     OR: search
       ? [
           { loadNumber: { contains: search, mode: "insensitive" } },

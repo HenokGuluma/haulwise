@@ -31,9 +31,10 @@ const ICONS: Record<string, string> = {
   logOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>',
   sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path>',
   moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>',
 };
 
-export function Icon({ name, size = 16, className = "" }: { name: string; size?: number; className?: string }) {
+export function Icon({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
   return (
     <svg
       width={size}
@@ -45,6 +46,7 @@ export function Icon({ name, size = 16, className = "" }: { name: string; size?:
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      style={style}
       dangerouslySetInnerHTML={{ __html: ICONS[name] || "" }}
     />
   );

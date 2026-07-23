@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
+import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { EQUIPMENT_TYPES } from "@/lib/dat";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
+
+const NEW_CUSTOMER_VALUE = "__new__";
 
 type FormState = {
   customerId: string;
@@ -38,7 +41,7 @@ export function LoadFormModal({
   onSaved: (load: Load) => void;
 }) {
   const [form, setForm] = useState<FormState>(() => ({
-    customerId: load ? load.customerId : customers[0]?.id ?? "",
+    customerId: (load ? load.customerId : customers[0]?.id) ?? "",
     origin: load?.origin ?? "",
     destination: load?.destination ?? "",
     pickupTime: load ? toInputDateTime(load.pickupTime) : "",
@@ -51,6 +54,8 @@ export function LoadFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [localCustomers, setLocalCustomers] = useState(customers);
+  const [newCustomerOpen, setNewCustomerOpen] = useState(false);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -109,6 +114,7 @@ export function LoadFormModal({
   }
 
   return (
+    <>
     <ModalBox onClose={onClose} width={560}>
       <PanelHead
         title={mode === "edit" && load ? "Edit " + load.loadNumber : "New Load"}
@@ -123,10 +129,18 @@ export function LoadFormModal({
         )}
 
         <Field label="Customer" error={errors.customerId}>
-          <select className={"input" + (errors.customerId ? " err" : "")} value={form.customerId} onChange={(e) => set("customerId", e.target.value)}>
-            {customers.map((c) => (
+          <select
+            className={"input" + (errors.customerId ? " err" : "")}
+            value={form.customerId}
+            onChange={(e) => {
+              if (e.target.value === NEW_CUSTOMER_VALUE) { setNewCustomerOpen(true); return; }
+              set("customerId", e.target.value);
+            }}
+          >
+            {localCustomers.map((c) => (
               <option key={c.id} value={c.id}>{c.companyName}</option>
             ))}
+            <option value={NEW_CUSTOMER_VALUE}>+ Add new customer…</option>
           </select>
         </Field>
 
@@ -177,5 +191,17 @@ export function LoadFormModal({
         </Button>
       </div>
     </ModalBox>
+
+    {newCustomerOpen && (
+      <CustomerFormModal
+        onClose={() => setNewCustomerOpen(false)}
+        onSaved={(c) => {
+          setLocalCustomers((prev) => [...prev, c]);
+          set("customerId", c.id);
+          setNewCustomerOpen(false);
+        }}
+      />
+    )}
+    </>
   );
 }

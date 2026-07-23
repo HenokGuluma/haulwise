@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/auth";
 import { loadUpdateSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
+import { getStorageDriver } from "@/lib/storage";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -89,6 +90,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   const existing = await prisma.load.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Load not found." }, { status: 404 });
+
+  // The DB cascade-deletes Document rows, but their stored files live
+  // outside Postgres — clean those up first or they'd be orphaned.
+  const docs = await prisma.document.findMany({ where: { loadId: params.id }, select: { storageKey: true } });
+  const storage = getStorageDriver();
+  await Promise.all(docs.map((d) => storage.delete(d.storageKey)));
 
   await prisma.load.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

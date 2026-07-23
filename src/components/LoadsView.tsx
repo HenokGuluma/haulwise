@@ -82,8 +82,8 @@ export function LoadsView({
             key: "customer",
             label: "Customer",
             sortable: true,
-            render: (l) => l.customer.companyName,
-            exportValue: (l) => l.customer.companyName,
+            render: (l) => l.customer?.companyName ?? <span style={{ color: "var(--muted)" }}>Deleted customer</span>,
+            exportValue: (l) => l.customer?.companyName ?? "Deleted customer",
           },
           {
             key: "route",

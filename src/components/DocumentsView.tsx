@@ -37,7 +37,7 @@ type DocumentLibraryRow = {
   mimeType: string;
   uploadedAt: string;
   uploadedBy: { id: string; name: string } | null;
-  load: { id: string; loadNumber: string; customer: { companyName: string } };
+  load: { id: string; loadNumber: string; customer: { companyName: string } | null };
 };
 
 function DocumentLibrary() {
@@ -57,7 +57,7 @@ function DocumentLibrary() {
       initialSort={{ by: "uploadedAt", dir: "desc" }}
       columns={[
         { key: "loadNumber", label: "Load", render: (d) => <span className="mono" style={{ fontWeight: 600 }}>{d.load.loadNumber}</span>, exportValue: (d) => d.load.loadNumber },
-        { key: "customer", label: "Customer", render: (d) => d.load.customer.companyName, exportValue: (d) => d.load.customer.companyName },
+        { key: "customer", label: "Customer", render: (d) => d.load.customer?.companyName ?? "Deleted customer", exportValue: (d) => d.load.customer?.companyName ?? "Deleted customer" },
         {
           key: "type",
           label: "Type",
@@ -159,7 +159,7 @@ export function DocumentsView({
             sortable: true,
             render: (l) => <span className="mono" style={{ fontWeight: 600 }}>{l.loadNumber}</span>,
           },
-          { key: "customer", label: "Customer", sortable: true, render: (l) => l.customer.companyName, exportValue: (l) => l.customer.companyName },
+          { key: "customer", label: "Customer", sortable: true, render: (l) => l.customer?.companyName ?? "Deleted customer", exportValue: (l) => l.customer?.companyName ?? "Deleted customer" },
           {
             key: "documents",
             label: "Documents",
