@@ -113,7 +113,7 @@ export function AssignModal({
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
-        <Button variant="primary" onClick={handleSave} disabled={saving || conflicts.length > 0 || !driverId || !equipmentId}>
+        <Button variant="primary" onClick={handleSave} loading={saving} disabled={conflicts.length > 0 || !driverId || !equipmentId}>
           {saving ? "Saving…" : "Save assignment"}
         </Button>
       </div>

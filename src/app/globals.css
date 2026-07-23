@@ -279,6 +279,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .btn-danger-ghost:hover { background: var(--danger-bg); }
 .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-spinner { animation: btn-spin 0.7s linear infinite; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line);

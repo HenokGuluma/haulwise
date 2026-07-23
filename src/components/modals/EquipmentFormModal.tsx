@@ -88,7 +88,7 @@ export function EquipmentFormModal({
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+        <Button variant="primary" onClick={handleSubmit} loading={submitting}>
           {submitting ? "Saving…" : isEdit ? "Save changes" : "Add equipment"}
         </Button>
       </div>

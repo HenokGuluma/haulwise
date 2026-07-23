@@ -118,25 +118,36 @@ export function StatusPill({ status, label }: { status: string; label: string })
   );
 }
 
+function Spinner({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="btn-spinner">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="42" strokeDashoffset="14" opacity="0.85" />
+    </svg>
+  );
+}
+
 type ButtonVariant = "primary" | "dark" | "ghost" | "danger-ghost";
 export function Button({
   variant = "ghost",
   size = "md",
   icon,
+  loading = false,
   children,
   className = "",
+  disabled,
   ...rest
 }: {
   variant?: ButtonVariant;
   size?: "sm" | "md";
   icon?: string;
+  loading?: boolean;
   children?: React.ReactNode;
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const cls = ["btn", "btn-" + variant, size === "sm" ? "btn-sm" : "", className].join(" ").trim();
   return (
-    <button className={cls} {...rest}>
-      {icon && <Icon name={icon} />}
+    <button className={cls} disabled={disabled || loading} {...rest}>
+      {loading ? <Spinner size={size === "sm" ? 12 : 14} /> : icon ? <Icon name={icon} /> : null}
       {children}
     </button>
   );

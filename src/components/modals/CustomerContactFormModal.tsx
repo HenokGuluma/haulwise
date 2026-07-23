@@ -68,7 +68,7 @@ export function CustomerContactFormModal({
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? "Saving…" : "Save"}</Button>
+        <Button variant="primary" onClick={handleSubmit} loading={submitting}>{submitting ? "Saving…" : "Save"}</Button>
       </div>
     </ModalBox>
   );

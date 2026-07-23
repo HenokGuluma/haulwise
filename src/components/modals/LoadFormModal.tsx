@@ -218,7 +218,7 @@ export function LoadFormModal({
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+        <Button variant="primary" onClick={handleSubmit} loading={submitting}>
           {submitting ? "Saving…" : isOversized && !oversizedAck ? "Review high value…" : isOversized && oversizedAck ? "Confirm & " + (mode === "edit" ? "save" : "create") : mode === "edit" ? "Save changes" : "Create load"}
         </Button>
       </div>

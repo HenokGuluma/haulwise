@@ -60,7 +60,7 @@ export function PaymentLogModal({
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? "Logging…" : "Log payment"}</Button>
+        <Button variant="primary" onClick={handleSubmit} loading={submitting}>{submitting ? "Logging…" : "Log payment"}</Button>
       </div>
     </ModalBox>
   );
