@@ -6,6 +6,8 @@ import { Icon, Pill, Button, IconButton, ConfirmDialog, useToast } from "@/compo
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { DriverFormModal } from "@/components/modals/DriverFormModal";
 import { EquipmentFormModal } from "@/components/modals/EquipmentFormModal";
+import { DriverDetailDrawer } from "@/components/modals/DriverDetailDrawer";
+import { EquipmentDetailDrawer } from "@/components/modals/EquipmentDetailDrawer";
 import { daysUntil } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import type { Driver, Equipment, SessionUser, DriverStatus, EquipmentStatus, EquipmentTypeCode } from "@/types";
@@ -47,6 +49,8 @@ export function RosterView({
   const [driverForm, setDriverForm] = useState<{ open: boolean; driver?: Driver }>({ open: false });
   const [equipmentForm, setEquipmentForm] = useState<{ open: boolean; equipment?: Equipment }>({ open: false });
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [detailDriver, setDetailDriver] = useState<Driver | null>(null);
+  const [detailEquipment, setDetailEquipment] = useState<Equipment | null>(null);
   const [driverCount, setDriverCount] = useState(0);
   const [equipmentCount, setEquipmentCount] = useState(0);
   const [driverReload, setDriverReload] = useState(0);
@@ -104,6 +108,7 @@ export function RosterView({
           fetchPage={fetchDrivers}
           reloadKey={driverReload}
           rowKey={(d) => d.id}
+          onRowClick={(d) => setDetailDriver(d)}
           onTotalChange={setDriverCount}
           searchPlaceholder="Search drivers…"
           emptyIcon="users"
@@ -175,6 +180,7 @@ export function RosterView({
           fetchPage={fetchEquipment}
           reloadKey={equipmentReload}
           rowKey={(e) => e.id}
+          onRowClick={(e) => setDetailEquipment(e)}
           onTotalChange={setEquipmentCount}
           searchPlaceholder="Search equipment…"
           emptyIcon="truck"
@@ -277,6 +283,19 @@ export function RosterView({
           onCancel={() => setConfirm(null)}
           onConfirm={() => { confirm.onConfirm(); setConfirm(null); }}
         />
+      )}
+
+      {detailDriver && (
+        <DriverDetailDrawer
+          driver={detailDriver}
+          canDelete={canDelete}
+          onClose={() => setDetailDriver(null)}
+          onUpdated={(d) => { setDetailDriver(d); setDriverReload((k) => k + 1); }}
+        />
+      )}
+
+      {detailEquipment && (
+        <EquipmentDetailDrawer equipment={detailEquipment} onClose={() => setDetailEquipment(null)} />
       )}
     </div>
   );

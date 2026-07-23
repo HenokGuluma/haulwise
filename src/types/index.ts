@@ -68,6 +68,8 @@ export type Driver = {
   phone: string;
   licenseNo: string;
   licenseExpiration: string;
+  medicalCertExpiration: string | null;
+  endorsements: string[];
   status: DriverStatus;
 };
 
@@ -77,6 +79,60 @@ export type Equipment = {
   typeCode: EquipmentTypeCode;
   status: EquipmentStatus;
   nextMaintenance: string;
+};
+
+export type DriverDocumentType = "CDL" | "MEDICAL_CERT" | "MVR";
+
+export type DriverDocument = {
+  id: string;
+  driverId: string;
+  type: DriverDocumentType;
+  fileName: string;
+  storageKey: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedById: string | null;
+  uploadedBy: { id: string; name: string } | null;
+};
+
+export type EquipmentMaintenanceRecord = {
+  id: string;
+  equipmentId: string;
+  date: string;
+  description: string;
+  cost: number | null;
+  performedBy: string | null;
+  createdAt: string;
+};
+
+export type LoadActivityRow = {
+  id: string;
+  loadId: string;
+  type: string;
+  message: string;
+  actorUserId: string | null;
+  actorUser: { id: string; name: string } | null;
+  createdAt: string;
+};
+
+export type LoadCommentRow = {
+  id: string;
+  loadId: string;
+  authorUserId: string;
+  authorUser: { id: string; name: string };
+  body: string;
+  createdAt: string;
+};
+
+export type PaymentRow = {
+  id: string;
+  loadId: string;
+  amount: number;
+  paidAt: string;
+  method: string | null;
+  note: string | null;
+  createdAt: string;
 };
 
 export type LoadDocument = {

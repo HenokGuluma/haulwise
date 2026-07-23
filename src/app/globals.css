@@ -394,6 +394,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .load-card .lc-unassigned {
   font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 7px; padding: 3px 8px;
 }
+.lc-quick-assign { display: flex; gap: 4px; align-items: center; width: 100%; }
+.lc-quick-assign select.input { font-size: 11px; padding: 4px 6px; flex: 1; min-width: 0; }
+.lc-quick-assign .icon-btn { width: 24px; height: 24px; flex-shrink: 0; }
 
 /* ---------------- Tables ---------------- */
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }

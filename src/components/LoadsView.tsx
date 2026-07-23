@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { StatusPill } from "@/components/ui";
+import { StatusPill, IconButton } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { AssignModal } from "@/components/modals/AssignModal";
@@ -29,6 +29,7 @@ export function LoadsView({
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [assignLoad, setAssignLoad] = useState<Load | null>(null);
   const [editLoad, setEditLoad] = useState<Load | null>(null);
+  const [cloneSource, setCloneSource] = useState<Load | null>(null);
   const [previewLoads, setPreviewLoads] = useState<Load[]>([]);
 
   const router = useRouter();
@@ -127,6 +128,16 @@ export function LoadsView({
             render: (l) => <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(l.rate)}</span>,
             exportValue: (l) => l.rate,
           },
+          {
+            key: "actions",
+            label: "",
+            align: "right",
+            render: (l) => (
+              <span onClick={(e) => e.stopPropagation()}>
+                <IconButton icon="package" title="Clone load" onClick={() => setCloneSource(l)} />
+              </span>
+            ),
+          },
         ]}
       />
 
@@ -139,6 +150,7 @@ export function LoadsView({
           onDeleted={() => { setDetailLoad(null); refresh(); router.refresh(); }}
           onAssign={(l) => setAssignLoad(l)}
           onEdit={(l) => { setEditLoad(l); setDetailLoad(null); }}
+          onClone={(l) => { setCloneSource(l); setDetailLoad(null); }}
         />
       )}
 
@@ -160,6 +172,16 @@ export function LoadsView({
           customers={customers}
           onClose={() => setEditLoad(null)}
           onSaved={(l) => { setEditLoad(null); refresh(); }}
+        />
+      )}
+
+      {cloneSource && (
+        <LoadFormModal
+          mode="create"
+          prefill={cloneSource}
+          customers={customers}
+          onClose={() => setCloneSource(null)}
+          onSaved={(l) => { setCloneSource(null); refresh(); }}
         />
       )}
     </div>

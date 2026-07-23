@@ -29,6 +29,8 @@ export function AssignModal({
   loads,
   drivers,
   equipment,
+  initialDriverId,
+  initialEquipmentId,
   onClose,
   onSaved,
 }: {
@@ -36,11 +38,13 @@ export function AssignModal({
   loads: Load[];
   drivers: Driver[];
   equipment: Equipment[];
+  initialDriverId?: string;
+  initialEquipmentId?: string;
   onClose: () => void;
   onSaved: (load: Load) => void;
 }) {
-  const [driverId, setDriverId] = useState(load.driverId ?? "");
-  const [equipmentId, setEquipmentId] = useState(load.equipmentId ?? "");
+  const [driverId, setDriverId] = useState(initialDriverId ?? load.driverId ?? "");
+  const [equipmentId, setEquipmentId] = useState(initialEquipmentId ?? load.equipmentId ?? "");
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 

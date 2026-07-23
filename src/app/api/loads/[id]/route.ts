@@ -4,6 +4,8 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { loadUpdateSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
 import { getStorageDriver } from "@/lib/storage";
+import { logActivity } from "@/lib/activity";
+import { statusLabel } from "@/lib/format";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -80,6 +82,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
     include: LOAD_INCLUDE,
   });
+
+  if (patch.status && patch.status !== existing.status) {
+    await logActivity(load.id, "STATUS_CHANGE", `Status changed from ${statusLabel(existing.status)} to ${statusLabel(patch.status)}.`, auth.user.id);
+  }
+  if (patch.payoutStatus && patch.payoutStatus !== existing.payoutStatus) {
+    await logActivity(load.id, "PAYOUT_CHANGE", `Payout status changed to ${patch.payoutStatus.replace("_", " ")}.`, auth.user.id);
+  }
+  const fieldChanges = Object.keys(patch).filter((k) => k !== "status" && k !== "payoutStatus");
+  if (fieldChanges.length > 0) {
+    await logActivity(load.id, "UPDATED", `Updated ${fieldChanges.join(", ")}.`, auth.user.id);
+  }
 
   return NextResponse.json({ load });
 }

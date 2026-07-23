@@ -1,13 +1,61 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, Button, useToast } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
-import { fmtMoney, fmtBytes, fmtDateTime, payoutLabel } from "@/lib/format";
+import { fmtMoney, fmtBytes, fmtDate, fmtDateTime, payoutLabel } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import type { Load, SessionUser, DocumentType, PayoutStatus } from "@/types";
+
+type AgingRow = { id: string; loadNumber: string; customerName: string; deliveryTime: string; driverPay: number; amountPaid: number; remaining: number; daysSinceDelivery: number };
+type AgingBuckets = { "0-15": AgingRow[]; "15-30": AgingRow[]; "30+": AgingRow[] };
+
+function AgingBucketCard({ title, rows, tone }: { title: string; rows: AgingRow[]; tone: "success" | "warning" | "danger" }) {
+  const total = rows.reduce((s, r) => s + r.remaining, 0);
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span className={"pill pill-" + tone}>{title}</span>
+        <span className="mono" style={{ fontWeight: 700 }}>{fmtMoney(total)}</span>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Nothing in this range.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {rows.map((r) => (
+            <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, paddingBottom: 8, borderBottom: "1px solid var(--line-soft)" }}>
+              <div>
+                <div className="mono" style={{ fontWeight: 600 }}>{r.loadNumber}</div>
+                <div style={{ color: "var(--muted)", fontSize: 11 }}>{r.customerName} · delivered {fmtDate(r.deliveryTime)}</div>
+              </div>
+              <span className="mono">{fmtMoney(r.remaining)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgingView() {
+  const [buckets, setBuckets] = useState<AgingBuckets | null>(null);
+
+  useEffect(() => {
+    api.get<{ buckets: AgingBuckets }>("/api/billing/aging").then((res) => setBuckets(res.buckets)).catch(() => {});
+  }, []);
+
+  if (!buckets) return <div style={{ fontSize: 13, color: "var(--muted)" }}>Loading…</div>;
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+      <AgingBucketCard title="0–15 days" rows={buckets["0-15"]} tone="success" />
+      <AgingBucketCard title="15–30 days" rows={buckets["15-30"]} tone="warning" />
+      <AgingBucketCard title="30+ days" rows={buckets["30+"]} tone="danger" />
+    </div>
+  );
+}
 
 function DocChip({ label, present }: { label: string; present: boolean }) {
   return (
@@ -84,7 +132,9 @@ export function DocumentsView({
 }) {
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [tab, setTab] = useState<"ledger" | "library">("ledger");
+  const [tab, setTab] = useState<"ledger" | "library" | "aging">("ledger");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const toast = useToast();
   const router = useRouter();
@@ -128,18 +178,27 @@ export function DocumentsView({
       <div className="tabbar">
         <button className={"tab" + (tab === "ledger" ? " active" : "")} onClick={() => setTab("ledger")}>Billing Ledger</button>
         <button className={"tab" + (tab === "library" ? " active" : "")} onClick={() => setTab("library")}>Document Library</button>
+        <button className={"tab" + (tab === "aging" ? " active" : "")} onClick={() => setTab("aging")}>Aging</button>
       </div>
 
-      <div style={{ display: "flex", marginBottom: 12 }}>
-        <div style={{ marginLeft: "auto" }}>
-          <a href="/api/billing" download>
-            <Button variant="dark" icon="download">Export Full Ledger CSV</Button>
-          </a>
+      {tab === "ledger" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>Delivery date range:</span>
+          <input type="date" className="input" style={{ width: 150 }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <span style={{ color: "var(--muted)" }}>–</span>
+          <input type="date" className="input" style={{ width: 150 }} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <div style={{ marginLeft: "auto" }}>
+            <a href={`/api/billing${dateFrom || dateTo ? `?from=${dateFrom}&to=${dateTo}` : ""}`} download>
+              <Button variant="dark" icon="download">Export {dateFrom || dateTo ? "Range" : "Full Ledger"} CSV</Button>
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       {tab === "library" ? (
         <DocumentLibrary />
+      ) : tab === "aging" ? (
+        <AgingView />
       ) : (
       <DataTable<Load>
         tableId="billing-ledger"

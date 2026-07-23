@@ -21,6 +21,7 @@ export function DriverFormModal({
     phone: driver?.phone ?? "",
     licenseNo: driver?.licenseNo ?? "",
     licenseExpiration: driver ? driver.licenseExpiration.slice(0, 10) : "",
+    medicalCertExpiration: driver?.medicalCertExpiration ? driver.medicalCertExpiration.slice(0, 10) : "",
     status: (driver?.status ?? "AVAILABLE") as DriverStatus,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,7 +47,11 @@ export function DriverFormModal({
     if (!validate()) return;
     setSubmitting(true);
     setServerError(null);
-    const payload = { ...form, licenseExpiration: new Date(form.licenseExpiration).toISOString() };
+    const payload = {
+      ...form,
+      licenseExpiration: new Date(form.licenseExpiration).toISOString(),
+      medicalCertExpiration: form.medicalCertExpiration ? new Date(form.medicalCertExpiration).toISOString() : null,
+    };
     try {
       if (isEdit && driver) {
         const res = await api.patch<{ driver: Driver }>(`/api/drivers/${driver.id}`, payload);
@@ -86,6 +91,9 @@ export function DriverFormModal({
             <input type="date" className={"input" + (errors.licenseExpiration ? " err" : "")} value={form.licenseExpiration} onChange={(e) => set("licenseExpiration", e.target.value)} />
           </Field>
         </div>
+        <Field label="Medical cert expiration" hint="Optional">
+          <input type="date" className="input" value={form.medicalCertExpiration} onChange={(e) => set("medicalCertExpiration", e.target.value)} />
+        </Field>
         <Field label="Status">
           <select className="input" value={form.status} onChange={(e) => set("status", e.target.value as DriverStatus)}>
             <option value="AVAILABLE">Available</option>

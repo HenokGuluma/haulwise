@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireRole } from "@/lib/auth";
 import { driverUpdateSchema } from "@/lib/validation";
+import { getStorageDriver } from "@/lib/storage";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
@@ -34,6 +35,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
       { status: 409 }
     );
   }
+
+  const docs = await prisma.driverDocument.findMany({ where: { driverId: params.id }, select: { storageKey: true } });
+  const storage = getStorageDriver();
+  await Promise.all(docs.map((d) => storage.delete(d.storageKey)));
 
   await prisma.driver.delete({ where: { id: params.id } }).catch(() => null);
   return NextResponse.json({ ok: true });

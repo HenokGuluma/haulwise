@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
 import { StatusPill, Drawer, PanelHead, Button, Icon, IconButton, ConfirmDialog } from "@/components/ui";
 import { useToast } from "@/components/ui";
-import { fmtMoney, fmtDateTime, fmtBytes, fmtRelative, statusLabel, payoutLabel } from "@/lib/format";
+import { PaymentLogModal } from "@/components/modals/PaymentLogModal";
+import { fmtMoney, fmtDateTime, fmtBytes, fmtRelative, statusLabel } from "@/lib/format";
 import { api, uploadFile, ApiRequestError } from "@/lib/api-client";
-import type { Load, LoadDocument, SessionUser, DocumentType } from "@/types";
+import type { Load, LoadDocument, LoadActivityRow, LoadCommentRow, PaymentRow, SessionUser, DocumentType } from "@/types";
 
 const STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"] as const;
 const REQUIRES_ASSIGNMENT = new Set(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
@@ -147,6 +148,113 @@ function DocumentSlot({
   );
 }
 
+const ACTIVITY_ICONS: Record<string, string> = {
+  CREATED: "plus",
+  STATUS_CHANGE: "arrowRight",
+  ASSIGNED: "users",
+  DOCUMENT_UPLOADED: "upload",
+  PAYOUT_CHANGE: "checkCircle",
+  PAYMENT_LOGGED: "checkCircle",
+  UPDATED: "edit",
+};
+
+function ActivityTimeline({ loadId }: { loadId: string }) {
+  const toast = useToast();
+  const [activities, setActivities] = useState<LoadActivityRow[]>([]);
+  const [comments, setComments] = useState<LoadCommentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [commentBody, setCommentBody] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await api.get<{ activities: LoadActivityRow[]; comments: LoadCommentRow[] }>(`/api/loads/${loadId}/activity`);
+      setActivities(res.activities);
+      setComments(res.comments);
+    } catch {
+      // non-critical panel — fail quietly, the rest of the drawer still works
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, [loadId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function postComment() {
+    if (!commentBody.trim()) return;
+    setPosting(true);
+    try {
+      await api.post(`/api/loads/${loadId}/comments`, { body: commentBody.trim() });
+      setCommentBody("");
+      load();
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't post comment.");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  type TimelineItem = { id: string; kind: "activity" | "comment"; createdAt: string; node: React.ReactNode };
+  const items: TimelineItem[] = [
+    ...activities.map((a) => ({
+      id: "a" + a.id,
+      kind: "activity" as const,
+      createdAt: a.createdAt,
+      node: (
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <Icon name={ACTIVITY_ICONS[a.type] ?? "clock"} size={13} style={{ marginTop: 2, color: "var(--muted)", flexShrink: 0 }} />
+          <div style={{ fontSize: 12.5 }}>
+            <div>{a.message}</div>
+            <div style={{ color: "var(--muted)", fontSize: 11 }}>{a.actorUser?.name ?? "System"} · {fmtRelative(a.createdAt)}</div>
+          </div>
+        </div>
+      ),
+    })),
+    ...comments.map((c) => ({
+      id: "c" + c.id,
+      kind: "comment" as const,
+      createdAt: c.createdAt,
+      node: (
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <span className="lc-avatar" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0 }}>
+            {c.authorUser.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
+          </span>
+          <div style={{ fontSize: 12.5, flex: 1 }}>
+            <div style={{ color: "var(--ink-soft)" }}>{c.body}</div>
+            <div style={{ color: "var(--muted)", fontSize: 11 }}>{c.authorUser.name} · {fmtRelative(c.createdAt)}</div>
+          </div>
+        </div>
+      ),
+    })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return (
+    <div>
+      <div className="section-title">Activity & Comments</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <input
+          className="input"
+          placeholder="Leave a note for other dispatchers…"
+          value={commentBody}
+          onChange={(e) => setCommentBody(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") postComment(); }}
+        />
+        <Button size="sm" variant="dark" onClick={postComment} disabled={posting || !commentBody.trim()}>Post</Button>
+      </div>
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Loading…</div>
+      ) : items.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>No activity yet.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 260, overflowY: "auto" }}>
+          {items.map((it) => <div key={it.id}>{it.node}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function LoadDetailDrawer({
   load,
   user,
@@ -155,6 +263,7 @@ export function LoadDetailDrawer({
   onDeleted,
   onAssign,
   onEdit,
+  onClone,
 }: {
   load: Load;
   user: SessionUser;
@@ -163,10 +272,21 @@ export function LoadDetailDrawer({
   onDeleted: () => void;
   onAssign: (load: Load) => void;
   onEdit: (load: Load) => void;
+  onClone?: (load: Load) => void;
 }) {
   const toast = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  useEffect(() => {
+    api.get<{ payments: PaymentRow[] }>(`/api/loads/${load.id}/payments`).then((res) => setPayments(res.payments)).catch(() => {});
+  }, [load.id]);
+
+  const amountPaid = payments.reduce((s, p) => s + p.amount, 0);
+  const remaining = Math.max(0, load.driverPay - amountPaid);
+  const computedStatus = amountPaid <= 0 ? "Not Billed" : amountPaid >= load.driverPay ? "Paid" : "Partially Paid";
 
   const idx = STATUSES.indexOf(load.status);
   const nextStatus = idx >= 0 && idx < STATUSES.length - 1 ? STATUSES[idx + 1] : null;
@@ -299,32 +419,80 @@ export function LoadDetailDrawer({
           ))}
         </div>
 
-        <div className="section-title">Billing</div>
-        <div className="card" style={{ padding: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+          <div className="section-title" style={{ marginBottom: 0 }}>Billing</div>
+          {user.role === "ADMIN" && remaining > 0 && (
+            <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setPaymentModalOpen(true)}>Log payment</button>
+          )}
+        </div>
+        <div className="card" style={{ padding: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
             <span style={{ color: "var(--muted)" }}>Driver pay</span>
             <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(load.driverPay)}</span>
           </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+            <span style={{ color: "var(--muted)" }}>Amount paid</span>
+            <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(amountPaid)}</span>
+          </div>
+          {remaining > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+              <span style={{ color: "var(--muted)" }}>Remaining</span>
+              <span className="mono" style={{ fontWeight: 600, color: "var(--danger)" }}>{fmtMoney(remaining)}</span>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
-            <span style={{ color: "var(--muted)" }}>Payout status</span>
+            <span style={{ color: "var(--muted)" }}>Status</span>
             <span
-              className={"pill " + (load.payoutStatus === "PAID" ? "pill-success" : load.payoutStatus === "PENDING" ? "pill-warning" : "pill-muted")}
-              style={{ cursor: user.role === "ADMIN" ? "pointer" : "default" }}
-              onClick={togglePayout}
-              title={user.role === "ADMIN" ? "Click to toggle" : "Admin only"}
+              className={"pill " + (computedStatus === "Paid" ? "pill-success" : computedStatus === "Partially Paid" ? "pill-warning" : "pill-muted")}
+              style={{ cursor: user.role === "ADMIN" && payments.length === 0 ? "pointer" : "default" }}
+              onClick={payments.length === 0 ? togglePayout : undefined}
+              title={user.role === "ADMIN" && payments.length === 0 ? "Click to toggle (or log a payment for partial amounts)" : undefined}
             >
-              {payoutLabel(load.payoutStatus)}
+              {computedStatus}
             </span>
           </div>
+          {payments.length > 0 && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line-soft)", display: "flex", flexDirection: "column", gap: 6 }}>
+              {payments.map((p) => (
+                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "var(--muted)" }}>
+                  <span>{fmtDateTime(p.paidAt)}{p.method ? " · " + p.method : ""}</span>
+                  <span className="mono">{fmtMoney(p.amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
+        <ActivityTimeline loadId={load.id} />
       </div>
       <div className="panel-foot">
         {user.role === "ADMIN" && (
           <Button variant="danger-ghost" onClick={() => setConfirmDelete(true)}>Delete</Button>
         )}
+        <a href={`/loads/${load.id}/print`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+          <Button variant="ghost" icon="fileText">Print</Button>
+        </a>
+        <a href={`/loads/${load.id}/invoice`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+          <Button variant="ghost" icon="download">Invoice</Button>
+        </a>
+        {onClone && <Button variant="ghost" icon="package" onClick={() => onClone(load)}>Clone</Button>}
         <Button variant="ghost" onClick={() => onEdit(load)}>Edit details</Button>
         <Button variant="dark" onClick={onClose}>Done</Button>
       </div>
+
+      {paymentModalOpen && (
+        <PaymentLogModal
+          load={load}
+          remaining={remaining}
+          onClose={() => setPaymentModalOpen(false)}
+          onSaved={(l) => {
+            onUpdated(l);
+            setPaymentModalOpen(false);
+            api.get<{ payments: PaymentRow[] }>(`/api/loads/${load.id}/payments`).then((res) => setPayments(res.payments)).catch(() => {});
+            toast.success("Payment logged.");
+          }}
+        />
+      )}
 
       {confirmDelete && (
         <ConfirmDialog

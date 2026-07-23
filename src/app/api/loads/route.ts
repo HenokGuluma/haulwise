@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { loadCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
+import { logActivity } from "@/lib/activity";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -37,10 +38,14 @@ export async function GET(req: NextRequest) {
 
   const statusFilter = filters.status as LoadStatus[] | undefined;
   const customerIdFilter = filters.customerId;
+  const driverIdFilter = filters.driverId;
+  const equipmentIdFilter = filters.equipmentId;
 
   const where: Prisma.LoadWhereInput = {
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     customerId: customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined,
+    driverId: driverIdFilter && driverIdFilter.length > 0 ? { in: driverIdFilter } : undefined,
+    equipmentId: equipmentIdFilter && equipmentIdFilter.length > 0 ? { in: equipmentIdFilter } : undefined,
     OR: search
       ? [
           { loadNumber: { contains: search, mode: "insensitive" } },
@@ -112,6 +117,8 @@ export async function POST(req: NextRequest) {
     },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
+
+  await logActivity(load.id, "CREATED", `Load ${load.loadNumber} created for ${customer.companyName}.`, auth.user.id);
 
   return NextResponse.json({ load }, { status: 201 });
 }

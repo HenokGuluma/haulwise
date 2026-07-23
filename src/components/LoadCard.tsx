@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
 import { Icon } from "@/components/ui";
 import { fmtMoney, fmtDate } from "@/lib/format";
-import type { Load } from "@/types";
+import type { Load, Driver, Equipment } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
@@ -11,19 +12,29 @@ function initials(a: string, b: string) {
 
 export function LoadCard({
   load,
+  drivers,
+  equipment,
   onOpen,
   onAssign,
+  onQuickAssign,
   dragging,
   onDragStart,
   onDragEnd,
 }: {
   load: Load;
+  drivers: Driver[];
+  equipment: Equipment[];
   onOpen: () => void;
   onAssign: () => void;
+  onQuickAssign: (driverId: string, equipmentId: string) => void;
   dragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [qDriver, setQDriver] = useState("");
+  const [qEquipment, setQEquipment] = useState("");
+
   return (
     <div
       className={"load-card" + (dragging ? " dragging" : "")}
@@ -55,10 +66,38 @@ export function LoadCard({
             <span style={{ fontSize: 12, fontWeight: 600 }}>{load.driver.firstName} {load.driver.lastName}</span>
             {load.equipment && <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>{load.equipment.unitNumber}</span>}
           </>
+        ) : quickOpen ? (
+          <div className="lc-quick-assign" onClick={(e) => e.stopPropagation()}>
+            <select className="input" value={qDriver} onChange={(e) => setQDriver(e.target.value)}>
+              <option value="">Driver…</option>
+              {drivers.map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
+            </select>
+            <select className="input" value={qEquipment} onChange={(e) => setQEquipment(e.target.value)}>
+              <option value="">Equipment…</option>
+              {equipment.map((e) => <option key={e.id} value={e.id}>{e.unitNumber}</option>)}
+            </select>
+            <button
+              className="icon-btn"
+              disabled={!qDriver || !qEquipment}
+              onClick={() => { onQuickAssign(qDriver, qEquipment); setQuickOpen(false); setQDriver(""); setQEquipment(""); }}
+              title="Confirm"
+            >
+              <Icon name="checkCircle" size={13} />
+            </button>
+            <button className="icon-btn" onClick={() => setQuickOpen(false)} title="Cancel"><Icon name="x" size={13} /></button>
+          </div>
         ) : (
-          <button className="lc-unassigned" onClick={(e) => { e.stopPropagation(); onAssign(); }}>
-            + Assign driver
-          </button>
+          <>
+            <button className="lc-unassigned" onClick={(e) => { e.stopPropagation(); setQuickOpen(true); }}>+ Assign driver</button>
+            <button
+              className="icon-btn"
+              style={{ marginLeft: "auto", width: 24, height: 24 }}
+              title="Open full assign dialog"
+              onClick={(e) => { e.stopPropagation(); onAssign(); }}
+            >
+              <Icon name="arrowRight" size={11} />
+            </button>
+          </>
         )}
       </div>
     </div>

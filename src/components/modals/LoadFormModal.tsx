@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
+import { Field, ModalBox, PanelHead, Button, Banner } from "@/components/ui";
 import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { EQUIPMENT_TYPES } from "@/lib/dat";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
 
 const NEW_CUSTOMER_VALUE = "__new__";
+// Data-entry safety net, not routing logic — flags fat-finger entry errors
+// (e.g. an extra zero) for a second look, doesn't block submission outright.
+const RATE_WARN_THRESHOLD = 50_000;
+const WEIGHT_WARN_THRESHOLD = 48_000; // ~ single-trailer legal max payload
+const MIN_PLAUSIBLE_TRANSIT_HOURS = 3;
 
 type FormState = {
   customerId: string;
@@ -30,36 +35,52 @@ function toInputDateTime(iso: string): string {
 export function LoadFormModal({
   mode,
   load,
+  prefill,
   customers,
   onClose,
   onSaved,
 }: {
   mode: "create" | "edit";
   load?: Load;
+  /** Create-mode only: seeds the form from an existing load ("Clone load") without copying its dates/status/assignment. */
+  prefill?: Load;
   customers: Customer[];
   onClose: () => void;
   onSaved: (load: Load) => void;
 }) {
+  const seed = load ?? prefill;
   const [form, setForm] = useState<FormState>(() => ({
-    customerId: (load ? load.customerId : customers[0]?.id) ?? "",
-    origin: load?.origin ?? "",
-    destination: load?.destination ?? "",
+    customerId: (seed ? seed.customerId : customers[0]?.id) ?? "",
+    origin: seed?.origin ?? "",
+    destination: seed?.destination ?? "",
     pickupTime: load ? toInputDateTime(load.pickupTime) : "",
     deliveryTime: load ? toInputDateTime(load.deliveryTime) : "",
-    weight: load ? String(load.weight) : "",
-    rate: load ? String(load.rate) : "",
-    commodity: load?.commodity ?? "",
-    equipmentTypeCode: load?.equipmentTypeCode ?? "V",
+    weight: seed ? String(seed.weight) : "",
+    rate: seed ? String(seed.rate) : "",
+    commodity: seed?.commodity ?? "",
+    equipmentTypeCode: seed?.equipmentTypeCode ?? "V",
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
+  const [oversizedAck, setOversizedAck] = useState(false);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+    if (key === "rate" || key === "weight") setOversizedAck(false);
   }
+
+  const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD || Number(form.weight) > WEIGHT_WARN_THRESHOLD;
+  const transitHours = form.pickupTime && form.deliveryTime
+    ? (new Date(form.deliveryTime).getTime() - new Date(form.pickupTime).getTime()) / 3_600_000
+    : null;
+  const showTransitWarning =
+    transitHours !== null &&
+    transitHours > 0 &&
+    transitHours < MIN_PLAUSIBLE_TRANSIT_HOURS &&
+    form.origin.trim().toLowerCase() !== form.destination.trim().toLowerCase();
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -83,6 +104,7 @@ export function LoadFormModal({
 
   async function handleSubmit() {
     if (!validate()) return;
+    if (isOversized && !oversizedAck) { setOversizedAck(true); return; }
     setSubmitting(true);
     setServerError(null);
 
@@ -183,11 +205,21 @@ export function LoadFormModal({
             </select>
           </Field>
         </div>
+
+        {showTransitWarning && (
+          <Banner tone="warning">
+            Only {transitHours!.toFixed(1)} hour{transitHours! === 1 ? "" : "s"} between pickup and delivery for a
+            different origin/destination — double-check the times.
+          </Banner>
+        )}
+        {isOversized && oversizedAck && (
+          <Banner tone="warning">Rate or weight looks unusually high — click &quot;Confirm&quot; again to save anyway.</Banner>
+        )}
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
         <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Create load"}
+          {submitting ? "Saving…" : isOversized && !oversizedAck ? "Review high value…" : isOversized && oversizedAck ? "Confirm & " + (mode === "edit" ? "save" : "create") : mode === "edit" ? "Save changes" : "Create load"}
         </Button>
       </div>
     </ModalBox>

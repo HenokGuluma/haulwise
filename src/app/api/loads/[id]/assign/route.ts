@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { assignSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireUser();
@@ -58,6 +59,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
+
+  const action = load.driverId || load.equipmentId ? "Reassigned" : "Assigned";
+  await logActivity(load.id, "ASSIGNED", `${action} to ${driver.firstName} ${driver.lastName} / ${equipment.unitNumber}.`, auth.user.id);
 
   return NextResponse.json({ load: updated });
 }

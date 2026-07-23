@@ -1,13 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { toCSV, fmtDate } from "@/lib/format";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+  const { searchParams } = new URL(req.url);
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const where: Prisma.LoadWhereInput = {};
+  if (from || to) {
+    where.deliveryTime = {
+      gte: from ? new Date(from) : undefined,
+      lte: to ? new Date(to + "T23:59:59.999Z") : undefined,
+    };
+  }
+
   const loads = await prisma.load.findMany({
+    where,
     include: { customer: true, documents: { orderBy: { uploadedAt: "desc" } } },
     orderBy: { pickupTime: "desc" },
   });
@@ -24,10 +38,11 @@ export async function GET() {
     { label: "POD", get: (l) => (l.documents.some((d) => d.type === "POD") ? "Yes" : "No") },
   ]);
 
+  const suffix = from || to ? `-${from || "start"}-to-${to || "now"}` : "";
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="haulwise-ledger-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "Content-Disposition": `attachment; filename="haulwise-ledger${suffix}.csv"`,
     },
   });
 }

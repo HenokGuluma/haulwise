@@ -55,10 +55,19 @@ export const driverCreateSchema = z.object({
   phone: z.string().trim().min(1),
   licenseNo: z.string().trim().min(1),
   licenseExpiration: z.coerce.date(),
+  medicalCertExpiration: z.coerce.date().optional().nullable(),
+  endorsements: z.array(z.string().trim().min(1)).optional(),
   status: z.enum(["AVAILABLE", "ON_DUTY", "OFF_DUTY"]).default("AVAILABLE"),
 });
 
 export const driverUpdateSchema = driverCreateSchema.partial();
+
+export const maintenanceRecordSchema = z.object({
+  date: z.coerce.date(),
+  description: z.string().trim().min(1, "Description is required."),
+  cost: z.coerce.number().nonnegative().optional().nullable(),
+  performedBy: z.string().trim().max(100).optional().nullable(),
+});
 
 export const equipmentCreateSchema = z.object({
   unitNumber: z.string().trim().min(1),
