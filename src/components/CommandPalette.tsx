@@ -12,9 +12,16 @@ type SearchResults = {
   customers: { id: string; companyName: string; status: string }[];
 };
 
-type FlatResult = { key: string; icon: string; label: string; sublabel: string; go: () => void };
+type ResultType = "load" | "driver" | "equipment" | "customer";
+type FlatResult = { key: string; type: ResultType; icon: string; label: string; sublabel: string; go: () => void };
 
 const EMPTY: SearchResults = { loads: [], drivers: [], equipment: [], customers: [] };
+const GROUP_META: Record<ResultType, { label: string; icon: string }> = {
+  load: { label: "Loads", icon: "list" },
+  driver: { label: "Drivers", icon: "users" },
+  equipment: { label: "Equipment", icon: "truck" },
+  customer: { label: "Customers", icon: "briefcase" },
+};
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -65,21 +72,25 @@ export function CommandPalette() {
   }
 
   const flat: FlatResult[] = [
-    ...results.loads.map((l) => ({ key: "l" + l.id, icon: "list", label: l.loadNumber, sublabel: `${l.origin} → ${l.destination}`, go: () => go(`/loads?open=${l.id}`) })),
-    ...results.drivers.map((d) => ({ key: "d" + d.id, icon: "users", label: `${d.firstName} ${d.lastName}`, sublabel: "Driver · " + d.status.replace("_", " "), go: () => go(`/roster?tab=drivers&driverId=${d.id}`) })),
-    ...results.equipment.map((e) => ({ key: "e" + e.id, icon: "truck", label: e.unitNumber, sublabel: "Equipment · " + e.typeCode, go: () => go(`/roster?tab=equipment&equipmentId=${e.id}`) })),
-    ...results.customers.map((c) => ({ key: "c" + c.id, icon: "briefcase", label: c.companyName, sublabel: "Customer", go: () => go(`/customers/${c.id}`) })),
+    ...results.loads.map((l): FlatResult => ({ key: "l" + l.id, type: "load", icon: "list", label: l.loadNumber, sublabel: `${l.origin} → ${l.destination}`, go: () => go(`/loads?open=${l.id}`) })),
+    ...results.drivers.map((d): FlatResult => ({ key: "d" + d.id, type: "driver", icon: "users", label: `${d.firstName} ${d.lastName}`, sublabel: "Driver · " + d.status.replace("_", " "), go: () => go(`/roster?tab=drivers&driverId=${d.id}`) })),
+    ...results.equipment.map((e): FlatResult => ({ key: "e" + e.id, type: "equipment", icon: "truck", label: e.unitNumber, sublabel: "Equipment · " + e.typeCode, go: () => go(`/roster?tab=equipment&equipmentId=${e.id}`) })),
+    ...results.customers.map((c): FlatResult => ({ key: "c" + c.id, type: "customer", icon: "briefcase", label: c.companyName, sublabel: "Customer", go: () => go(`/customers/${c.id}`) })),
   ];
+
+  const groups: { type: ResultType; items: FlatResult[] }[] = (["load", "driver", "equipment", "customer"] as ResultType[])
+    .map((type) => ({ type, items: flat.filter((r) => r.type === type) }))
+    .filter((g) => g.items.length > 0);
 
   useEffect(() => setActiveIndex(0), [query]);
 
   if (!open) return null;
 
   return (
-    <div className="overlay center" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+    <div className="overlay center cmdk-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div className="cmdk" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()}>
         <div className="cmdk-input-row">
-          <Icon name="search" size={15} />
+          <span className="cmdk-input-icon"><Icon name="search" size={16} /></span>
           <input
             ref={inputRef}
             className="cmdk-input"
@@ -95,15 +106,36 @@ export function CommandPalette() {
           <kbd className="cmdk-esc">Esc</kbd>
         </div>
         <div className="cmdk-results">
-          {query.trim() && flat.length === 0 && <div className="cmdk-empty">No results for &quot;{query}&quot;.</div>}
-          {!query.trim() && <div className="cmdk-empty">Type to search across the whole app…</div>}
-          {flat.map((r, i) => (
-            <button key={r.key} type="button" className={"cmdk-item" + (i === activeIndex ? " active" : "")} onMouseEnter={() => setActiveIndex(i)} onClick={r.go}>
-              <Icon name={r.icon} size={15} />
-              <span className="cmdk-item-label">{r.label}</span>
-              <span className="cmdk-item-sub">{r.sublabel}</span>
-            </button>
-          ))}
+          {query.trim() && flat.length === 0 && (
+            <div className="cmdk-empty">
+              <Icon name="search" size={22} />
+              <div>No results for &quot;{query}&quot;.</div>
+            </div>
+          )}
+          {!query.trim() && (
+            <div className="cmdk-empty">
+              <Icon name="sparkles" size={22} />
+              <div>Search across loads, drivers, equipment, and customers.</div>
+            </div>
+          )}
+          {groups.map((group) => {
+            const meta = GROUP_META[group.type];
+            return (
+              <div key={group.type} className="cmdk-group">
+                <div className="cmdk-group-label">{meta.label}</div>
+                {group.items.map((r) => {
+                  const i = flat.indexOf(r);
+                  return (
+                    <button key={r.key} type="button" className={"cmdk-item" + (i === activeIndex ? " active" : "")} onMouseEnter={() => setActiveIndex(i)} onClick={r.go}>
+                      <span className={"cmdk-item-icon cmdk-item-icon-" + r.type}><Icon name={r.icon} size={14} /></span>
+                      <span className="cmdk-item-label">{r.label}</span>
+                      <span className="cmdk-item-sub">{r.sublabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

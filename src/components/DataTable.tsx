@@ -239,7 +239,7 @@ export function DataTable<T>({
                 onClick={() => { setOpenMenu(openMenu === "filter" && filterMenuKey === col.key ? null : "filter"); setFilterMenuKey(col.key); }}
               >
                 {col.label}{active > 0 ? ` (${active})` : ""}
-                <Icon name="arrowRight" size={11} className="dt-chevron" />
+                <Icon name="chevronDown" size={11} className="dt-chevron" />
               </button>
               {openMenu === "filter" && filterMenuKey === col.key && (
                 <div className="dt-menu">
@@ -302,7 +302,7 @@ export function DataTable<T>({
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {c.label}
                       {c.sortable && sortBy === c.key && (
-                        <Icon name={sortDir === "asc" ? "arrowRight" : "arrowRight"} size={10} className={"dt-sort-icon" + (sortDir === "desc" ? " dt-sort-desc" : " dt-sort-asc")} />
+                        <Icon name={sortDir === "asc" ? "chevronUp" : "chevronDown"} size={12} />
                       )}
                     </span>
                   </th>
@@ -358,11 +358,11 @@ export function DataTable<T>({
           </select>
           <div className="dt-pagination-nav">
             <button type="button" className="icon-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} title="Previous page" aria-label="Previous page">
-              <Icon name="arrowRight" size={13} className="dt-chevron-left" />
+              <Icon name="chevronLeft" size={14} />
             </button>
             <span className="dt-pagination-page">Page {page} of {totalPages}</span>
             <button type="button" className="icon-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} title="Next page" aria-label="Next page">
-              <Icon name="arrowRight" size={13} />
+              <Icon name="chevronRight" size={14} />
             </button>
           </div>
         </div>

@@ -21,6 +21,14 @@ const STATUS_LABELS: Record<LoadStatus, string> = {
   DELIVERED: "Delivered",
   BILLED: "Billed",
 };
+const STATUS_ICONS: Record<LoadStatus, string> = {
+  DRAFT: "edit",
+  ASSIGNED: "users",
+  DISPATCHED: "route",
+  IN_TRANSIT: "truck",
+  DELIVERED: "checkCircle",
+  BILLED: "dollarSign",
+};
 const REQUIRES_ASSIGNMENT = new Set<LoadStatus>(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 
 type BoardFilters = { q: string; customerId: string; driverId: string; equipmentTypeCode: string };
@@ -205,7 +213,9 @@ export function BoardView({
           return (
             <div key={status} className="board-col">
               <div className="board-col-head">
-                <span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block" }} className="pill-dot" />
+                <span className={"board-col-icon status-" + status.replace(/_/g, "")}>
+                  <Icon name={STATUS_ICONS[status]} size={12} />
+                </span>
                 <span className="board-col-title">{STATUS_LABELS[status]}</span>
                 <span className="board-col-count">{items.length}</span>
               </div>

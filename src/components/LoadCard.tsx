@@ -4,7 +4,7 @@ import { useState } from "react";
 import { RouteLine } from "@/components/RouteLine";
 import { Icon } from "@/components/ui";
 import { fmtMoney, fmtDate } from "@/lib/format";
-import type { Load, Driver, Equipment, LoadStatus } from "@/types";
+import type { Load, Driver, Equipment, LoadStatus, EquipmentTypeCode } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
@@ -19,6 +19,15 @@ const STATUS_LABELS: Record<LoadStatus, string> = {
   BILLED: "Billed",
 };
 const ALL_STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
+
+// A small visual identity per equipment type — icon + tone — so a column of
+// cards reads at a glance instead of requiring the type-code text every time.
+const EQUIPMENT_VISUAL: Record<EquipmentTypeCode, { icon: string; tone: string; label: string }> = {
+  V: { icon: "box", tone: "van", label: "Dry Van" },
+  R: { icon: "snowflake", tone: "reefer", label: "Reefer" },
+  F: { icon: "layers", tone: "flatbed", label: "Flatbed" },
+  PO: { icon: "zap", tone: "power", label: "Power Only" },
+};
 
 export function LoadCard({
   load,
@@ -48,6 +57,8 @@ export function LoadCard({
   const [qEquipment, setQEquipment] = useState("");
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
 
+  const visual = EQUIPMENT_VISUAL[load.equipmentTypeCode];
+
   return (
     <div
       className={"load-card" + (dragging ? " dragging" : "")}
@@ -57,8 +68,14 @@ export function LoadCard({
       onClick={onOpen}
     >
       <div className="lc-top">
-        <span className="lc-id mono">{load.loadNumber}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span className={"lc-equip-badge lc-equip-" + visual.tone} title={visual.label}>
+          <Icon name={visual.icon} size={15} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="lc-id mono">{load.loadNumber}</div>
+          <div className="lc-customer">{load.customer?.companyName ?? "Deleted customer"}</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
           <span className="lc-rate mono">{fmtMoney(load.rate)}</span>
           <span className="dt-menu-anchor" onClick={(e) => e.stopPropagation()}>
             <button
@@ -68,7 +85,7 @@ export function LoadCard({
               aria-label="Move to another status"
               onClick={() => setMoveMenuOpen((o) => !o)}
             >
-              <Icon name="columns" size={11} />
+              <Icon name="chevronDown" size={12} />
             </button>
             {moveMenuOpen && (
               <div className="dt-menu dt-menu-right">
@@ -80,26 +97,24 @@ export function LoadCard({
               </div>
             )}
           </span>
-        </span>
+        </div>
       </div>
+
       <div className="lc-route">
-        {load.origin} <span style={{ color: "var(--muted)", fontWeight: 500 }}>→</span> {load.destination}
+        <Icon name="mapPin" size={11} className="lc-route-pin" />
+        {load.origin} <span className="lc-route-arrow">→</span> {load.destination}
       </div>
       <RouteLine status={load.status} pickup={load.pickupTime} delivery={load.deliveryTime} />
       <div className="lc-meta">
         <Icon name="calendar" size={12} />
         <span>{fmtDate(load.pickupTime)} → {fmtDate(load.deliveryTime)}</span>
       </div>
-      <div className="lc-meta" style={{ marginTop: 3 }}>
-        <Icon name="package" size={12} />
-        <span>{load.customer?.companyName ?? "Deleted customer"} · {load.equipmentTypeCode}</span>
-      </div>
       <div className="lc-assign">
         {load.driver ? (
           <>
             <span className="lc-avatar">{initials(load.driver.firstName, load.driver.lastName)}</span>
             <span style={{ fontSize: 12, fontWeight: 600 }}>{load.driver.firstName} {load.driver.lastName}</span>
-            {load.equipment && <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>{load.equipment.unitNumber}</span>}
+            {load.equipment && <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }} className="mono">{load.equipment.unitNumber}</span>}
           </>
         ) : quickOpen ? (
           <div className="lc-quick-assign" onClick={(e) => e.stopPropagation()}>
@@ -116,6 +131,7 @@ export function LoadCard({
               disabled={!qDriver || !qEquipment}
               onClick={() => { onQuickAssign(qDriver, qEquipment); setQuickOpen(false); setQDriver(""); setQEquipment(""); }}
               title="Confirm"
+              aria-label="Confirm quick assign"
             >
               <Icon name="checkCircle" size={13} />
             </button>

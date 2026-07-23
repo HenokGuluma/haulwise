@@ -94,7 +94,7 @@ export function CustomerFormModal({
           </Field>
         </div>
         {isEdit && customer && (
-          <Link href={`/customers/${customer.id}`} style={{ fontSize: 12, color: "var(--accent)" }}>
+          <Link href={`/customers/${customer.id}`} style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>
             Open full customer profile (contacts, documents, load history) →
           </Link>
         )}

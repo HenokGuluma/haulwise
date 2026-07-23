@@ -17,7 +17,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
       </p>
       <div style={{ display: "flex", gap: 10 }}>
         <Button variant="primary" icon="refresh" onClick={reset}>Try again</Button>
-        <a href="/dashboard"><Button variant="ghost">Back to Dashboard</Button></a>
+        <a href="/dashboard" style={{ textDecoration: "none" }}><Button variant="ghost">Back to Dashboard</Button></a>
       </div>
     </div>
   );

@@ -25,16 +25,16 @@ export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMe
         <div className="topbar-title">{meta.title}</div>
         <div className="topbar-sub">{meta.sub}</div>
       </div>
-      <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
         <button
           type="button"
-          className="btn btn-ghost btn-sm"
+          className="topbar-search-trigger"
           onClick={() => window.dispatchEvent(new Event("haulwise:open-command-palette"))}
           title="Search everything (Cmd/Ctrl+K)"
         >
-          <Icon name="search" size={13} />
-          Search
-          <kbd className="cmdk-esc" style={{ marginLeft: 2 }}>⌘K</kbd>
+          <Icon name="search" size={14} />
+          <span>Search loads, drivers, customers…</span>
+          <kbd className="cmdk-esc">⌘K</kbd>
         </button>
         <Button variant="primary" icon="plus" onClick={onNewLoad}>New Load</Button>
       </div>

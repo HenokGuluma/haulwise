@@ -174,7 +174,7 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
   return (
     <div>
       <Link href="/customers" style={{ fontSize: 12.5, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14, textDecoration: "none" }}>
-        <Icon name="arrowRight" size={12} style={{ transform: "rotate(180deg)" }} /> Back to Customers
+        <Icon name="arrowLeft" size={12} /> Back to Customers
       </Link>
 
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>

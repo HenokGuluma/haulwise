@@ -143,7 +143,7 @@ export function LoadsView({
             align: "right",
             render: (l) => (
               <span onClick={(e) => e.stopPropagation()}>
-                <IconButton icon="package" title="Clone load" onClick={() => setCloneSource(l)} />
+                <IconButton icon="copy" title="Clone load" onClick={() => setCloneSource(l)} />
               </span>
             ),
           },

@@ -475,7 +475,7 @@ export function LoadDetailDrawer({
         <a href={`/loads/${load.id}/invoice`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
           <Button variant="ghost" icon="download">Invoice</Button>
         </a>
-        {onClone && <Button variant="ghost" icon="package" onClick={() => onClone(load)}>Clone</Button>}
+        {onClone && <Button variant="ghost" icon="copy" onClick={() => onClone(load)}>Clone</Button>}
         <Button variant="ghost" onClick={() => onEdit(load)}>Edit details</Button>
         <Button variant="dark" onClick={onClose}>Done</Button>
       </div>

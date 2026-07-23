@@ -8,7 +8,7 @@ export default function AppNotFound() {
       <p style={{ color: "var(--muted)", fontSize: 13.5, maxWidth: 420, marginBottom: 20 }}>
         This record doesn&apos;t exist — it may have been deleted, or the link is out of date.
       </p>
-      <a href="/dashboard"><Button variant="primary">Back to Dashboard</Button></a>
+      <a href="/dashboard" style={{ textDecoration: "none" }}><Button variant="primary">Back to Dashboard</Button></a>
     </div>
   );
 }
