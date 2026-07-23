@@ -399,33 +399,33 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .board-col-body.drag-over { background: var(--accent-bg); border-radius: 10px; }
 
 .load-card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
   cursor: grab; box-shadow: var(--shadow-sm);
   transition: box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 .load-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--scrollbar-thumb-hover); }
 .load-card.dragging { opacity: 0.4; }
-.load-card .lc-top { display: flex; align-items: flex-start; gap: 9px; }
-.load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.2; }
-.load-card .lc-customer { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.load-card .lc-rate { font-family: var(--font-mono), monospace; font-size: 13px; font-weight: 700; color: var(--ink); }
+.load-card .lc-top { display: flex; align-items: center; gap: 12px; }
+.load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.25; }
+.load-card .lc-customer { font-size: 12.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.load-card .lc-rate { font-family: var(--font-mono), monospace; font-size: 15px; font-weight: 700; color: var(--ink); }
 
 .lc-equip-badge {
-  width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+  width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
 
 .load-card .lc-route {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 12.5px; font-weight: 600; margin-top: 10px; line-height: 1.3; color: var(--ink-soft);
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13.5px; font-weight: 600; margin-top: 13px; line-height: 1.3; color: var(--ink-soft);
 }
 .load-card .lc-route-pin { color: var(--muted); flex-shrink: 0; }
 .load-card .lc-route-arrow { color: var(--muted); font-weight: 500; }
-.load-card .lc-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
-.load-card .lc-assign { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line-soft); }
+.load-card .lc-meta { display: flex; align-items: center; gap: 6px; margin-top: 9px; font-size: 12px; color: var(--muted); }
+.load-card .lc-assign { display: flex; align-items: center; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line-soft); }
 .load-card .lc-avatar {
-  width: 20px; height: 20px; border-radius: 6px; background: var(--slate-bg); color: var(--slate);
-  font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 7px; background: var(--slate-bg); color: var(--slate);
+  font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
 .load-card .lc-unassigned {
   font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 7px; padding: 3px 8px;
