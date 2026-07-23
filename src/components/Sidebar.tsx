@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { SessionUser } from "@/types";
 
 const NAV_ITEMS = [
@@ -33,10 +34,10 @@ export function Sidebar({
     <div className="sidebar">
       <div className="brand">
         <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
-          <rect width="100" height="100" rx="22" fill="#F5A623" />
-          <path d="M20 62h8V40h20l10 12v10h8" stroke="#131B2E" strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="36" cy="66" r="6" fill="#131B2E" />
-          <circle cx="62" cy="66" r="6" fill="#131B2E" />
+          <rect width="100" height="100" rx="22" style={{ fill: "var(--amber)" }} />
+          <path d="M20 62h8V40h20l10 12v10h8" style={{ stroke: "var(--navy)" }} strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="36" cy="66" r="6" style={{ fill: "var(--navy)" }} />
+          <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
         </svg>
         <div>
           <div className="brand-name">Haulwise</div>
@@ -62,8 +63,9 @@ export function Sidebar({
         <div className="role-avatar">{user.role === "ADMIN" ? "AD" : "DS"}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="role-name">{user.name}</div>
-          <div style={{ fontSize: 10.5, color: "#7C8AB0" }}>{user.role === "ADMIN" ? "Admin" : "Dispatcher"}</div>
+          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>{user.role === "ADMIN" ? "Admin" : "Dispatcher"}</div>
         </div>
+        <ThemeToggle />
         <IconButtonInline onClick={signOut} />
       </div>
     </div>
@@ -76,7 +78,7 @@ function IconButtonInline({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title="Sign out"
       aria-label="Sign out"
-      style={{ background: "none", border: "none", color: "#7C8AB0", cursor: "pointer", display: "flex", padding: 4 }}
+      style={{ background: "none", border: "none", color: "var(--navy-ink-muted)", cursor: "pointer", display: "flex", padding: 4 }}
     >
       <Icon name="logOut" size={16} />
     </button>

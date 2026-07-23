@@ -7,9 +7,9 @@ import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, daysUntil, statusLabel } from "@/lib/format";
 import type { Load, Driver, Equipment, SessionUser } from "@/types";
 
-function KPI({ label, value, tone, deltaIcon, deltaText }: { label: string; value: string | number; tone?: "success" | "danger"; deltaIcon?: string; deltaText?: string }) {
+function KPI({ label, value, tone, deltaIcon, deltaText, highlight }: { label: string; value: string | number; tone?: "success" | "danger"; deltaIcon?: string; deltaText?: string; highlight?: boolean }) {
   return (
-    <div className="kpi-card">
+    <div className={"kpi-card" + (highlight ? " highlight" : "")}>
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">{value}</div>
       {deltaText && (
@@ -67,7 +67,7 @@ export function DashboardView({
         <KPI label="Active Loads" value={active.length} />
         <KPI label="In Transit" value={inTransit.length} tone="success" deltaIcon="truck" deltaText="on the road now" />
         <KPI label="Delivered This Week" value={deliveredThisWeek.length} />
-        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} tone="success" />
+        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} tone="success" highlight />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, alignItems: "start" }}>

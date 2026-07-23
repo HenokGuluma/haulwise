@@ -10,29 +10,29 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         background: "var(--navy)",
-        backgroundImage: "linear-gradient(180deg, var(--navy) 0%, #10162A 100%)",
+        backgroundImage: "linear-gradient(180deg, var(--navy) 0%, var(--navy-grad-end) 100%)",
       }}
     >
       <div
         className="card"
-        style={{ width: 380, maxWidth: "92vw", padding: 32, background: "#fff" }}
+        style={{ width: 380, maxWidth: "92vw", padding: 32, background: "var(--surface)" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
           <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
-            <rect width="100" height="100" rx="22" fill="#F5A623" />
+            <rect width="100" height="100" rx="22" style={{ fill: "var(--amber)" }} />
             <path
               d="M20 62h8V40h20l10 12v10h8"
-              stroke="#131B2E"
+              style={{ stroke: "var(--navy)" }}
               strokeWidth="6"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            <circle cx="36" cy="66" r="6" fill="#131B2E" />
-            <circle cx="62" cy="66" r="6" fill="#131B2E" />
+            <circle cx="36" cy="66" r="6" style={{ fill: "var(--navy)" }} />
+            <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
           </svg>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>Haulwise</div>
+            <div style={{ fontWeight: 700, fontSize: 16, fontFamily: "var(--font-heading)", letterSpacing: "-0.025em", color: "var(--ink)" }}>Haulwise</div>
             <div style={{ fontSize: 11.5, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Dispatch
             </div>
