@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, Pill, Button, IconButton, ConfirmDialog, useToast } from "@/components/ui";
+import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { DriverFormModal } from "@/components/modals/DriverFormModal";
 import { EquipmentFormModal } from "@/components/modals/EquipmentFormModal";
 import { daysUntil } from "@/lib/format";
-import { api, ApiRequestError } from "@/lib/api-client";
-import type { Driver, Equipment, SessionUser } from "@/types";
+import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
+import type { Driver, Equipment, SessionUser, DriverStatus, EquipmentStatus, EquipmentTypeCode } from "@/types";
 
 function initials(a: string, b: string) {
   return (a?.[0] || "").toUpperCase() + (b?.[0] || "").toUpperCase();
@@ -29,36 +30,40 @@ function serviceLabel(days: number, kind: "license" | "maintenance") {
   return "Service in " + days + "d";
 }
 
+const DRIVER_STATUSES: DriverStatus[] = ["AVAILABLE", "ON_DUTY", "OFF_DUTY"];
+const EQUIPMENT_STATUSES: EquipmentStatus[] = ["AVAILABLE", "IN_USE", "MAINTENANCE"];
+const EQUIPMENT_TYPES: EquipmentTypeCode[] = ["V", "R", "F", "PO"];
+
 export function RosterView({
   user,
-  initialDrivers,
-  initialEquipment,
   activeLoadCounts,
 }: {
   user: SessionUser;
-  initialDrivers: Driver[];
-  initialEquipment: Equipment[];
+  initialDrivers?: Driver[];
+  initialEquipment?: Equipment[];
   activeLoadCounts: { byDriver: Record<string, number>; byEquipment: Record<string, number> };
 }) {
-  const [drivers, setDrivers] = useState(initialDrivers);
-  const [equipment, setEquipment] = useState(initialEquipment);
-  useEffect(() => setDrivers(initialDrivers), [initialDrivers]);
-  useEffect(() => setEquipment(initialEquipment), [initialEquipment]);
-
   const [tab, setTab] = useState<"drivers" | "equipment">("drivers");
   const [driverForm, setDriverForm] = useState<{ open: boolean; driver?: Driver }>({ open: false });
   const [equipmentForm, setEquipmentForm] = useState<{ open: boolean; equipment?: Equipment }>({ open: false });
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [driverCount, setDriverCount] = useState(0);
+  const [equipmentCount, setEquipmentCount] = useState(0);
+  const [driverReload, setDriverReload] = useState(0);
+  const [equipmentReload, setEquipmentReload] = useState(0);
 
   const toast = useToast();
   const router = useRouter();
   const canDelete = user.role === "ADMIN";
 
+  const fetchDrivers = useCallback((params: FetchPageParams) => fetchTablePage<Driver>("/api/drivers", params), []);
+  const fetchEquipment = useCallback((params: FetchPageParams) => fetchTablePage<Equipment>("/api/equipment", params), []);
+
   async function deleteDriver(id: string) {
     try {
       await api.del(`/api/drivers/${id}`);
-      setDrivers((prev) => prev.filter((d) => d.id !== id));
       toast.success("Driver removed from roster.");
+      setDriverReload((k) => k + 1);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete driver.");
@@ -68,8 +73,8 @@ export function RosterView({
   async function deleteEquipment(id: string) {
     try {
       await api.del(`/api/equipment/${id}`);
-      setEquipment((prev) => prev.filter((e) => e.id !== id));
       toast.success("Equipment removed from fleet.");
+      setEquipmentReload((k) => k + 1);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete equipment.");
@@ -79,8 +84,8 @@ export function RosterView({
   return (
     <div>
       <div className="tabbar">
-        <button className={"tab" + (tab === "drivers" ? " active" : "")} onClick={() => setTab("drivers")}>Drivers ({drivers.length})</button>
-        <button className={"tab" + (tab === "equipment" ? " active" : "")} onClick={() => setTab("equipment")}>Equipment ({equipment.length})</button>
+        <button className={"tab" + (tab === "drivers" ? " active" : "")} onClick={() => setTab("drivers")}>Drivers ({driverCount})</button>
+        <button className={"tab" + (tab === "equipment" ? " active" : "")} onClick={() => setTab("equipment")}>Equipment ({equipmentCount})</button>
       </div>
 
       <div style={{ display: "flex", marginBottom: 14 }}>
@@ -94,95 +99,161 @@ export function RosterView({
       </div>
 
       {tab === "drivers" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-          {drivers.map((d) => {
-            const days = daysUntil(d.licenseExpiration);
-            const statusTone = d.status === "AVAILABLE" ? "success" : d.status === "ON_DUTY" ? "warning" : "muted";
-            const loadCount = activeLoadCounts.byDriver[d.id] ?? 0;
-            return (
-              <div key={d.id} className="card" style={{ padding: 16 }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span className="lc-avatar" style={{ width: 36, height: 36, fontSize: 13, borderRadius: 10 }}>{initials(d.firstName, d.lastName)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{d.firstName} {d.lastName}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{d.phone}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <IconButton icon="edit" title="Edit driver" onClick={() => setDriverForm({ open: true, driver: d })} />
-                    <IconButton
-                      icon="trash"
-                      title={canDelete ? "Delete driver" : "Admin only"}
-                      onClick={canDelete ? () => setConfirm({
-                        title: "Delete driver",
-                        message: `Remove ${d.firstName} ${d.lastName} from the roster? This cannot be undone.`,
-                        onConfirm: () => deleteDriver(d.id),
-                      }) : undefined}
-                      style={!canDelete ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
-                    />
-                  </div>
-                </div>
-                <div className="divider" style={{ margin: "12px 0" }}></div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5 }}>
-                  <Pill tone={statusTone} dot>{d.status.replace("_", " ")}</Pill>
-                  <span className="mono" style={{ color: "var(--muted)" }}>{d.licenseNo}</span>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Pill tone={serviceTone(days)}>{serviceLabel(days, "license")}</Pill>
-                </div>
-                {loadCount > 0 && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>{loadCount} active load{loadCount === 1 ? "" : "s"}</div>}
-              </div>
-            );
-          })}
-        </div>
+        <DataTable<Driver>
+          tableId="roster-drivers"
+          fetchPage={fetchDrivers}
+          reloadKey={driverReload}
+          rowKey={(d) => d.id}
+          onTotalChange={setDriverCount}
+          searchPlaceholder="Search drivers…"
+          emptyIcon="users"
+          emptyTitle="No drivers match"
+          csvFilename="haulwise-drivers.csv"
+          initialSort={{ by: "name", dir: "asc" }}
+          columns={[
+            {
+              key: "name",
+              label: "Driver",
+              sortable: true,
+              render: (d) => (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="lc-avatar">{initials(d.firstName, d.lastName)}</span>
+                  {d.firstName} {d.lastName}
+                </span>
+              ),
+              exportValue: (d) => `${d.firstName} ${d.lastName}`,
+            },
+            { key: "phone", label: "Phone" },
+            { key: "licenseNo", label: "License #", render: (d) => <span className="mono">{d.licenseNo}</span> },
+            {
+              key: "licenseExpiration",
+              label: "License",
+              sortable: true,
+              render: (d) => { const days = daysUntil(d.licenseExpiration); return <Pill tone={serviceTone(days)}>{serviceLabel(days, "license")}</Pill>; },
+              exportValue: (d) => new Date(d.licenseExpiration).toISOString().slice(0, 10),
+            },
+            {
+              key: "status",
+              label: "Status",
+              sortable: true,
+              filterOptions: DRIVER_STATUSES.map((s) => ({ value: s, label: s.replace("_", " ") })),
+              render: (d) => <Pill tone={d.status === "AVAILABLE" ? "success" : d.status === "ON_DUTY" ? "warning" : "muted"} dot>{d.status.replace("_", " ")}</Pill>,
+              exportValue: (d) => d.status,
+            },
+            {
+              key: "activeLoads",
+              label: "Active Loads",
+              align: "right",
+              render: (d) => activeLoadCounts.byDriver[d.id] ?? 0,
+              exportValue: (d) => activeLoadCounts.byDriver[d.id] ?? 0,
+            },
+            {
+              key: "actions",
+              label: "",
+              align: "right",
+              render: (d) => (
+                <span style={{ display: "flex", gap: 4, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+                  <IconButton icon="edit" title="Edit driver" onClick={() => setDriverForm({ open: true, driver: d })} />
+                  <IconButton
+                    icon="trash"
+                    title={canDelete ? "Delete driver" : "Admin only"}
+                    onClick={canDelete ? () => setConfirm({
+                      title: "Delete driver",
+                      message: `Remove ${d.firstName} ${d.lastName} from the roster? This cannot be undone.`,
+                      onConfirm: () => deleteDriver(d.id),
+                    }) : undefined}
+                    style={!canDelete ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                  />
+                </span>
+              ),
+            },
+          ]}
+        />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-          {equipment.map((e) => {
-            const days = daysUntil(e.nextMaintenance);
-            const statusTone = e.status === "AVAILABLE" ? "success" : e.status === "IN_USE" ? "warning" : "danger";
-            const loadCount = activeLoadCounts.byEquipment[e.id] ?? 0;
-            return (
-              <div key={e.id} className="card" style={{ padding: 16 }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span className="lc-avatar" style={{ width: 36, height: 36, fontSize: 13, borderRadius: 10, background: "var(--route-bg)", color: "var(--route)" }}>{e.typeCode}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }} className="mono">{e.unitNumber}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <IconButton icon="edit" title="Edit equipment" onClick={() => setEquipmentForm({ open: true, equipment: e })} />
-                    <IconButton
-                      icon="trash"
-                      title={canDelete ? "Delete equipment" : "Admin only"}
-                      onClick={canDelete ? () => setConfirm({
-                        title: "Delete equipment",
-                        message: `Remove unit ${e.unitNumber} from the fleet? This cannot be undone.`,
-                        onConfirm: () => deleteEquipment(e.id),
-                      }) : undefined}
-                      style={!canDelete ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
-                    />
-                  </div>
-                </div>
-                <div className="divider" style={{ margin: "12px 0" }}></div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5 }}>
-                  <Pill tone={statusTone} dot>{e.status.replace("_", " ")}</Pill>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Pill tone={serviceTone(days)}><Icon name="wrench" size={11} /> {serviceLabel(days, "maintenance")}</Pill>
-                </div>
-                {loadCount > 0 && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>{loadCount} active load{loadCount === 1 ? "" : "s"}</div>}
-              </div>
-            );
-          })}
-        </div>
+        <DataTable<Equipment>
+          tableId="roster-equipment"
+          fetchPage={fetchEquipment}
+          reloadKey={equipmentReload}
+          rowKey={(e) => e.id}
+          onTotalChange={setEquipmentCount}
+          searchPlaceholder="Search equipment…"
+          emptyIcon="truck"
+          emptyTitle="No equipment matches"
+          csvFilename="haulwise-equipment.csv"
+          initialSort={{ by: "unitNumber", dir: "asc" }}
+          columns={[
+            {
+              key: "unitNumber",
+              label: "Unit",
+              sortable: true,
+              render: (e) => (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="lc-avatar" style={{ background: "var(--route-bg)", color: "var(--route)" }}>{e.typeCode}</span>
+                  <span className="mono" style={{ fontWeight: 600 }}>{e.unitNumber}</span>
+                </span>
+              ),
+            },
+            {
+              key: "typeCode",
+              label: "Type",
+              sortable: true,
+              filterOptions: EQUIPMENT_TYPES.map((t) => ({ value: t, label: t })),
+              render: (e) => e.typeCode,
+            },
+            {
+              key: "status",
+              label: "Status",
+              sortable: true,
+              filterOptions: EQUIPMENT_STATUSES.map((s) => ({ value: s, label: s.replace("_", " ") })),
+              render: (e) => <Pill tone={e.status === "AVAILABLE" ? "success" : e.status === "IN_USE" ? "warning" : "danger"} dot>{e.status.replace("_", " ")}</Pill>,
+              exportValue: (e) => e.status,
+            },
+            {
+              key: "nextMaintenance",
+              label: "Maintenance",
+              sortable: true,
+              render: (e) => { const days = daysUntil(e.nextMaintenance); return <Pill tone={serviceTone(days)}><Icon name="wrench" size={11} /> {serviceLabel(days, "maintenance")}</Pill>; },
+              exportValue: (e) => new Date(e.nextMaintenance).toISOString().slice(0, 10),
+            },
+            {
+              key: "activeLoads",
+              label: "Active Loads",
+              align: "right",
+              render: (e) => activeLoadCounts.byEquipment[e.id] ?? 0,
+              exportValue: (e) => activeLoadCounts.byEquipment[e.id] ?? 0,
+            },
+            {
+              key: "actions",
+              label: "",
+              align: "right",
+              render: (e) => (
+                <span style={{ display: "flex", gap: 4, justifyContent: "flex-end" }} onClick={(ev) => ev.stopPropagation()}>
+                  <IconButton icon="edit" title="Edit equipment" onClick={() => setEquipmentForm({ open: true, equipment: e })} />
+                  <IconButton
+                    icon="trash"
+                    title={canDelete ? "Delete equipment" : "Admin only"}
+                    onClick={canDelete ? () => setConfirm({
+                      title: "Delete equipment",
+                      message: `Remove unit ${e.unitNumber} from the fleet? This cannot be undone.`,
+                      onConfirm: () => deleteEquipment(e.id),
+                    }) : undefined}
+                    style={!canDelete ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                  />
+                </span>
+              ),
+            },
+          ]}
+        />
       )}
 
       {driverForm.open && (
         <DriverFormModal
           driver={driverForm.driver}
           onClose={() => setDriverForm({ open: false })}
-          onSaved={(d) => {
-            setDrivers((prev) => (driverForm.driver ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]));
+          onSaved={() => {
             toast.success(driverForm.driver ? "Driver updated." : "Driver added to roster.");
             setDriverForm({ open: false });
+            setDriverReload((k) => k + 1);
           }}
         />
       )}
@@ -191,10 +262,10 @@ export function RosterView({
         <EquipmentFormModal
           equipment={equipmentForm.equipment}
           onClose={() => setEquipmentForm({ open: false })}
-          onSaved={(e) => {
-            setEquipment((prev) => (equipmentForm.equipment ? prev.map((x) => (x.id === e.id ? e : x)) : [...prev, e]));
+          onSaved={() => {
             toast.success(equipmentForm.equipment ? "Equipment updated." : "Equipment added to fleet.");
             setEquipmentForm({ open: false });
+            setEquipmentReload((k) => k + 1);
           }}
         />
       )}

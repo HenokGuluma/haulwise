@@ -1,14 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, DriverStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { driverCreateSchema } from "@/lib/validation";
+import { parseListParams } from "@/lib/pagination";
 
-export async function GET() {
+// Native Postgres enum sorts by declared order (AVAILABLE, ON_DUTY, OFF_DUTY),
+// so `status: dir` already gives pipeline order, not alphabetical.
+const SORT_MAP: Record<string, Prisma.DriverOrderByWithRelationInput> = {
+  name: { firstName: "asc" },
+  phone: { phone: "asc" },
+  licenseNo: { licenseNo: "asc" },
+  licenseExpiration: { licenseExpiration: "asc" },
+  status: { status: "asc" },
+};
+
+export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const drivers = await prisma.driver.findMany({ orderBy: { firstName: "asc" } });
-  return NextResponse.json({ drivers });
+  const { searchParams } = new URL(req.url);
+  const { page, pageSize, sortBy, sortDir, search, filters } = parseListParams(searchParams);
+
+  const statusFilter = filters.status as DriverStatus[] | undefined;
+  const where: Prisma.DriverWhereInput = {
+    status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
+    OR: search
+      ? [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
+          { licenseNo: { contains: search, mode: "insensitive" } },
+        ]
+      : undefined,
+  };
+
+  const orderKey = sortBy && SORT_MAP[sortBy] ? Object.keys(SORT_MAP[sortBy])[0] : "firstName";
+  const orderBy = { [orderKey]: sortDir } as Prisma.DriverOrderByWithRelationInput;
+
+  const [rows, total] = await Promise.all([
+    prisma.driver.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.driver.count({ where }),
+  ]);
+
+  return NextResponse.json({ rows, total });
 }
 
 export async function POST(req: NextRequest) {

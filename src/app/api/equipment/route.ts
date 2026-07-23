@@ -1,14 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, EquipmentStatus, EquipmentTypeCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { equipmentCreateSchema } from "@/lib/validation";
+import { parseListParams } from "@/lib/pagination";
 
-export async function GET() {
+const SORT_MAP: Record<string, keyof Prisma.EquipmentOrderByWithRelationInput> = {
+  unitNumber: "unitNumber",
+  typeCode: "typeCode",
+  status: "status",
+  nextMaintenance: "nextMaintenance",
+};
+
+export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const equipment = await prisma.equipment.findMany({ orderBy: { unitNumber: "asc" } });
-  return NextResponse.json({ equipment });
+  const { searchParams } = new URL(req.url);
+  const { page, pageSize, sortBy, sortDir, search, filters } = parseListParams(searchParams);
+
+  const statusFilter = filters.status as EquipmentStatus[] | undefined;
+  const typeFilter = filters.typeCode as EquipmentTypeCode[] | undefined;
+  const where: Prisma.EquipmentWhereInput = {
+    status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
+    typeCode: typeFilter && typeFilter.length > 0 ? { in: typeFilter } : undefined,
+    unitNumber: search ? { contains: search, mode: "insensitive" } : undefined,
+  };
+
+  const orderKey = (sortBy && SORT_MAP[sortBy]) || "unitNumber";
+  const orderBy = { [orderKey]: sortDir } as Prisma.EquipmentOrderByWithRelationInput;
+
+  const [rows, total] = await Promise.all([
+    prisma.equipment.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.equipment.count({ where }),
+  ]);
+
+  return NextResponse.json({ rows, total });
 }
 
 export async function POST(req: NextRequest) {

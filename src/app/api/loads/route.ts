@@ -1,39 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, LoadStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { loadCreateSchema } from "@/lib/validation";
-import { LoadStatus } from "@prisma/client";
+import { parseListParams } from "@/lib/pagination";
+
+// Sortable columns exposed to the DataTable. Native Postgres enum columns
+// (status) sort by their declared order — DRAFT..BILLED — which is the
+// pipeline order, not alphabetical, so no special-casing is needed there.
+const SORT_MAP: Record<string, Prisma.LoadOrderByWithRelationInput> = {
+  loadNumber: { loadNumber: "asc" },
+  customer: { customer: { companyName: "asc" } },
+  pickupTime: { pickupTime: "asc" },
+  deliveryTime: { deliveryTime: "asc" },
+  status: { status: "asc" },
+  rate: { rate: "asc" },
+  driverPay: { driverPay: "asc" },
+  payoutStatus: { payoutStatus: "asc" },
+};
+
+function withDir(order: Prisma.LoadOrderByWithRelationInput, dir: "asc" | "desc"): Prisma.LoadOrderByWithRelationInput {
+  const [key, val] = Object.entries(order)[0];
+  if (val && typeof val === "object") {
+    const [nestedKey] = Object.entries(val)[0];
+    return { [key]: { [nestedKey]: dir } } as Prisma.LoadOrderByWithRelationInput;
+  }
+  return { [key]: dir } as Prisma.LoadOrderByWithRelationInput;
+}
 
 export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-  const q = searchParams.get("q")?.trim();
+  const { page, pageSize, sortBy, sortDir, search, filters } = parseListParams(searchParams);
 
-  const loads = await prisma.load.findMany({
-    where: {
-      status: status && status !== "All" ? (status as LoadStatus) : undefined,
-      OR: q
-        ? [
-            { loadNumber: { contains: q, mode: "insensitive" } },
-            { origin: { contains: q, mode: "insensitive" } },
-            { destination: { contains: q, mode: "insensitive" } },
-            { customer: { companyName: { contains: q, mode: "insensitive" } } },
-          ]
-        : undefined,
-    },
-    include: {
-      customer: true,
-      driver: true,
-      equipment: true,
-      documents: true,
-    },
-    orderBy: { pickupTime: "desc" },
-  });
+  const statusFilter = filters.status as LoadStatus[] | undefined;
 
-  return NextResponse.json({ loads });
+  const where: Prisma.LoadWhereInput = {
+    status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
+    OR: search
+      ? [
+          { loadNumber: { contains: search, mode: "insensitive" } },
+          { origin: { contains: search, mode: "insensitive" } },
+          { destination: { contains: search, mode: "insensitive" } },
+          { commodity: { contains: search, mode: "insensitive" } },
+          { customer: { companyName: { contains: search, mode: "insensitive" } } },
+        ]
+      : undefined,
+  };
+
+  const orderBy = sortBy && SORT_MAP[sortBy] ? withDir(SORT_MAP[sortBy], sortDir) : { pickupTime: "desc" as const };
+
+  const [rows, total] = await Promise.all([
+    prisma.load.findMany({
+      where,
+      include: { customer: true, driver: true, equipment: true, documents: true },
+      orderBy,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.load.count({ where }),
+  ]);
+
+  return NextResponse.json({ rows, total });
 }
 
 // Generates the next sequential load number, e.g. HL-2415. Not safe against
