@@ -28,8 +28,29 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>(EMPTY);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Anchor the panel to the topbar search trigger so it opens right under it
+  // instead of floating centered in the middle of the screen. Falls back to
+  // the centered layout on narrow viewports where a right-anchored 600px
+  // panel wouldn't fit sensibly under a shrunken trigger.
+  useEffect(() => {
+    if (!open) return;
+    function computeAnchor() {
+      const el = document.querySelector<HTMLElement>(".topbar-search-trigger");
+      if (el && window.innerWidth > 640) {
+        const r = el.getBoundingClientRect();
+        setAnchor({ top: r.bottom + 10, right: Math.max(12, window.innerWidth - r.right) });
+      } else {
+        setAnchor(null);
+      }
+    }
+    computeAnchor();
+    window.addEventListener("resize", computeAnchor);
+    return () => window.removeEventListener("resize", computeAnchor);
+  }, [open]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -88,7 +109,14 @@ export function CommandPalette() {
 
   return (
     <div className="overlay center cmdk-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-      <div className="cmdk" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="cmdk"
+        style={anchor ? { position: "fixed", top: anchor.top, right: anchor.right, margin: 0 } : undefined}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="cmdk-input-row">
           <span className="cmdk-input-icon"><Icon name="search" size={16} /></span>
           <input

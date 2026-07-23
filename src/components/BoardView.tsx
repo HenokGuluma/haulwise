@@ -31,6 +31,28 @@ const STATUS_ICONS: Record<LoadStatus, string> = {
 };
 const REQUIRES_ASSIGNMENT = new Set<LoadStatus>(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 
+// Fixed pipeline layout: Draft → Assigned → Dispatched along the top row,
+// then the flow drops down on the right and reverses — In Transit →
+// Delivered → Billed — along the bottom row (a "boustrophedon" chain).
+// Grid columns 2 & 4 are narrow connector tracks between the three content
+// columns (1, 3, 5); grid row 2 is a narrow connector track between the
+// two content rows (1, 3).
+const COL_POSITION: Record<LoadStatus, { gridColumn: number; gridRow: number }> = {
+  DRAFT: { gridColumn: 1, gridRow: 1 },
+  ASSIGNED: { gridColumn: 3, gridRow: 1 },
+  DISPATCHED: { gridColumn: 5, gridRow: 1 },
+  IN_TRANSIT: { gridColumn: 5, gridRow: 3 },
+  DELIVERED: { gridColumn: 3, gridRow: 3 },
+  BILLED: { gridColumn: 1, gridRow: 3 },
+};
+const CONNECTORS: { key: string; gridColumn: number; gridRow: number; dir: "h" | "v"; icon: string }[] = [
+  { key: "draft-assigned", gridColumn: 2, gridRow: 1, dir: "h", icon: "chevronRight" },
+  { key: "assigned-dispatched", gridColumn: 4, gridRow: 1, dir: "h", icon: "chevronRight" },
+  { key: "dispatched-transit", gridColumn: 5, gridRow: 2, dir: "v", icon: "chevronDown" },
+  { key: "transit-delivered", gridColumn: 4, gridRow: 3, dir: "h", icon: "chevronLeft" },
+  { key: "delivered-billed", gridColumn: 2, gridRow: 3, dir: "h", icon: "chevronLeft" },
+];
+
 type BoardFilters = { q: string; customerId: string; driverId: string; equipmentTypeCode: string };
 const EMPTY_FILTERS: BoardFilters = { q: "", customerId: "", driverId: "", equipmentTypeCode: "" };
 const PRESETS_KEY = "haulwise-board-presets";
@@ -72,6 +94,7 @@ export function BoardView({
   const [presets, setPresets] = useState<{ name: string; filters: BoardFilters }[]>([]);
   const [savingPreset, setSavingPreset] = useState(false);
   const [presetName, setPresetName] = useState("");
+  const [expandedCols, setExpandedCols] = useState<Set<LoadStatus>>(new Set());
 
   const toast = useToast();
   const router = useRouter();
@@ -98,6 +121,15 @@ export function BoardView({
     const next = presets.filter((p) => p.name !== name);
     setPresets(next);
     localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+  }
+
+  function toggleExpand(status: LoadStatus) {
+    setExpandedCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
   }
 
   async function changeStatus(load: Load, status: LoadStatus) {
@@ -211,14 +243,25 @@ export function BoardView({
             .filter((l) => l.status === status)
             .sort((a, b) => new Date(a.pickupTime).getTime() - new Date(b.pickupTime).getTime());
           const total = items.reduce((s, l) => s + l.rate, 0);
+          const pos = COL_POSITION[status];
+          const expanded = expandedCols.has(status);
           return (
-            <div key={status} className="board-col">
+            <div key={status} className={"board-col" + (expanded ? " expanded" : "")} style={{ gridColumn: pos.gridColumn, gridRow: pos.gridRow }}>
               <div className="board-col-head">
                 <span className={"board-col-icon status-" + status.replace(/_/g, "")}>
-                  <Icon name={STATUS_ICONS[status]} size={28} />
+                  <Icon name={STATUS_ICONS[status]} size={24} />
                 </span>
                 <span className="board-col-title">{STATUS_LABELS[status]}</span>
                 <span className="board-col-count">{items.length}</span>
+                <button
+                  type="button"
+                  className="board-col-expand"
+                  onClick={() => toggleExpand(status)}
+                  title={expanded ? "Collapse" : "Expand for more detail"}
+                  aria-label={expanded ? "Collapse column" : "Expand column"}
+                >
+                  <Icon name={expanded ? "chevronUp" : "chevronDown"} size={14} />
+                </button>
               </div>
               <div
                 className={"board-col-body" + (overCol === status ? " drag-over" : "")}
@@ -258,6 +301,14 @@ export function BoardView({
             </div>
           );
         })}
+
+        {CONNECTORS.map((c) => (
+          <div key={c.key} className={"board-connector " + c.dir} style={{ gridColumn: c.gridColumn, gridRow: c.gridRow }}>
+            <span className="board-connector-badge">
+              <Icon name={c.icon} size={15} />
+            </span>
+          </div>
+        ))}
       </div>
 
       {detailLoad && (

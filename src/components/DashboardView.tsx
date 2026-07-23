@@ -105,7 +105,7 @@ export function DashboardView({
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 22 }}>
         <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" />
-        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" tone="success" deltaIcon="truck" deltaText="on the road now" />
+        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" />
         <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" />
         <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="dollarSign" iconTone="amber" tone="success" highlight />
       </div>
