@@ -43,7 +43,16 @@ function KPI({
         <div className="kpi-label">{label}</div>
         <div className="kpi-value">{value}</div>
         {deltaText && (
-          <div className="kpi-delta" style={{ color: tone === "danger" ? "var(--danger)" : tone === "success" ? "var(--success)" : "var(--muted)" }}>
+          <div
+            className="kpi-delta"
+            style={
+              tone === "danger"
+                ? { color: "var(--danger)", background: "var(--danger-bg)" }
+                : tone === "success"
+                ? { color: "var(--success)", background: "var(--success-bg)" }
+                : undefined
+            }
+          >
             {deltaIcon && <Icon name={deltaIcon} size={12} />}
             {deltaText}
           </div>
@@ -118,19 +127,19 @@ export function DashboardView({
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {unassigned.map((l) => (
-                <div key={l.id} className="banner banner-danger" style={{ cursor: "pointer" }} onClick={() => setDetailLoadId(l.id)}>
+                <div key={l.id} className="banner banner-danger banner-clickable" onClick={() => setDetailLoadId(l.id)}>
                   <Icon name="alertTriangle" />
                   <div><strong>{l.loadNumber}</strong> is Assigned but missing a driver or equipment.</div>
                 </div>
               ))}
               {expiringDrivers.map(({ d, days }) => (
-                <div key={d.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push(`/roster?tab=drivers&driverId=${d.id}`)}>
+                <div key={d.id} className="banner banner-warning banner-clickable" onClick={() => router.push(`/roster?tab=drivers&driverId=${d.id}`)}>
                   <Icon name="alertTriangle" />
                   <div><strong>{d.firstName} {d.lastName}</strong>&apos;s license {days < 0 ? "expired" : `expires in ${days} day${days === 1 ? "" : "s"}`}.</div>
                 </div>
               ))}
               {maintenanceEquip.map(({ e, days }) => (
-                <div key={e.id} className="banner banner-warning" style={{ cursor: "pointer" }} onClick={() => router.push(`/roster?tab=equipment&equipmentId=${e.id}`)}>
+                <div key={e.id} className="banner banner-warning banner-clickable" onClick={() => router.push(`/roster?tab=equipment&equipmentId=${e.id}`)}>
                   <Icon name="wrench" />
                   <div><strong>{e.unitNumber}</strong> maintenance {days < 0 ? "is overdue" : `due in ${days} day${days === 1 ? "" : "s"}`}.</div>
                 </div>
@@ -146,13 +155,16 @@ export function DashboardView({
             </span>
             Today
           </div>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 6 }}>Pickups ({pickupsToday.length})</div>
+          <div style={{ marginBottom: 16 }}>
+            <div className="dash-subhead">
+              <Icon name="mapPin" size={13} />
+              Pickups <span className="count">({pickupsToday.length})</span>
+            </div>
             {pickupsToday.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>No pickups scheduled today.</div>
+              <div className="dash-empty">No pickups scheduled today.</div>
             ) : (
               pickupsToday.map((l) => (
-                <div key={l.id} onClick={() => setDetailLoadId(l.id)} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid var(--line-soft)", cursor: "pointer" }}>
+                <div key={l.id} className="dash-row" onClick={() => setDetailLoadId(l.id)}>
                   <span><span className="mono" style={{ color: "var(--muted)" }}>{l.loadNumber}</span> · {l.origin}</span>
                   <StatusPill status={l.status} label={statusLabel(l.status)} />
                 </div>
@@ -160,12 +172,15 @@ export function DashboardView({
             )}
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 6 }}>Deliveries ({deliveriesToday.length})</div>
+            <div className="dash-subhead">
+              <Icon name="checkCircle" size={13} />
+              Deliveries <span className="count">({deliveriesToday.length})</span>
+            </div>
             {deliveriesToday.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>No deliveries scheduled today.</div>
+              <div className="dash-empty">No deliveries scheduled today.</div>
             ) : (
               deliveriesToday.map((l) => (
-                <div key={l.id} onClick={() => setDetailLoadId(l.id)} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid var(--line-soft)", cursor: "pointer" }}>
+                <div key={l.id} className="dash-row" onClick={() => setDetailLoadId(l.id)}>
                   <span><span className="mono" style={{ color: "var(--muted)" }}>{l.loadNumber}</span> · {l.destination}</span>
                   <StatusPill status={l.status} label={statusLabel(l.status)} />
                 </div>

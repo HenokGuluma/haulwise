@@ -215,7 +215,7 @@ export function BoardView({
             <div key={status} className="board-col">
               <div className="board-col-head">
                 <span className={"board-col-icon status-" + status.replace(/_/g, "")}>
-                  <Icon name={STATUS_ICONS[status]} size={12} />
+                  <Icon name={STATUS_ICONS[status]} size={28} />
                 </span>
                 <span className="board-col-title">{STATUS_LABELS[status]}</span>
                 <span className="board-col-count">{items.length}</span>
