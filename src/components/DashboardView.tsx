@@ -109,7 +109,7 @@ export function DashboardView({
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 22 }}>
+      <div className="kpi-grid">
         <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" />
         <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" />
         <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" />
@@ -158,7 +158,7 @@ export function DashboardView({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, alignItems: "start", marginTop: 16 }}>
+      <div className="panels-grid-uneven" style={{ marginTop: 16 }}>
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
             <div className="section-title" style={{ marginBottom: 0 }}>

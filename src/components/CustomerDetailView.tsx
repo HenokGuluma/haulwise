@@ -210,7 +210,7 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
       </div>
 
       {tab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="panels-grid-even">
           <div className="card" style={{ padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
               <div className="section-title" style={{ marginBottom: 0 }}>Contacts</div>

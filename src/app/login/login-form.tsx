@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export function LoginForm() {
@@ -10,6 +10,16 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Autofocus is a nice desktop shortcut but pops the keyboard immediately
+  // on mobile before the user has even seen the page — only do it for
+  // pointer-based (non-touch) devices.
+  useEffect(() => {
+    if (window.matchMedia("(pointer: fine)").matches) {
+      emailRef.current?.focus();
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,10 +51,12 @@ export function LoginForm() {
       <div className="field">
         <label>Email</label>
         <input
+          ref={emailRef}
           className="input"
           type="email"
+          autoComplete="email"
+          inputMode="email"
           required
-          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -54,6 +66,7 @@ export function LoginForm() {
         <input
           className="input"
           type="password"
+          autoComplete="current-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}

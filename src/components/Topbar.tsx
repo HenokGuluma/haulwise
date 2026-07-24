@@ -22,7 +22,7 @@ export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMe
       <button type="button" className="topbar-menu-btn" onClick={onMenuClick} aria-label="Open menu" title="Open menu">
         <Icon name="list" size={18} />
       </button>
-      <div>
+      <div className="topbar-heading">
         <div className="topbar-title">{meta.title}</div>
         <div className="topbar-sub">{meta.sub}</div>
       </div>
@@ -32,12 +32,15 @@ export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMe
           className="topbar-search-trigger"
           onClick={() => window.dispatchEvent(new Event("haulwise:open-command-palette"))}
           title="Search everything (Cmd/Ctrl+K)"
+          aria-label="Search everything"
         >
           <Icon name="search" size={14} />
-          <span>Search loads, drivers, customers…</span>
+          <span className="topbar-search-label">Search loads, drivers, customers…</span>
           <kbd className="cmdk-esc">⌘K</kbd>
         </button>
-        <Button variant="primary" icon="plus" onClick={onNewLoad}>New Load</Button>
+        <Button variant="primary" icon="plus" onClick={onNewLoad} title="New Load" aria-label="New Load">
+          <span className="btn-label-collapsible">New Load</span>
+        </Button>
       </div>
     </div>
   );

@@ -126,6 +126,21 @@ html, body {
   -webkit-font-smoothing: antialiased;
   margin: 0;
   transition: background 0.15s ease, color 0.15s ease;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Safety net: nothing in this app intentionally scrolls sideways, so a
+   stray fixed-width element on a narrow screen shouldn't be able to open
+   up horizontal scroll on the page. Scoped to html alone (not "html,
+   body") — setting overflow-x on both without an explicit overflow-y
+   makes overflow-y compute to "auto" per the CSS overflow spec, which
+   turns body into its own independent scroll container and breaks
+   position: sticky headers tracking the real page scroll. */
+html { overflow-x: hidden; }
+
+button, a, .nav-item, .icon-btn, .btn, .tab, .dash-row, .banner-clickable {
+  touch-action: manipulation;
 }
 
 #root { min-height: 100vh; }
@@ -270,8 +285,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 30;
 }
-.topbar-title { font-size: 16.5px; font-weight: 700; }
-.topbar-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.topbar-heading { min-width: 0; flex-shrink: 1; }
+.topbar-title { font-size: 16.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-sub { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .search-box {
   display: flex; align-items: center; gap: 10px;
@@ -366,6 +382,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .dash-empty { font-size: 12.5px; color: var(--muted); padding: 4px 0; }
 .banner-clickable { transition: transform 0.12s ease, box-shadow 0.12s ease; }
 .banner-clickable:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+/* ---------------- Reusable responsive grids ----------------
+   Shared by Dashboard, Documents, and Customer detail — collapse to a
+   single column on tablet/phone widths instead of squeezing text. */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.panels-grid-uneven { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
+.panels-grid-even { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.stat-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 
 /* ---------------- Dashboard analytics charts ---------------- */
 .analytics-grid {
@@ -833,4 +857,39 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .field-row { grid-template-columns: 1fr; }
   .dt-search { width: 100%; }
   .cmdk { width: 94vw; }
+
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .panels-grid-uneven, .panels-grid-even { grid-template-columns: 1fr; }
+  .stat-grid-3 { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Prefer a horizontally-scrollable table over squeezing every column
+     until cells wrap to 2-3 lines each. nowrap forces table-layout:auto
+     to size every column to its natural single-line content width (some
+     tables run 8-9 columns, so a flat min-width guess isn't enough); the
+     table then grows past its container and .dt-scroll (overflow:auto)
+     picks up the horizontal scroll. */
+  .dt-scroll .data-table th, .dt-scroll .data-table td { white-space: nowrap; }
+  .dt-scroll .data-table { min-width: 100%; }
+
+  /* iOS Safari zooms the whole page in when a focused input's computed
+     font-size is under 16px — bump every text control past that floor
+     only in touch/mobile layout, so desktop keeps its tighter density. */
+  .input, select.input, textarea.input, .search-box input {
+    font-size: 16px;
+  }
+
+  .topbar { padding: 0 14px; gap: 8px; }
+}
+
+@media (max-width: 560px) {
+  .topbar-sub { display: none; }
+  .topbar-search-trigger { width: auto; padding: 9px; }
+  .topbar-search-label, .topbar-search-trigger .cmdk-esc { display: none; }
+  .btn-label-collapsible { display: none; }
+  .icon-btn { width: 36px; height: 36px; }
+
+  /* A wrapped tab bar looks broken; scroll sideways instead, same pattern
+     as the data table. */
+  .tabbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { flex-shrink: 0; }
 }

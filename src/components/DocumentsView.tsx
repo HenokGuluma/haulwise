@@ -49,7 +49,7 @@ function AgingView() {
   if (!buckets) return <div style={{ fontSize: 13, color: "var(--muted)" }}>Loading…</div>;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+    <div className="stat-grid-3">
       <AgingBucketCard title="0–15 days" rows={buckets["0-15"]} tone="success" />
       <AgingBucketCard title="15–30 days" rows={buckets["15-30"]} tone="warning" />
       <AgingBucketCard title="30+ days" rows={buckets["30+"]} tone="danger" />
@@ -160,7 +160,7 @@ export function DocumentsView({
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 18 }}>
+      <div className="stat-grid-3" style={{ marginBottom: 18 }}>
         <div className="kpi-card">
           <div className="kpi-label">Total Payable</div>
           <div className="kpi-value">{fmtMoney(totals.totalPay)}</div>
@@ -182,7 +182,7 @@ export function DocumentsView({
       </div>
 
       {tab === "ledger" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: 12, color: "var(--muted)" }}>Delivery date range:</span>
           <input type="date" className="input" style={{ width: 150 }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           <span style={{ color: "var(--muted)" }}>–</span>

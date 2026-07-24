@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -29,6 +29,14 @@ export const metadata: Metadata = {
     icon:
       "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23131B2E'/%3E%3Cpath d='M20 62h8V40h20l10 12v10h8' stroke='%23F5A623' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='36' cy='66' r='6' fill='%23F5A623'/%3E%3Ccircle cx='62' cy='66' r='6' fill='%23F5A623'/%3E%3C/svg%3E",
   },
+};
+
+// Without this, mobile browsers fall back to a ~980px virtual viewport and
+// scale the desktop layout down instead of reflowing it, which makes every
+// max-width media query in globals.css unreliable on real phones.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Runs before hydration so the correct theme is applied on first paint —
