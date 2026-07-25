@@ -385,19 +385,23 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* ---------------- Reusable responsive grids ----------------
    Shared by Dashboard, Documents, and Customer detail — collapse to a
-   single column on tablet/phone widths instead of squeezing text. */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
-.panels-grid-uneven { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
-.panels-grid-even { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.stat-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+   single column on tablet/phone widths instead of squeezing text.
+   minmax(0, 1fr), not bare 1fr/1.1fr/1.4fr — a bare fr track has an
+   implicit min-width equal to its content's min-content size, so a
+   card with a badge/long value refuses to shrink and pushes the whole
+   page into horizontal overflow instead of just fitting. */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+.panels-grid-uneven { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panels-grid-even { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.stat-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
 /* ---------------- Dashboard analytics charts ---------------- */
 .analytics-grid {
-  display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-top: 16px;
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; margin-top: 16px;
 }
-.analytics-grid-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.analytics-grid-row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 @media (max-width: 980px) {
-  .analytics-grid, .analytics-grid-row2 { grid-template-columns: 1fr; }
+  .analytics-grid, .analytics-grid-row2 { grid-template-columns: minmax(0, 1fr); }
 }
 .chart-card { padding: 20px; }
 .chart-empty {
@@ -473,7 +477,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    rather than computed. */
 .board-scroll {
   display: grid;
-  grid-template-columns: 1fr 40px 1fr 40px 1fr;
+  /* minmax(0, 1fr), not bare 1fr — a bare 1fr track has an implicit
+     min-width equal to its content's min-content size, so a column with
+     a wide load card refuses to shrink and pushes the whole page into
+     horizontal overflow on narrower desktop windows instead of just
+     fitting. */
+  grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr) 40px minmax(0, 1fr);
   grid-template-rows: auto 40px auto;
   gap: 0 4px;
 }
@@ -487,7 +496,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   padding: 14px 14px 12px 14px; display: flex; align-items: center; gap: 10px;
   position: sticky; top: 0;
 }
-.board-col-title { font-family: var(--font-heading), var(--font-inter), sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.board-col-title {
+  font-family: var(--font-heading), var(--font-inter), sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
+  /* Flex items default to min-width:auto (floor = content's own width),
+     which refuses to shrink and pushes the count pill/expand button past
+     the column edge once the column itself gets narrow. flex+min-width:0
+     lets the title truncate instead. */
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .board-col-icon {
   width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -519,7 +535,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 900px) {
-  .board-scroll { grid-template-columns: 1fr; grid-template-rows: none; gap: 14px; }
+  .board-scroll { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 14px; }
   .board-scroll .board-col { grid-column: 1 !important; grid-row: auto !important; }
   .board-scroll .board-connector { display: none; }
 }
@@ -719,7 +735,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .input.err { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-bg); }
 .err-text { font-size: 11px; color: var(--danger); margin-top: 4px; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 /* ---------------- Alerts / toasts ---------------- */
 .toast-stack { position: fixed; top: 18px; right: 18px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
@@ -858,9 +874,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .dt-search { width: 100%; }
   .cmdk { width: 94vw; }
 
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  .panels-grid-uneven, .panels-grid-even { grid-template-columns: 1fr; }
-  .stat-grid-3 { grid-template-columns: 1fr; gap: 10px; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .panels-grid-uneven, .panels-grid-even { grid-template-columns: minmax(0, 1fr); }
+  .stat-grid-3 { grid-template-columns: minmax(0, 1fr); gap: 10px; }
 
   /* Prefer a horizontally-scrollable table over squeezing every column
      until cells wrap to 2-3 lines each. nowrap forces table-layout:auto
