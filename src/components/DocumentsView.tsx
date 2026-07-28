@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon, Button, useToast } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
-import { fmtMoney, fmtBytes, fmtDate, fmtDateTime, payoutLabel } from "@/lib/format";
+import { fmtMoney, fitFontSize, fmtBytes, fmtDate, fmtDateTime, payoutLabel } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import type { Load, SessionUser, DocumentType, PayoutStatus } from "@/types";
 
@@ -101,7 +101,7 @@ function DocumentLibrary() {
       emptyIcon="fileText"
       emptyTitle="No documents uploaded yet"
       emptyHint="Documents uploaded to any load will show up here."
-      csvFilename="haulwise-document-library.csv"
+      csvFilename="edget-document-library.csv"
       initialSort={{ by: "uploadedAt", dir: "desc" }}
       columns={[
         { key: "loadNumber", label: "Load", render: (d) => <span className="mono" style={{ fontWeight: 600 }}>{d.load.loadNumber}</span>, exportValue: (d) => d.load.loadNumber },
@@ -163,11 +163,16 @@ export function DocumentsView({
       <div className="stat-grid-3" style={{ marginBottom: 18 }}>
         <div className="kpi-card">
           <div className="kpi-label">Total Payable</div>
-          <div className="kpi-value">{fmtMoney(totals.totalPay)}</div>
+          <div className="kpi-value" style={{ fontSize: fitFontSize(fmtMoney(totals.totalPay), 32) }}>{fmtMoney(totals.totalPay)}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Pending Payout</div>
-          <div className="kpi-value" style={{ color: totals.totalPending > 0 ? "var(--danger)" : undefined }}>{fmtMoney(totals.totalPending)}</div>
+          <div
+            className="kpi-value"
+            style={{ fontSize: fitFontSize(fmtMoney(totals.totalPending), 32), color: totals.totalPending > 0 ? "var(--danger)" : undefined }}
+          >
+            {fmtMoney(totals.totalPending)}
+          </div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Loads With Documents</div>
@@ -209,7 +214,7 @@ export function DocumentsView({
         searchPlaceholder="Search loads, customers…"
         emptyIcon="fileText"
         emptyTitle="No loads to bill"
-        csvFilename="haulwise-billing.csv"
+        csvFilename="edget-billing.csv"
         initialSort={{ by: "pickupTime", dir: "desc" }}
         columns={[
           {

@@ -4,8 +4,34 @@ export function fmtBytes(n: number): string {
   return (n / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+// Single source of truth for the USD->ETB scale used when the platform
+// switched currencies — applied once to convert every existing dollar
+// figure (seed data, thresholds) to a realistic birr-scale amount, not a
+// live/fluctuating FX rate.
+export const USD_TO_ETB_RATE = 145;
+
 export function fmtMoney(n: number): string {
-  return "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "ETB " + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+// Abbreviated form for tight spaces (chart axis ticks) — full precision
+// still shows in tooltips via fmtMoney. "ETB 33.8M" instead of
+// "ETB 33,800,000" keeps axis width sane at ETB's larger figure scale.
+export function fmtMoneyCompact(n: number): string {
+  return "ETB " + new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Number(n || 0));
+}
+
+// ETB amounts run noticeably longer than the USD figures the UI was
+// originally tuned for (e.g. "ETB 1,912,345" vs "$14,720") — spots with a
+// large fixed font-size (KPI cards, load card rates) need to shrink a step
+// or two once the formatted string gets long, rather than overflowing or
+// wrapping mid-number.
+export function fitFontSize(text: string, base: number): number {
+  const len = text.length;
+  if (len <= 9) return base;
+  if (len <= 12) return Math.round(base * 0.86);
+  if (len <= 15) return Math.round(base * 0.74);
+  return Math.round(base * 0.64);
 }
 
 export function fmtDate(d: Date | string, opts?: Intl.DateTimeFormatOptions): string {

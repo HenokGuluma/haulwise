@@ -1,7 +1,7 @@
 "use client";
 
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
-import { fmtMoney } from "@/lib/format";
+import { fmtMoney, fmtMoneyCompact } from "@/lib/format";
 import { useChartColors } from "@/lib/useChartColors";
 import type { TopCustomerPoint } from "@/types";
 
@@ -20,7 +20,7 @@ export function TopCustomersChart({ data }: { data: TopCustomerPoint[] }) {
     <ResponsiveContainer width="100%" height={Math.max(220, rows.length * 34)}>
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
         <CartesianGrid stroke={c["--line-soft"]} horizontal={false} />
-        <XAxis type="number" tick={{ fontSize: 11, fill: c["--muted"] }} tickFormatter={(v) => fmtMoney(v).replace(".00", "")} tickLine={false} axisLine={{ stroke: c["--line"] }} />
+        <XAxis type="number" tick={{ fontSize: 11, fill: c["--muted"] }} tickFormatter={(v) => fmtMoneyCompact(v)} tickLine={false} axisLine={{ stroke: c["--line"] }} />
         <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12, fill: c["--ink-soft"] }} tickLine={false} axisLine={false} />
         <Tooltip
           formatter={(value) => [fmtMoney(Number(value ?? 0)), "Revenue"]}

@@ -1,4 +1,4 @@
-# Haulwise — Freight Dispatching Platform
+# Edget — Freight Dispatching Platform
 
 A real, full-stack implementation of the MVP: Next.js 14 (App Router) frontend,
 REST API route handlers, PostgreSQL via Prisma, and server-side session auth —
@@ -50,8 +50,8 @@ npm run dev
 
 Open http://localhost:3000. Log in with:
 
-- **Admin:** `admin@haulwise.local` / `admin123`
-- **Dispatcher:** `dispatcher@haulwise.local` / `dispatch123`
+- **Admin:** `admin@edget.local` / `admin123`
+- **Dispatcher:** `dispatcher@edget.local` / `dispatch123`
 
 ### Other useful commands
 

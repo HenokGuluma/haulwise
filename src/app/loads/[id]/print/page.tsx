@@ -46,7 +46,7 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
       <AutoPrint />
 
-      <h1>Haulwise — Load Summary</h1>
+      <h1>Edget — Load Summary</h1>
       <div className="sub">{load.loadNumber} · {statusLabel(load.status)} · Generated {fmtDateTime(new Date().toISOString())}</div>
 
       <div className="section">Route</div>

@@ -22,6 +22,7 @@ import {
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
+import { USD_TO_ETB_RATE } from "../src/lib/format";
 
 const prisma = new PrismaClient();
 
@@ -201,7 +202,7 @@ function daysFromNow(days: number, hour = 8, minute = 0): Date {
 }
 
 async function main() {
-  console.log("Seeding Haulwise demo dataset (3 years of mock operations)...");
+  console.log("Seeding Edget demo dataset (3 years of mock operations)...");
   const startedAt = Date.now();
 
   // --- Demo user -----------------------------------------------------------
@@ -369,7 +370,7 @@ async function main() {
         equipmentId: e.id,
         date: daysFromNow(randInt(30, 1000)),
         description: pick(MAINTENANCE_DESCRIPTIONS),
-        cost: randInt(120, 2400),
+        cost: randInt(120, 2400) * USD_TO_ETB_RATE,
         performedBy: pick(["Fleet Services Inc.", "QuickLube Truck Center", "In-house shop", "Roadside Rescue Diesel"]),
       });
     }
@@ -417,7 +418,7 @@ async function main() {
     const deliveryTime = new Date(opts.pickupTime.getTime() + transitHours * 3_600_000);
     const equipmentTypeCode = pickEquipmentTypeCode();
     const baseRate = laneKind === "long" ? randInt(2200, 4600) : laneKind === "medium" ? randInt(1200, 2800) : randInt(650, 1700);
-    const rate = Math.round(baseRate * opts.rateMultiplier);
+    const rate = Math.round(baseRate * opts.rateMultiplier * USD_TO_ETB_RATE);
     const weight = randInt(8000, 45000);
     const driver = opts.assign ? pick(drivers) : null;
     const equip = opts.assign ? pickEquipmentForType(equipmentTypeCode) : null;
@@ -576,7 +577,7 @@ async function main() {
   // driver (STORAGE_DRIVER env var), matching how the app itself uploads. ---
   const storage = getStorageDriver();
   function fakePdf(label: string): Buffer {
-    const text = `Haulwise demo document — ${label}`;
+    const text = `Edget demo document — ${label}`;
     return Buffer.from(
       `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 120]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj\n4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n5 0 obj<</Length ${text.length + 24}>>stream\nBT /F1 12 Tf 12 60 Td (${text}) Tj ET\nendstream\nendobj\ntrailer<</Size 6/Root 1 0 R>>\n%%EOF`,
       "latin1"

@@ -1,4 +1,4 @@
-// Haulwise — Prisma schema
+// Edget — Prisma schema
 // PostgreSQL. Run `npx prisma migrate dev` after setting DATABASE_URL to create
 // these tables in your database.
 

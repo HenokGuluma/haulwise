@@ -46,7 +46,7 @@ export function Sidebar({
           <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
         </svg>
         <div>
-          <div className="brand-name">Haulwise</div>
+          <div className="brand-name">Edget</div>
           <div className="brand-sub">Dispatch</div>
         </div>
         <button className="sidebar-close" onClick={onCloseMobile} aria-label="Close menu" title="Close menu">

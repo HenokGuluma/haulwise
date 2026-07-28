@@ -27,7 +27,7 @@ const STATUS_ICONS: Record<LoadStatus, string> = {
   DISPATCHED: "route",
   IN_TRANSIT: "truck",
   DELIVERED: "checkCircle",
-  BILLED: "dollarSign",
+  BILLED: "money",
 };
 const REQUIRES_ASSIGNMENT = new Set<LoadStatus>(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 

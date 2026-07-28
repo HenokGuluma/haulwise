@@ -162,7 +162,7 @@ export function RosterView({
           searchPlaceholder="Search drivers…"
           emptyIcon="users"
           emptyTitle="No drivers match"
-          csvFilename="haulwise-drivers.csv"
+          csvFilename="edget-drivers.csv"
           initialSort={{ by: "name", dir: "asc" }}
           columns={[
             {
@@ -235,7 +235,7 @@ export function RosterView({
           searchPlaceholder="Search equipment…"
           emptyIcon="truck"
           emptyTitle="No equipment matches"
-          csvFilename="haulwise-equipment.csv"
+          csvFilename="edget-equipment.csv"
           initialSort={{ by: "unitNumber", dir: "asc" }}
           columns={[
             {
@@ -312,7 +312,7 @@ export function RosterView({
           searchPlaceholder="Search types…"
           emptyIcon="layers"
           emptyTitle="No equipment types match"
-          csvFilename="haulwise-equipment-types.csv"
+          csvFilename="edget-equipment-types.csv"
           columns={[
             {
               key: "code",

@@ -15,7 +15,7 @@ const VIEW_META: Record<string, { title: string; sub: string }> = {
 
 export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMenuClick: () => void }) {
   const pathname = usePathname() || "/dashboard";
-  const meta = VIEW_META[pathname] ?? { title: "Haulwise", sub: "" };
+  const meta = VIEW_META[pathname] ?? { title: "Edget", sub: "" };
 
   return (
     <div className="topbar">

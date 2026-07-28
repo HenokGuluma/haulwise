@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
 import { api, ApiRequestError } from "@/lib/api-client";
+import { fmtMoney } from "@/lib/format";
 import type { Load } from "@/types";
 
 function today(): string {
@@ -48,11 +49,11 @@ export function PaymentLogModal({
 
   return (
     <ModalBox onClose={onClose} width={400}>
-      <PanelHead title={"Log Payment — " + load.loadNumber} sub={`${remaining > 0 ? "$" + remaining.toLocaleString() + " remaining" : "Fully paid"}`} onClose={onClose} />
+      <PanelHead title={"Log Payment — " + load.loadNumber} sub={remaining > 0 ? fmtMoney(remaining) + " remaining" : "Fully paid"} onClose={onClose} />
       <div className="panel-body">
         {error && <div className="banner banner-danger" style={{ marginBottom: 14 }}>{error}</div>}
         <div className="field-row">
-          <Field label="Amount (USD)"><input type="number" min="0" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+          <Field label="Amount (ETB)"><input type="number" min="0" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
           <Field label="Date paid"><input type="date" className="input" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} /></Field>
         </div>
         <Field label="Method" hint="e.g. ACH, Check, Wire"><input className="input" value={method} onChange={(e) => setMethod(e.target.value)} /></Field>

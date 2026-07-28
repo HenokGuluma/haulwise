@@ -1,12 +1,13 @@
 import { PrismaClient, LoadStatus, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
+import { USD_TO_ETB_RATE } from "../src/lib/format";
 
 const prisma = new PrismaClient();
 
 /** A tiny, real (if minimal) single-page PDF — enough for a browser to open and preview. */
 function fakePdf(label: string): Buffer {
-  const text = `Haulwise seed document — ${label}`;
+  const text = `Edget seed document — ${label}`;
   return Buffer.from(
     `%PDF-1.4
 1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
@@ -31,29 +32,29 @@ function daysFromNow(n: number, hour = 8): Date {
 }
 
 async function main() {
-  console.log("Seeding Haulwise database...");
+  console.log("Seeding Edget database...");
 
   // --- Users -----------------------------------------------------------
   const adminPassword = await bcrypt.hash("admin123", 10);
   const dispatcherPassword = await bcrypt.hash("dispatch123", 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@haulwise.local" },
+    where: { email: "admin@edget.local" },
     update: {},
     create: {
       name: "Alex Morgan",
-      email: "admin@haulwise.local",
+      email: "admin@edget.local",
       passwordHash: adminPassword,
       role: Role.ADMIN,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "dispatcher@haulwise.local" },
+    where: { email: "dispatcher@edget.local" },
     update: {},
     create: {
       name: "Jamie Chen",
-      email: "dispatcher@haulwise.local",
+      email: "dispatcher@edget.local",
       passwordHash: dispatcherPassword,
       role: Role.DISPATCHER,
     },
@@ -151,7 +152,7 @@ async function main() {
     const p = plan[i];
     const [origin, destination] = cities[i % cities.length];
     const customer = customers[i % customers.length];
-    const rate = 1450 + ((i * 137) % 1800);
+    const rate = (1450 + ((i * 137) % 1800)) * USD_TO_ETB_RATE;
     const weight = 12000 + ((i * 900) % 26000);
     const commodity = commodities[i % commodities.length];
     const equipmentTypeCode = equipTypes[i % equipTypes.length];
@@ -216,8 +217,8 @@ async function main() {
   });
 
   console.log("Seed complete.");
-  console.log("Login with: admin@haulwise.local / admin123  (Admin)");
-  console.log("        or: dispatcher@haulwise.local / dispatch123  (Dispatcher)");
+  console.log("Login with: admin@edget.local / admin123  (Admin)");
+  console.log("        or: dispatcher@edget.local / dispatch123  (Dispatcher)");
 }
 
 main()

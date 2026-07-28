@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, StatusPill } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
-import { fmtMoney, daysUntil, statusLabel } from "@/lib/format";
+import { fmtMoney, fitFontSize, daysUntil, statusLabel } from "@/lib/format";
 import { useAnalytics } from "@/lib/useAnalytics";
 import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
 import { StatusBreakdownChart } from "@/components/charts/StatusBreakdownChart";
@@ -46,7 +46,7 @@ function KPI({
       </span>
       <div className="kpi-body">
         <div className="kpi-label">{label}</div>
-        <div className="kpi-value">{value}</div>
+        <div className="kpi-value" style={typeof value === "string" ? { fontSize: fitFontSize(value, 32) } : undefined}>{value}</div>
         {deltaText && (
           <div
             className="kpi-delta"
@@ -113,7 +113,7 @@ export function DashboardView({
         <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" />
         <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" />
         <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" />
-        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="dollarSign" iconTone="amber" tone="success" highlight />
+        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight />
       </div>
 
       <div className="analytics-grid">

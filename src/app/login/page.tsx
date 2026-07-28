@@ -21,7 +21,7 @@ export default function LoginPage() {
               <circle cx="36" cy="66" r="6" style={{ fill: "var(--navy)" }} />
               <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
             </svg>
-            <span className="auth-brand-name">Haulwise</span>
+            <span className="auth-brand-name">Edget</span>
           </div>
 
           <h1 className="hero-title auth-hero-title">
@@ -67,8 +67,8 @@ export default function LoginPage() {
 
           <div className="auth-demo-hint">
             <div className="auth-demo-hint-label">Demo accounts (seeded locally)</div>
-            <div><span className="mono">admin@haulwise.local</span> / <span className="mono">admin123</span> — Admin</div>
-            <div><span className="mono">dispatcher@haulwise.local</span> / <span className="mono">dispatch123</span> — Dispatcher</div>
+            <div><span className="mono">admin@edget.local</span> / <span className="mono">admin123</span> — Admin</div>
+            <div><span className="mono">dispatcher@edget.local</span> / <span className="mono">dispatch123</span> — Dispatcher</div>
           </div>
         </div>
       </div>

@@ -79,7 +79,7 @@ export function LoadsView({
         emptyIcon="list"
         emptyTitle="No loads match"
         emptyHint="Try a different search or filter, or create a new load."
-        csvFilename="haulwise-loads.csv"
+        csvFilename="edget-loads.csv"
         initialSort={{ by: "pickupTime", dir: "desc" }}
         columns={[
           {

@@ -5,12 +5,13 @@ import { Field, ModalBox, PanelHead, Button, Banner } from "@/components/ui";
 import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { api, ApiRequestError } from "@/lib/api-client";
+import { USD_TO_ETB_RATE } from "@/lib/format";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
 
 const NEW_CUSTOMER_VALUE = "__new__";
 // Data-entry safety net, not routing logic — flags fat-finger entry errors
 // (e.g. an extra zero) for a second look, doesn't block submission outright.
-const RATE_WARN_THRESHOLD = 50_000;
+const RATE_WARN_THRESHOLD = 50_000 * USD_TO_ETB_RATE;
 const WEIGHT_WARN_THRESHOLD = 48_000; // ~ single-trailer legal max payload
 const MIN_PLAUSIBLE_TRANSIT_HOURS = 3;
 
@@ -197,7 +198,7 @@ export function LoadFormModal({
           <Field label="Weight (lbs)" error={errors.weight}>
             <input type="number" min="0" className={"input" + (errors.weight ? " err" : "")} value={form.weight} onChange={(e) => set("weight", e.target.value)} />
           </Field>
-          <Field label="Rate (USD)" error={errors.rate}>
+          <Field label="Rate (ETB)" error={errors.rate}>
             <input type="number" min="0" className={"input" + (errors.rate ? " err" : "")} value={form.rate} onChange={(e) => set("rate", e.target.value)} />
           </Field>
         </div>

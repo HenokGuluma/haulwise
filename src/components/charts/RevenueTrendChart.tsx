@@ -1,7 +1,7 @@
 "use client";
 
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { fmtMoney } from "@/lib/format";
+import { fmtMoney, fmtMoneyCompact } from "@/lib/format";
 import { useChartColors } from "@/lib/useChartColors";
 import type { MonthlyAnalyticsPoint } from "@/types";
 
@@ -33,7 +33,7 @@ export function RevenueTrendChart({ data }: { data: MonthlyAnalyticsPoint[] }) {
       <ComposedChart data={data} margin={{ top: 6, right: 8, left: -12, bottom: 0 }}>
         <CartesianGrid stroke={c["--line-soft"]} vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: c["--muted"] }} interval={tickInterval} tickLine={false} axisLine={{ stroke: c["--line"] }} />
-        <YAxis yAxisId="revenue" tick={{ fontSize: 11, fill: c["--muted"] }} tickLine={false} axisLine={false} tickFormatter={(v) => fmtMoney(v).replace(".00", "")} width={64} />
+        <YAxis yAxisId="revenue" tick={{ fontSize: 11, fill: c["--muted"] }} tickLine={false} axisLine={false} tickFormatter={(v) => fmtMoneyCompact(v)} width={72} />
         <YAxis yAxisId="loads" orientation="right" tick={{ fontSize: 11, fill: c["--muted"] }} tickLine={false} axisLine={false} width={30} />
         <Tooltip content={<ChartTooltip />} cursor={{ fill: c["--line-soft"] }} />
         <Bar yAxisId="loads" dataKey="loads" fill={c["--accent-bg"]} radius={[4, 4, 0, 0]} barSize={10} />

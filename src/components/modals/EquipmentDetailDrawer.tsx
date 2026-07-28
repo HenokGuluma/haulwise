@@ -63,7 +63,7 @@ export function EquipmentDetailDrawer({ equipment, onClose }: { equipment: Equip
           <div className="card" style={{ padding: 12, marginBottom: 14 }}>
             <div className="field-row">
               <Field label="Date"><input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} /></Field>
-              <Field label="Cost (USD)"><input type="number" min="0" className="input" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} /></Field>
+              <Field label="Cost (ETB)"><input type="number" min="0" className="input" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} /></Field>
             </div>
             <Field label="Description"><input className="input" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="e.g. Brake pad replacement" /></Field>
             <Field label="Performed by"><input className="input" value={form.performedBy} onChange={(e) => setForm((f) => ({ ...f, performedBy: e.target.value }))} /></Field>

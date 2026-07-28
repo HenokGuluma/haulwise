@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Haulwise · Dispatch",
+  title: "Edget · Dispatch",
   description: "Internal freight dispatching platform",
   icons: {
     icon:

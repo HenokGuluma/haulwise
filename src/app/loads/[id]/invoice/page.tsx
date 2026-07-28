@@ -39,7 +39,7 @@ export default async function LoadInvoicePage({ params }: { params: { id: string
 
       <div className="invoice-head">
         <div>
-          <h1>Haulwise</h1>
+          <h1>Edget</h1>
           <div style={{ fontSize: 12, color: "#6B7280" }}>Freight Dispatch</div>
         </div>
         <div className="meta">
@@ -80,7 +80,7 @@ export default async function LoadInvoicePage({ params }: { params: { id: string
       <div className="invoice-total">Total Due: {fmtMoney(load.rate)}</div>
 
       <div className="invoice-footer">
-        Remit payment referencing invoice #{load.loadNumber}. Questions? Contact your Haulwise dispatcher.
+        Remit payment referencing invoice #{load.loadNumber}. Questions? Contact your Edget dispatcher.
       </div>
     </div>
   );
