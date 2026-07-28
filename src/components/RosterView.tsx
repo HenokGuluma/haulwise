@@ -152,6 +152,7 @@ export function RosterView({
 
       {tab === "drivers" ? (
         <DataTable<Driver>
+          key="drivers"
           tableId="roster-drivers"
           fetchPage={fetchDrivers}
           reloadKey={driverReload}
@@ -224,6 +225,7 @@ export function RosterView({
         />
       ) : tab === "equipment" ? (
         <DataTable<Equipment>
+          key="equipment"
           tableId="roster-equipment"
           fetchPage={fetchEquipment}
           reloadKey={equipmentReload}
@@ -300,6 +302,7 @@ export function RosterView({
         />
       ) : (
         <DataTable<EquipmentTypeListRow>
+          key="types"
           tableId="roster-equipment-types"
           fetchPage={fetchTypes}
           reloadKey={typeReload}
