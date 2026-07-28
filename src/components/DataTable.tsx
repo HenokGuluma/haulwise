@@ -70,6 +70,7 @@ export function DataTable<T>({
   searchPlaceholder = "Search…",
   pageSizeOptions = [25, 50, 100],
   initialSort,
+  initialFilters,
   toolbarExtra,
   csvFilename = "export.csv",
   reloadKey,
@@ -86,6 +87,8 @@ export function DataTable<T>({
   searchPlaceholder?: string;
   pageSizeOptions?: number[];
   initialSort?: { by: string; dir: SortDir };
+  /** Seeds the column filter state, e.g. a status filter from a dashboard deep link. */
+  initialFilters?: Record<string, string[]>;
   toolbarExtra?: React.ReactNode;
   csvFilename?: string;
   reloadKey?: number | string;
@@ -99,7 +102,7 @@ export function DataTable<T>({
   const [sortDir, setSortDir] = useState<SortDir>(initialSort?.dir ?? "asc");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [filters, setFilters] = useState<Record<string, string[]>>(initialFilters ?? {});
   const [density, setDensity] = useState<Density>(prefs.density ?? "comfortable");
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(
     new Set(prefs.hiddenColumns ?? columns.filter((c) => c.defaultHidden).map((c) => c.key))

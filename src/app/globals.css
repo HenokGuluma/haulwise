@@ -352,6 +352,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--scrollbar-thumb-hover); }
 .kpi-card.highlight { background: var(--amber-bg); border-color: var(--amber); }
 .kpi-card.highlight .kpi-value { color: var(--amber-ink); }
+/* .kpi-card is rendered as a Link when clickable — undo anchor defaults and
+   add a clear hover/focus affordance so it still reads as a card, not text. */
+.kpi-card-link { text-decoration: none; color: inherit; cursor: pointer; }
+.kpi-card-link:hover { border-color: var(--accent); }
+.kpi-card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .kpi-icon-badge {
   width: 52px; height: 52px; border-radius: 15px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -465,6 +470,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   color: var(--amber); transition: left 0.4s ease;
 }
 .route-line .truck svg { width: 14px; height: 14px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15)); }
+
+/* ---------------- Board view toggle (Summary / Detailed) ---------------- */
+.board-view-toggle {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--surface-hover); border: 1px solid var(--line); border-radius: 10px; padding: 3px;
+}
+.board-view-toggle-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px; border: none; background: none;
+  font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.board-view-toggle-btn.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.board-view-toggle-btn:hover:not(.active) { color: var(--ink-soft); }
+
+/* Summary view — one clickable status card per pipeline stage, mirroring
+   the dashboard's KPI cards (same .kpi-card/.kpi-icon-badge/.kpi-value
+   classes) so the two "click a count, land on filtered Loads" patterns
+   read as the same feature everywhere in the app. */
+.board-summary-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+}
 
 /* ---------------- Dispatch board ----------------
    A 3-wide, 2-row "boustrophedon" pipeline: Draft → Assigned → Dispatched
@@ -877,6 +904,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
   .panels-grid-uneven, .panels-grid-even { grid-template-columns: minmax(0, 1fr); }
   .stat-grid-3 { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .board-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
   /* Prefer a horizontally-scrollable table over squeezing every column
      until cells wrap to 2-3 lines each. nowrap forces table-layout:auto

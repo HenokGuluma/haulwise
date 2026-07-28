@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Icon, StatusPill } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, fitFontSize, daysUntil, statusLabel } from "@/lib/format";
@@ -28,6 +29,7 @@ function KPI({
   deltaIcon,
   deltaText,
   highlight,
+  href,
 }: {
   label: string;
   value: string | number;
@@ -37,10 +39,12 @@ function KPI({
   deltaIcon?: string;
   deltaText?: string;
   highlight?: boolean;
+  /** Makes the whole card a link, e.g. to the Loads view pre-filtered for this metric. */
+  href?: string;
 }) {
   const c = KPI_TONES[iconTone];
-  return (
-    <div className={"kpi-card" + (highlight ? " highlight" : "")}>
+  const content = (
+    <>
       <span className="kpi-icon-badge" style={{ background: c.bg, color: c.fg }}>
         <Icon name={icon} size={28} />
       </span>
@@ -63,8 +67,17 @@ function KPI({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
+  const cls = "kpi-card" + (highlight ? " highlight" : "") + (href ? " kpi-card-link" : "");
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {content}
+      </Link>
+    );
+  }
+  return <div className={cls}>{content}</div>;
 }
 
 export function DashboardView({
@@ -92,6 +105,13 @@ export function DashboardView({
     (l) => (l.status === "DELIVERED" || l.status === "BILLED") && new Date(l.deliveryTime).getTime() >= weekAgo && new Date(l.deliveryTime).getTime() <= now
   );
   const revenueThisWeek = deliveredThisWeek.reduce((s, l) => s + l.rate, 0);
+
+  // Each KPI card links to Loads pre-filtered to exactly the set it's
+  // counting — the "This Week" cards pass the same weekAgo/now bounds used
+  // above so the destination table matches what was actually counted here.
+  const activeLoadsHref = "/loads?status=DRAFT,ASSIGNED,DISPATCHED,IN_TRANSIT";
+  const inTransitHref = "/loads?status=IN_TRANSIT";
+  const deliveredThisWeekHref = `/loads?status=DELIVERED,BILLED&deliveredFrom=${encodeURIComponent(new Date(weekAgo).toISOString())}&deliveredTo=${encodeURIComponent(new Date(now).toISOString())}`;
   const unassigned = loads.filter((l) => l.status === "ASSIGNED" && (!l.driverId || !l.equipmentId));
 
   const expiringDrivers = drivers.map((d) => ({ d, days: daysUntil(d.licenseExpiration) })).filter((x) => x.days <= 21).sort((a, b) => a.days - b.days);
@@ -110,10 +130,10 @@ export function DashboardView({
   return (
     <div>
       <div className="kpi-grid">
-        <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" />
-        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" />
-        <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" />
-        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight />
+        <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" href={activeLoadsHref} />
+        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" href={inTransitHref} />
+        <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" href={deliveredThisWeekHref} />
+        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight href={deliveredThisWeekHref} />
       </div>
 
       <div className="analytics-grid">

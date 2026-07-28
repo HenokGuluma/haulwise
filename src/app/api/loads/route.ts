@@ -42,12 +42,21 @@ export async function GET(req: NextRequest) {
   const driverIdFilter = filters.driverId;
   const equipmentIdFilter = filters.equipmentId;
 
+  // Fixed (non-column) date-range params for deep links like the dashboard's
+  // "Delivered This Week" / "Revenue This Week" cards — not a general
+  // filter_<col> since a date range doesn't fit that multi-select contract.
+  const deliveredFrom = searchParams.get("deliveredFrom");
+  const deliveredTo = searchParams.get("deliveredTo");
+
   const where: Prisma.LoadWhereInput = {
     ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
     customerId: customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined,
     driverId: driverIdFilter && driverIdFilter.length > 0 ? { in: driverIdFilter } : undefined,
     equipmentId: equipmentIdFilter && equipmentIdFilter.length > 0 ? { in: equipmentIdFilter } : undefined,
+    deliveryTime: deliveredFrom || deliveredTo
+      ? { gte: deliveredFrom ? new Date(deliveredFrom) : undefined, lte: deliveredTo ? new Date(deliveredTo) : undefined }
+      : undefined,
     OR: search
       ? [
           { loadNumber: { contains: search, mode: "insensitive" } },

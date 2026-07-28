@@ -60,7 +60,16 @@ export function uploadFile<T>(url: string, formData: FormData, onProgress?: (pct
   });
 }
 
-export async function fetchTablePage<T>(url: string, params: TablePageParams): Promise<{ rows: T[]; total: number }> {
+/**
+ * extraParams carries fixed, non-column query params that don't fit the
+ * generic filter_<col> contract (e.g. a date-range deep link from the
+ * dashboard) — merged in as-is alongside the normal paging/sort/filter set.
+ */
+export async function fetchTablePage<T>(
+  url: string,
+  params: TablePageParams,
+  extraParams?: Record<string, string>
+): Promise<{ rows: T[]; total: number }> {
   const qs = new URLSearchParams();
   qs.set("page", String(params.page));
   qs.set("pageSize", String(params.pageSize));
@@ -69,6 +78,11 @@ export async function fetchTablePage<T>(url: string, params: TablePageParams): P
   if (params.search) qs.set("search", params.search);
   for (const [key, values] of Object.entries(params.filters)) {
     if (values.length > 0) qs.set("filter_" + key, values.join(","));
+  }
+  if (extraParams) {
+    for (const [key, value] of Object.entries(extraParams)) {
+      if (value) qs.set(key, value);
+    }
   }
   return apiFetch<{ rows: T[]; total: number }>(url + "?" + qs.toString());
 }

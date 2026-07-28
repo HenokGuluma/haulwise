@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LoadCard } from "@/components/LoadCard";
 import { Icon, useToast } from "@/components/ui";
 import { AssignModal } from "@/components/modals/AssignModal";
@@ -56,6 +57,7 @@ const CONNECTORS: { key: string; gridColumn: number; gridRow: number; dir: "h" |
 type BoardFilters = { q: string; customerId: string; driverId: string; equipmentTypeCode: string };
 const EMPTY_FILTERS: BoardFilters = { q: "", customerId: "", driverId: "", equipmentTypeCode: "" };
 const PRESETS_KEY = "haulwise-board-presets";
+const VIEW_MODE_KEY = "haulwise-board-view-mode";
 
 function loadPresets(): { name: string; filters: BoardFilters }[] {
   if (typeof window === "undefined") return [];
@@ -64,6 +66,12 @@ function loadPresets(): { name: string; filters: BoardFilters }[] {
   } catch {
     return [];
   }
+}
+
+type BoardViewMode = "detailed" | "summary";
+function loadViewMode(): BoardViewMode {
+  if (typeof window === "undefined") return "detailed";
+  return localStorage.getItem(VIEW_MODE_KEY) === "summary" ? "summary" : "detailed";
 }
 
 export function BoardView({
@@ -95,11 +103,21 @@ export function BoardView({
   const [savingPreset, setSavingPreset] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [expandedCols, setExpandedCols] = useState<Set<LoadStatus>>(new Set());
+  // Defaults to "detailed" on both server and first client render (matches
+  // the presets pattern below) — the saved preference is applied via
+  // useEffect after mount to avoid an SSR/hydration mismatch.
+  const [viewMode, setViewMode] = useState<BoardViewMode>("detailed");
 
   const toast = useToast();
   const router = useRouter();
 
   useEffect(() => setPresets(loadPresets()), []);
+  useEffect(() => setViewMode(loadViewMode()), []);
+
+  function changeViewMode(mode: BoardViewMode) {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  }
 
   function patchLocal(updated: Load) {
     setLoads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
@@ -234,9 +252,51 @@ export function BoardView({
         <span style={{ fontSize: 13, fontWeight: 600 }}>{visible.length} load{visible.length === 1 ? "" : "s"}</span>
         <span style={{ color: "var(--line)" }}>·</span>
         <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{fmtMoney(grandTotal)} total value</span>
-        {hasFilters && <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: "auto" }}>Filtered view</span>}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          {hasFilters && <span style={{ color: "var(--muted)", fontSize: 12 }}>Filtered view</span>}
+          <div className="board-view-toggle" role="tablist" aria-label="Board view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "summary"}
+              className={"board-view-toggle-btn" + (viewMode === "summary" ? " active" : "")}
+              onClick={() => changeViewMode("summary")}
+            >
+              <Icon name="grid" size={13} /> Summary
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "detailed"}
+              className={"board-view-toggle-btn" + (viewMode === "detailed" ? " active" : "")}
+              onClick={() => changeViewMode("detailed")}
+            >
+              <Icon name="columns" size={13} /> Detailed
+            </button>
+          </div>
+        </div>
       </div>
 
+      {viewMode === "summary" ? (
+      <div className="board-summary-grid">
+        {STATUSES.map((status) => {
+          const items = visible.filter((l) => l.status === status);
+          const total = items.reduce((s, l) => s + l.rate, 0);
+          return (
+            <Link key={status} href={`/loads?status=${status}`} className="kpi-card kpi-card-link">
+              <span className={"kpi-icon-badge status-" + status.replace(/_/g, "")}>
+                <Icon name={STATUS_ICONS[status]} size={28} />
+              </span>
+              <div className="kpi-body">
+                <div className="kpi-label">{STATUS_LABELS[status]}</div>
+                <div className="kpi-value">{items.length}</div>
+                <div className="kpi-delta">{fmtMoney(total)}</div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      ) : (
       <div className="board-scroll">
         {STATUSES.map((status) => {
           const items = visible
@@ -310,6 +370,7 @@ export function BoardView({
           </div>
         ))}
       </div>
+      )}
 
       {detailLoad && (
         <LoadDetailDrawer

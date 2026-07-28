@@ -43,6 +43,16 @@ export function LoadsView({
     api.get<{ load: Load }>(`/api/loads/${openId}`).then((res) => setDetailLoad(res.load)).catch(() => {});
   }, [searchParams]);
 
+  // Deep-link support: /loads?status=A,B (from the dashboard KPI cards or
+  // the board's summary view) pre-applies the status filter. deliveredFrom/
+  // deliveredTo (also from the dashboard's "This Week" cards) narrow by
+  // delivery date — a fixed param, not a column filter, so it's threaded
+  // straight into fetchPage rather than through DataTable's filter state.
+  const statusParam = searchParams.get("status");
+  const initialFilters = statusParam ? { status: statusParam.split(",").filter(Boolean) } : undefined;
+  const deliveredFrom = searchParams.get("deliveredFrom");
+  const deliveredTo = searchParams.get("deliveredTo");
+
   // Lightweight, unpaginated snapshot of active loads used only for the
   // AssignModal's client-side conflict preview — the server re-checks
   // authoritatively in /api/loads/[id]/assign regardless.
@@ -60,8 +70,8 @@ export function LoadsView({
   }, [reloadKey]);
 
   const fetchPage = useCallback(async (params: FetchPageParams) => {
-    return fetchTablePage<Load>("/api/loads", params);
-  }, []);
+    return fetchTablePage<Load>("/api/loads", params, { deliveredFrom: deliveredFrom ?? "", deliveredTo: deliveredTo ?? "" });
+  }, [deliveredFrom, deliveredTo]);
 
   function refresh() {
     setReloadKey((k) => k + 1);
@@ -81,6 +91,7 @@ export function LoadsView({
         emptyHint="Try a different search or filter, or create a new load."
         csvFilename="edget-loads.csv"
         initialSort={{ by: "pickupTime", dir: "desc" }}
+        initialFilters={initialFilters}
         columns={[
           {
             key: "loadNumber",
