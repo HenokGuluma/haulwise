@@ -22,7 +22,9 @@ enum Role {
 
 model User {
   id           String   @id @default(cuid())
-  name         String
+  firstName    String
+  // Optional — some account holders are represented by a single name.
+  lastName     String   @default("")
   email        String   @unique
   passwordHash String
   role         Role     @default(DISPATCHER)

@@ -28,7 +28,8 @@ const prisma = new PrismaClient();
 
 const DEMO_USER_EMAIL = "tecknoking24@gmail.com";
 const DEMO_USER_PASSWORD = "tdashuluqa";
-const DEMO_USER_NAME = "Jordan Blake";
+const DEMO_USER_FIRST_NAME = "Jordan";
+const DEMO_USER_LAST_NAME = "Blake";
 
 // ---------------------------------------------------------------------------
 // Deterministic RNG so re-running against a fresh DB produces the same shape
@@ -211,7 +212,8 @@ async function main() {
     where: { email: DEMO_USER_EMAIL },
     update: { showMockData: true },
     create: {
-      name: DEMO_USER_NAME,
+      firstName: DEMO_USER_FIRST_NAME,
+      lastName: DEMO_USER_LAST_NAME,
       email: DEMO_USER_EMAIL,
       passwordHash,
       role: Role.ADMIN,

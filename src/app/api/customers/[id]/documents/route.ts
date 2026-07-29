@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getStorageDriver, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "@/lib/storage";
+import { fullName } from "@/lib/format";
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
@@ -43,8 +44,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       mimeType: file.type,
       uploadedById: auth.user.id,
     },
-    include: { uploadedBy: { select: { id: true, name: true } } },
+    include: { uploadedBy: { select: { id: true, firstName: true, lastName: true } } },
   });
 
-  return NextResponse.json({ document }, { status: 201 });
+  return NextResponse.json({
+    document: { ...document, uploadedBy: document.uploadedBy ? { id: document.uploadedBy.id, name: fullName(document.uploadedBy.firstName, document.uploadedBy.lastName) } : null },
+  }, { status: 201 });
 }

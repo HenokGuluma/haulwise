@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { parseListParams } from "@/lib/pagination";
 import { demoScope } from "@/lib/demo-scope";
+import { fullName } from "@/lib/format";
 
 const SORT_MAP: Record<string, keyof Prisma.DocumentOrderByWithRelationInput> = {
   uploadedAt: "uploadedAt",
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
   const [rows, total] = await Promise.all([
     prisma.document.findMany({
       where,
-      include: { load: { include: { customer: true } }, uploadedBy: { select: { id: true, name: true } } },
+      include: { load: { include: { customer: true } }, uploadedBy: { select: { id: true, firstName: true, lastName: true } } },
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -46,5 +47,11 @@ export async function GET(req: NextRequest) {
     prisma.document.count({ where }),
   ]);
 
-  return NextResponse.json({ rows, total });
+  return NextResponse.json({
+    rows: rows.map((d) => ({
+      ...d,
+      uploadedBy: d.uploadedBy ? { id: d.uploadedBy.id, name: fullName(d.uploadedBy.firstName, d.uploadedBy.lastName) } : null,
+    })),
+    total,
+  });
 }

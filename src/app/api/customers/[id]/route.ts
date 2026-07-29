@@ -4,6 +4,7 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { customerUpdateSchema } from "@/lib/validation";
 import { getStorageDriver } from "@/lib/storage";
 import { demoScope } from "@/lib/demo-scope";
+import { fullName } from "@/lib/format";
 
 const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as const;
 
@@ -15,12 +16,20 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id, ...demoScope(auth.user) },
     include: {
       contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
-      documents: { orderBy: { uploadedAt: "desc" }, include: { uploadedBy: { select: { id: true, name: true } } } },
+      documents: { orderBy: { uploadedAt: "desc" }, include: { uploadedBy: { select: { id: true, firstName: true, lastName: true } } } },
     },
   });
   if (!customer) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
-  return NextResponse.json({ customer });
+  return NextResponse.json({
+    customer: {
+      ...customer,
+      documents: customer.documents.map((d) => ({
+        ...d,
+        uploadedBy: d.uploadedBy ? { id: d.uploadedBy.id, name: fullName(d.uploadedBy.firstName, d.uploadedBy.lastName) } : null,
+      })),
+    },
+  });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

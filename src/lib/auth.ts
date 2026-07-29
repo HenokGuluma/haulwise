@@ -10,7 +10,8 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export type SessionUser = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: Role;
   showMockData: boolean;
@@ -62,7 +63,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   return {
     id: session.user.id,
-    name: session.user.name,
+    firstName: session.user.firstName,
+    lastName: session.user.lastName,
     email: session.user.email,
     role: session.user.role,
     showMockData: session.user.showMockData,

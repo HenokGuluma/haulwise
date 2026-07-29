@@ -2,15 +2,37 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Icon, useToast } from "@/components/ui";
+import { Icon, Button, useToast } from "@/components/ui";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { SessionUser } from "@/types";
 
 export function SettingsView({ user }: { user: SessionUser }) {
+  const [firstName, setFirstName] = useState(user.firstName);
+  const [lastName, setLastName] = useState(user.lastName);
+  const [savingName, setSavingName] = useState(false);
   const [showMockData, setShowMockData] = useState(user.showMockData);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const router = useRouter();
+
+  const nameDirty = firstName.trim() !== user.firstName || lastName.trim() !== user.lastName;
+
+  async function saveName() {
+    if (!firstName.trim()) {
+      toast.error("First name is required.");
+      return;
+    }
+    setSavingName(true);
+    try {
+      await api.patch("/api/me/preferences", { firstName: firstName.trim(), lastName: lastName.trim() });
+      toast.success("Name updated.");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't update your name.");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function toggle() {
     const next = !showMockData;
@@ -38,9 +60,29 @@ export function SettingsView({ user }: { user: SessionUser }) {
           Account
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13.5 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
-            <span style={{ color: "var(--muted)" }}>Name</span>
-            <span style={{ fontWeight: 600 }}>{user.name}</span>
+          <div style={{ padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
+            <div style={{ color: "var(--muted)", marginBottom: 8 }}>Name</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                className="input"
+                style={{ flex: 1, minWidth: 140 }}
+                placeholder="First name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              <input
+                className="input"
+                style={{ flex: 1, minWidth: 140 }}
+                placeholder="Last name (optional)"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+              {nameDirty && (
+                <Button variant="primary" size="sm" onClick={saveName} loading={savingName}>
+                  Save
+                </Button>
+              )}
+            </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
             <span style={{ color: "var(--muted)" }}>Email</span>

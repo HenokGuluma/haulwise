@@ -875,12 +875,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .auth-form-title { font-family: var(--font-heading); font-weight: 800; font-size: 25px; color: var(--ink); letter-spacing: -0.02em; }
 .auth-form-sub { font-size: 13px; color: var(--muted); margin-top: 5px; }
 
-.auth-demo-hint {
-  margin-top: 22px; padding: 12px 14px; border-radius: 10px; background: var(--surface-hover);
-  font-size: 11.5px; color: var(--muted); line-height: 1.9; border: 1px solid var(--line);
-}
-.auth-demo-hint-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
-
 @media (max-width: 860px) {
   .auth-hero { display: none; }
   .auth-form-panel { padding: 32px 20px; }

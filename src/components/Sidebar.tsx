@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { fullName } from "@/lib/format";
 import type { SessionUser } from "@/types";
 
 const NAV_ITEMS = [
@@ -71,7 +72,7 @@ export function Sidebar({
       <div className="sidebar-footer">
         <div className="role-avatar">{user.role === "ADMIN" ? "AD" : "DS"}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="role-name">{user.name}</div>
+          <div className="role-name">{fullName(user.firstName, user.lastName)}</div>
           <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>{user.role === "ADMIN" ? "Admin" : "Dispatcher"}</div>
         </div>
         <ThemeToggle />

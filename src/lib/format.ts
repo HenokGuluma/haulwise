@@ -1,3 +1,9 @@
+// Users may have no last name (e.g. a single-word account holder) — trims
+// the trailing space rather than showing "Edget " with dangling whitespace.
+export function fullName(firstName: string, lastName: string): string {
+  return lastName ? `${firstName} ${lastName}` : firstName;
+}
+
 export function fmtBytes(n: number): string {
   if (n < 1024) return n + " B";
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getStorageDriver, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "@/lib/storage";
 import { logActivity } from "@/lib/activity";
+import { fullName } from "@/lib/format";
 import { z } from "zod";
 
 const DOCUMENT_TYPES = ["BOL", "POD", "RATE_CONFIRMATION"] as const;
@@ -53,10 +54,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       mimeType: file.type,
       uploadedById: auth.user.id,
     },
-    include: { uploadedBy: { select: { id: true, name: true } } },
+    include: { uploadedBy: { select: { id: true, firstName: true, lastName: true } } },
   });
 
   await logActivity(load.id, "DOCUMENT_UPLOADED", `Uploaded ${typeParsed.data.replace("_", " ")}: ${file.name}.`, auth.user.id);
 
-  return NextResponse.json({ document }, { status: 201 });
+  return NextResponse.json({
+    document: { ...document, uploadedBy: document.uploadedBy ? { id: document.uploadedBy.id, name: fullName(document.uploadedBy.firstName, document.uploadedBy.lastName) } : null },
+  }, { status: 201 });
 }

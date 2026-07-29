@@ -190,7 +190,8 @@ export type Load = {
 
 export type SessionUser = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: Role;
   showMockData: boolean;
