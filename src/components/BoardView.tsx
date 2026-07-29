@@ -93,7 +93,10 @@ export function BoardView({
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<LoadStatus | null>(null);
-  const [detailLoadId, setDetailLoadId] = useState<string | null>(null);
+  // Board cards only carry the fields rendered on the card itself (no
+  // documents — see board/page.tsx) — opening a card's detail drawer
+  // lazy-fetches the complete Load on demand instead.
+  const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [assignLoad, setAssignLoad] = useState<Load | null>(null);
   const [assignPrefill, setAssignPrefill] = useState<{ driverId: string; equipmentId: string } | null>(null);
   const [editLoad, setEditLoad] = useState<Load | null>(null);
@@ -124,6 +127,15 @@ export function BoardView({
   }
   function removeLocal(id: string) {
     setLoads((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  async function openLoad(id: string) {
+    try {
+      const res = await api.get<{ load: Load }>(`/api/loads/${id}`);
+      setDetailLoad(res.load);
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't load details.");
+    }
   }
 
   function savePreset() {
@@ -192,7 +204,6 @@ export function BoardView({
     }
   }
 
-  const detailLoad = detailLoadId ? loads.find((l) => l.id === detailLoadId) ?? null : null;
   const hasFilters = filters.q || filters.customerId || filters.driverId || filters.equipmentTypeCode;
 
   const visible = loads.filter((l) => {
@@ -340,7 +351,7 @@ export function BoardView({
                     equipment={equipment}
                     equipmentTypes={equipmentTypes}
                     dragging={dragId === load.id}
-                    onOpen={() => setDetailLoadId(load.id)}
+                    onOpen={() => openLoad(load.id)}
                     onAssign={() => setAssignLoad(load)}
                     onQuickAssign={(driverId, equipmentId) => quickAssign(load, driverId, equipmentId)}
                     onMoveTo={(status) => changeStatus(load, status)}
@@ -376,12 +387,12 @@ export function BoardView({
         <LoadDetailDrawer
           load={detailLoad}
           user={user}
-          onClose={() => setDetailLoadId(null)}
-          onUpdated={(l) => patchLocal(l)}
-          onDeleted={() => { removeLocal(detailLoad.id); setDetailLoadId(null); router.refresh(); }}
+          onClose={() => setDetailLoad(null)}
+          onUpdated={(l) => { patchLocal(l); setDetailLoad(l); }}
+          onDeleted={() => { removeLocal(detailLoad.id); setDetailLoad(null); router.refresh(); }}
           onAssign={(l) => setAssignLoad(l)}
-          onEdit={(l) => { setEditLoad(l); setDetailLoadId(null); }}
-          onClone={(l) => { setCloneSource(l); setDetailLoadId(null); }}
+          onEdit={(l) => { setEditLoad(l); setDetailLoad(null); }}
+          onClone={(l) => { setCloneSource(l); setDetailLoad(null); }}
         />
       )}
 

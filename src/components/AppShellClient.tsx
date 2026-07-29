@@ -7,17 +7,15 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { LoadFormModal } from "@/components/modals/LoadFormModal";
-import type { SessionUser, Customer } from "@/types";
+import type { SessionUser } from "@/types";
 
 function ShellInner({
   user,
   counts,
-  customers,
   children,
 }: {
   user: SessionUser;
   counts: Record<string, number>;
-  customers: Customer[];
   children: React.ReactNode;
 }) {
   const [newLoadOpen, setNewLoadOpen] = useState(false);
@@ -39,7 +37,6 @@ function ShellInner({
       {newLoadOpen && (
         <LoadFormModal
           mode="create"
-          customers={customers}
           onClose={() => setNewLoadOpen(false)}
           onSaved={(load) => {
             toast.success(load.loadNumber + " created as a Draft.");
@@ -55,7 +52,6 @@ function ShellInner({
 export function AppShellClient(props: {
   user: SessionUser;
   counts: Record<string, number>;
-  customers: Customer[];
   children: React.ReactNode;
 }) {
   return (

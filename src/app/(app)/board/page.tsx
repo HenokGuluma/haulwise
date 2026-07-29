@@ -11,9 +11,13 @@ export default async function BoardPage() {
 
   const scope = demoScope(user);
   const [loads, drivers, equipment, customers] = await Promise.all([
+    // documents isn't rendered anywhere on the board itself (only inside the
+    // detail drawer, which lazy-fetches the full load — including documents
+    // — when a card is opened), so it's dropped here rather than pulling
+    // every load's document rows just to hand them to the browser unused.
     prisma.load.findMany({
       where: scope,
-      include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
+      include: { customer: true, driver: true, equipment: true },
       orderBy: { pickupTime: "asc" },
     }),
     prisma.driver.findMany({ where: scope, orderBy: { firstName: "asc" } }),

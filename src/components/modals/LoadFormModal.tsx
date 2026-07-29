@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Field, ModalBox, PanelHead, Button, Banner } from "@/components/ui";
 import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
+import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
 import { USD_TO_ETB_RATE } from "@/lib/format";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
@@ -45,13 +46,16 @@ export function LoadFormModal({
   load?: Load;
   /** Create-mode only: seeds the form from an existing load ("Clone load") without copying its dates/status/assignment. */
   prefill?: Load;
-  customers: Customer[];
+  /** Omit when the caller doesn't already have the full customer list (e.g. the topbar's "New Load" button) — fetched lazily on mount instead. Pass it when the caller already fetched it anyway (board/loads filters) to avoid a redundant request. */
+  customers?: Customer[];
   onClose: () => void;
   onSaved: (load: Load) => void;
 }) {
+  const fetchedCustomers = useCustomers(!customers);
+  const effectiveCustomers = customers ?? fetchedCustomers;
   const seed = load ?? prefill;
   const [form, setForm] = useState<FormState>(() => ({
-    customerId: (seed ? seed.customerId : customers[0]?.id) ?? "",
+    customerId: (seed ? seed.customerId : effectiveCustomers[0]?.id) ?? "",
     origin: seed?.origin ?? "",
     destination: seed?.destination ?? "",
     pickupTime: load ? toInputDateTime(load.pickupTime) : "",
@@ -64,10 +68,20 @@ export function LoadFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [localCustomers, setLocalCustomers] = useState(customers);
+  const [localCustomers, setLocalCustomers] = useState(effectiveCustomers);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [oversizedAck, setOversizedAck] = useState(false);
   const equipmentTypes = useEquipmentTypes();
+
+  // Mirrors the equipmentTypeCode default-fill below: when customers arrive
+  // asynchronously (the lazy-fetch path), seed the list and, for a brand
+  // new load, default customerId to the first one once it's known.
+  useEffect(() => {
+    setLocalCustomers(effectiveCustomers);
+    if (!seed && !form.customerId && effectiveCustomers.length > 0) {
+      set("customerId", effectiveCustomers[0].id);
+    }
+  }, [effectiveCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));

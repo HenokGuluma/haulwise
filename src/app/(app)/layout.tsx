@@ -9,16 +9,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   const scope = demoScope(user);
-  const [boardCount, loadsCount, driversCount, equipmentCount, customers] = await Promise.all([
+  const [boardCount, loadsCount, driversCount, equipmentCount] = await Promise.all([
     prisma.load.count({ where: { ...scope, status: { notIn: ["DELIVERED", "BILLED"] } } }),
     prisma.load.count({ where: scope }),
     prisma.driver.count({ where: scope }),
     prisma.equipment.count({ where: scope }),
-    prisma.customer.findMany({
-      where: scope,
-      orderBy: { companyName: "asc" },
-      select: { id: true, companyName: true, contactName: true, phone: true, email: true, status: true, paymentTerms: true, notes: true },
-    }),
   ]);
 
   const counts = {
@@ -28,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <AppShellClient user={user} counts={counts} customers={customers}>
+    <AppShellClient user={user} counts={counts}>
       {children}
     </AppShellClient>
   );

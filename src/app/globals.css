@@ -718,6 +718,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .dt-skeleton { height: 13px; border-radius: 4px; background: var(--surface-hover); animation: dt-shimmer 1.2s ease-in-out infinite; }
 @keyframes dt-shimmer { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
 
+/* ---------------- Route-level loading skeletons (Next.js loading.tsx) ----
+   Shown instantly on navigation while the destination route's server data
+   streams in, so a tab switch never reads as "nothing happened, then a
+   hard jump" — reuses the same shimmer as DataTable's own loading rows. */
+.skel { border-radius: 6px; background: var(--surface-hover); animation: dt-shimmer 1.2s ease-in-out infinite; }
+.skel-text { height: 13px; border-radius: 4px; }
+
 .dt-pagination { display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
 .dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
 .dt-pagination-nav { display: flex; align-items: center; gap: 8px; margin-left: auto; }

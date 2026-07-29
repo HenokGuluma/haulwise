@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Icon, StatusPill } from "@/components/ui";
+import { Icon, StatusPill, useToast } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, fitFontSize, daysUntil, statusLabel } from "@/lib/format";
 import { useAnalytics } from "@/lib/useAnalytics";
+import { api, ApiRequestError } from "@/lib/api-client";
 import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
 import { StatusBreakdownChart } from "@/components/charts/StatusBreakdownChart";
 import { TopCustomersChart } from "@/components/charts/TopCustomersChart";
 import { EquipmentVolumeChart } from "@/components/charts/EquipmentVolumeChart";
-import type { Load, Driver, Equipment, SessionUser } from "@/types";
+import type { Load, Driver, Equipment, SessionUser, LoadStatus } from "@/types";
 
 const KPI_TONES: Record<string, { bg: string; fg: string }> = {
   accent: { bg: "var(--accent-bg)", fg: "var(--accent)" },
@@ -80,60 +81,85 @@ function KPI({
   return <div className={cls}>{content}</div>;
 }
 
+export type DashboardStats = {
+  activeCount: number;
+  inTransitCount: number;
+  deliveredThisWeekCount: number;
+  revenueThisWeek: number;
+  weekAgoIso: string;
+  nowIso: string;
+  unassigned: { id: string; loadNumber: string }[];
+  pickupsToday: { id: string; loadNumber: string; origin: string; status: LoadStatus }[];
+  deliveriesToday: { id: string; loadNumber: string; destination: string; status: LoadStatus }[];
+};
+
 export function DashboardView({
-  initialLoads,
+  stats: initialStats,
   drivers,
   equipment,
   user,
 }: {
-  initialLoads: Load[];
+  stats: DashboardStats;
   drivers: Driver[];
   equipment: Equipment[];
   user?: SessionUser;
 }) {
-  const [loads, setLoads] = useState(initialLoads);
-  useEffect(() => setLoads(initialLoads), [initialLoads]);
-  const [detailLoadId, setDetailLoadId] = useState<string | null>(null);
+  const [stats, setStats] = useState(initialStats);
+  useEffect(() => setStats(initialStats), [initialStats]);
+
+  // The "Needs attention" / "Today" lists only carry the few fields needed
+  // to render a row — opening one lazy-fetches the full Load (documents,
+  // activity, etc.) on demand instead of the dashboard preloading every
+  // load's full relations just so a handful of rows are clickable.
+  const [detailLoad, setDetailLoad] = useState<Load | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const router = useRouter();
+  const toast = useToast();
   const { data: analytics } = useAnalytics();
 
-  const active = loads.filter((l) => l.status !== "DELIVERED" && l.status !== "BILLED");
-  const inTransit = loads.filter((l) => l.status === "IN_TRANSIT");
-  const now = Date.now();
-  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const deliveredThisWeek = loads.filter(
-    (l) => (l.status === "DELIVERED" || l.status === "BILLED") && new Date(l.deliveryTime).getTime() >= weekAgo && new Date(l.deliveryTime).getTime() <= now
-  );
-  const revenueThisWeek = deliveredThisWeek.reduce((s, l) => s + l.rate, 0);
+  async function openLoad(id: string) {
+    setOpeningId(id);
+    try {
+      const res = await api.get<{ load: Load }>(`/api/loads/${id}`);
+      setDetailLoad(res.load);
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't load details.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
 
   // Each KPI card links to Loads pre-filtered to exactly the set it's
-  // counting — the "This Week" cards pass the same weekAgo/now bounds used
-  // above so the destination table matches what was actually counted here.
+  // counting — the "This Week" cards pass the same weekAgo/now bounds the
+  // server used to compute them, so the destination table matches exactly.
   const activeLoadsHref = "/loads?status=DRAFT,ASSIGNED,DISPATCHED,IN_TRANSIT";
   const inTransitHref = "/loads?status=IN_TRANSIT";
-  const deliveredThisWeekHref = `/loads?status=DELIVERED,BILLED&deliveredFrom=${encodeURIComponent(new Date(weekAgo).toISOString())}&deliveredTo=${encodeURIComponent(new Date(now).toISOString())}`;
-  const unassigned = loads.filter((l) => l.status === "ASSIGNED" && (!l.driverId || !l.equipmentId));
+  const deliveredThisWeekHref = `/loads?status=DELIVERED,BILLED&deliveredFrom=${encodeURIComponent(stats.weekAgoIso)}&deliveredTo=${encodeURIComponent(stats.nowIso)}`;
 
   const expiringDrivers = drivers.map((d) => ({ d, days: daysUntil(d.licenseExpiration) })).filter((x) => x.days <= 21).sort((a, b) => a.days - b.days);
   const maintenanceEquip = equipment.map((e) => ({ e, days: daysUntil(e.nextMaintenance) })).filter((x) => x.days <= 14).sort((a, b) => a.days - b.days);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today.getTime() + 86400000);
-  const isToday = (iso: string) => { const d = new Date(iso); return d >= today && d < tomorrow; };
-  const pickupsToday = loads.filter((l) => isToday(l.pickupTime));
-  const deliveriesToday = loads.filter((l) => isToday(l.deliveryTime));
+  const attentionCount = stats.unassigned.length + expiringDrivers.length + maintenanceEquip.length;
 
-  const attentionCount = unassigned.length + expiringDrivers.length + maintenanceEquip.length;
-  const detailLoad = detailLoadId ? loads.find((l) => l.id === detailLoadId) ?? null : null;
+  // Optimistic removal from the thin server-provided lists on update/delete
+  // so a resolved item disappears immediately rather than waiting for the
+  // background router.refresh() to bring back fresh server-computed stats.
+  function dropFromLists(id: string) {
+    setStats((prev) => ({
+      ...prev,
+      unassigned: prev.unassigned.filter((x) => x.id !== id),
+      pickupsToday: prev.pickupsToday.filter((x) => x.id !== id),
+      deliveriesToday: prev.deliveriesToday.filter((x) => x.id !== id),
+    }));
+  }
 
   return (
     <div>
       <div className="kpi-grid">
-        <KPI label="Active Loads" value={active.length} icon="package" iconTone="accent" href={activeLoadsHref} />
-        <KPI label="In Transit" value={inTransit.length} icon="truck" iconTone="success" href={inTransitHref} />
-        <KPI label="Delivered This Week" value={deliveredThisWeek.length} icon="checkCircle" iconTone="route" href={deliveredThisWeekHref} />
-        <KPI label="Revenue This Week" value={fmtMoney(revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight href={deliveredThisWeekHref} />
+        <KPI label="Active Loads" value={stats.activeCount} icon="package" iconTone="accent" href={activeLoadsHref} />
+        <KPI label="In Transit" value={stats.inTransitCount} icon="truck" iconTone="success" href={inTransitHref} />
+        <KPI label="Delivered This Week" value={stats.deliveredThisWeekCount} icon="checkCircle" iconTone="route" href={deliveredThisWeekHref} />
+        <KPI label="Revenue This Week" value={fmtMoney(stats.revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight href={deliveredThisWeekHref} />
       </div>
 
       <div className="analytics-grid">
@@ -194,8 +220,13 @@ export function DashboardView({
             <div style={{ padding: "10px 0", color: "var(--muted)", fontSize: 13 }}>All clear — nothing needs attention right now.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {unassigned.map((l) => (
-                <div key={l.id} className="banner banner-danger banner-clickable" onClick={() => setDetailLoadId(l.id)}>
+              {stats.unassigned.map((l) => (
+                <div
+                  key={l.id}
+                  className="banner banner-danger banner-clickable"
+                  style={openingId === l.id ? { opacity: 0.5, pointerEvents: "none" } : undefined}
+                  onClick={() => openLoad(l.id)}
+                >
                   <Icon name="alertTriangle" />
                   <div><strong>{l.loadNumber}</strong> is Assigned but missing a driver or equipment.</div>
                 </div>
@@ -226,13 +257,18 @@ export function DashboardView({
           <div style={{ marginBottom: 16 }}>
             <div className="dash-subhead">
               <Icon name="mapPin" size={13} />
-              Pickups <span className="count">({pickupsToday.length})</span>
+              Pickups <span className="count">({stats.pickupsToday.length})</span>
             </div>
-            {pickupsToday.length === 0 ? (
+            {stats.pickupsToday.length === 0 ? (
               <div className="dash-empty">No pickups scheduled today.</div>
             ) : (
-              pickupsToday.map((l) => (
-                <div key={l.id} className="dash-row" onClick={() => setDetailLoadId(l.id)}>
+              stats.pickupsToday.map((l) => (
+                <div
+                  key={l.id}
+                  className="dash-row"
+                  style={openingId === l.id ? { opacity: 0.5, pointerEvents: "none" } : undefined}
+                  onClick={() => openLoad(l.id)}
+                >
                   <span><span className="mono" style={{ color: "var(--muted)" }}>{l.loadNumber}</span> · {l.origin}</span>
                   <StatusPill status={l.status} label={statusLabel(l.status)} />
                 </div>
@@ -242,13 +278,18 @@ export function DashboardView({
           <div>
             <div className="dash-subhead">
               <Icon name="checkCircle" size={13} />
-              Deliveries <span className="count">({deliveriesToday.length})</span>
+              Deliveries <span className="count">({stats.deliveriesToday.length})</span>
             </div>
-            {deliveriesToday.length === 0 ? (
+            {stats.deliveriesToday.length === 0 ? (
               <div className="dash-empty">No deliveries scheduled today.</div>
             ) : (
-              deliveriesToday.map((l) => (
-                <div key={l.id} className="dash-row" onClick={() => setDetailLoadId(l.id)}>
+              stats.deliveriesToday.map((l) => (
+                <div
+                  key={l.id}
+                  className="dash-row"
+                  style={openingId === l.id ? { opacity: 0.5, pointerEvents: "none" } : undefined}
+                  onClick={() => openLoad(l.id)}
+                >
                   <span><span className="mono" style={{ color: "var(--muted)" }}>{l.loadNumber}</span> · {l.destination}</span>
                   <StatusPill status={l.status} label={statusLabel(l.status)} />
                 </div>
@@ -262,9 +303,9 @@ export function DashboardView({
         <LoadDetailDrawer
           load={detailLoad}
           user={user}
-          onClose={() => setDetailLoadId(null)}
-          onUpdated={(l) => setLoads((prev) => prev.map((x) => (x.id === l.id ? l : x)))}
-          onDeleted={() => { setLoads((prev) => prev.filter((x) => x.id !== detailLoad.id)); setDetailLoadId(null); router.refresh(); }}
+          onClose={() => setDetailLoad(null)}
+          onUpdated={(l) => { setDetailLoad(l); dropFromLists(l.id); router.refresh(); }}
+          onDeleted={() => { dropFromLists(detailLoad.id); setDetailLoad(null); router.refresh(); }}
           onAssign={() => router.push("/board")}
           onEdit={() => router.push("/loads")}
         />
