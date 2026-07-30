@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { assignSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
 import { logActivity } from "@/lib/activity";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const load = await prisma.load.findUnique({ where: { id: params.id } });

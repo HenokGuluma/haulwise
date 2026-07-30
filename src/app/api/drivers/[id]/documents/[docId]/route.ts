@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getStorageDriver } from "@/lib/storage";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string; docId: string } }) {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const doc = await prisma.driverDocument.findUnique({ where: { id: params.docId } });

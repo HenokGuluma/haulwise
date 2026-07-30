@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { fmtMoney } from "@/lib/format";
 import { z } from "zod";
@@ -13,7 +13,7 @@ const paymentSchema = z.object({
 });
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const payments = await prisma.payment.findMany({ where: { loadId: params.id }, orderBy: { paidAt: "desc" } });

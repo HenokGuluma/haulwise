@@ -34,6 +34,7 @@ export function LoadsView({
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isCustomer = user.role === "CUSTOMER";
 
   // Deep-link support: /loads?open=<id> (from the command palette, or a
   // future external link) opens that load's detail drawer directly.
@@ -148,16 +149,20 @@ export function LoadsView({
             render: (l) => <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(l.rate)}</span>,
             exportValue: (l) => l.rate,
           },
-          {
-            key: "actions",
-            label: "",
-            align: "right",
-            render: (l) => (
-              <span onClick={(e) => e.stopPropagation()}>
-                <IconButton icon="copy" title="Clone load" onClick={() => setCloneSource(l)} />
-              </span>
-            ),
-          },
+          ...(isCustomer
+            ? []
+            : [
+                {
+                  key: "actions",
+                  label: "",
+                  align: "right" as const,
+                  render: (l: Load) => (
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <IconButton icon="copy" title="Clone load" onClick={() => setCloneSource(l)} />
+                    </span>
+                  ),
+                },
+              ]),
         ]}
       />
 

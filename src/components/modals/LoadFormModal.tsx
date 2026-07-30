@@ -13,7 +13,7 @@ const NEW_CUSTOMER_VALUE = "__new__";
 // Data-entry safety net, not routing logic — flags fat-finger entry errors
 // (e.g. an extra zero) for a second look, doesn't block submission outright.
 const RATE_WARN_THRESHOLD = 50_000 * USD_TO_ETB_RATE;
-const WEIGHT_WARN_THRESHOLD = 48_000; // ~ single-trailer legal max payload
+const WEIGHT_WARN_THRESHOLD = 218; // ~ single-trailer legal max payload (48,000 lbs in Quintals)
 const MIN_PLAUSIBLE_TRANSIT_HOURS = 3;
 
 type FormState = {
@@ -209,7 +209,7 @@ export function LoadFormModal({
         </div>
 
         <div className="field-row">
-          <Field label="Weight (lbs)" error={errors.weight}>
+          <Field label="Weight (Quintals)" error={errors.weight}>
             <input type="number" min="0" className={"input" + (errors.weight ? " err" : "")} value={form.weight} onChange={(e) => set("weight", e.target.value)} />
           </Field>
           <Field label="Rate (ETB)" error={errors.rate}>

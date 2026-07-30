@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, LoadStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser, requireRole } from "@/lib/auth";
 import { loadCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
 import { logActivity } from "@/lib/activity";
 import { demoScope } from "@/lib/demo-scope";
+import { customerScope } from "@/lib/customer-scope";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -48,10 +49,15 @@ export async function GET(req: NextRequest) {
   const deliveredFrom = searchParams.get("deliveredFrom");
   const deliveredTo = searchParams.get("deliveredTo");
 
+  // customerScope (a CUSTOMER-role account's own customerId) always wins over
+  // the customerId column filter — the filter dropdown is never offered to
+  // CUSTOMER accounts, but this keeps the API itself from trusting a forged
+  // filter_customerId param to see another customer's loads.
+  const scopedCustomerId = customerScope(auth.user).customerId;
   const where: Prisma.LoadWhereInput = {
     ...demoScope(auth.user),
     status: statusFilter && statusFilter.length > 0 ? { in: statusFilter } : undefined,
-    customerId: customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined,
+    customerId: scopedCustomerId ?? (customerIdFilter && customerIdFilter.length > 0 ? { in: customerIdFilter } : undefined),
     driverId: driverIdFilter && driverIdFilter.length > 0 ? { in: driverIdFilter } : undefined,
     equipmentId: equipmentIdFilter && equipmentIdFilter.length > 0 ? { in: equipmentIdFilter } : undefined,
     deliveryTime: deliveredFrom || deliveredTo
@@ -96,7 +102,7 @@ async function nextLoadNumber(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);

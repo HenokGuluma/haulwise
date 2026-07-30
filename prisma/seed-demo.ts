@@ -22,7 +22,7 @@ import {
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
-import { USD_TO_ETB_RATE } from "../src/lib/format";
+import { USD_TO_ETB_RATE, LBS_PER_QUINTAL } from "../src/lib/format";
 
 const prisma = new PrismaClient();
 
@@ -343,9 +343,10 @@ async function main() {
       // A few units are overdue/due-soon for maintenance so the dashboard
       // alert panel and roster "Maintenance" column both have real signal.
       const nextMaintenance = chance(0.15) ? daysFromNow(-randInt(-14, 5)) : daysFromNow(-randInt(15, 150));
+      const unitNumber = nextUnitNumber(prefix);
       const row: EquipmentRow = {
         id: randomUUID(),
-        unitNumber: nextUnitNumber(prefix),
+        unitNumber,
         typeCode: t.code,
         status: pickWeighted<EquipmentStatus>([
           [EquipmentStatus.AVAILABLE, 55],
@@ -353,6 +354,8 @@ async function main() {
           [EquipmentStatus.MAINTENANCE, 10],
         ]),
         nextMaintenance,
+        licensePlate: "AA-" + randInt(10000, 99999),
+        registrationExpiration: daysFromNow(randInt(20, 400)),
         isDemo: true,
       };
       equipment.push(row);
@@ -421,7 +424,7 @@ async function main() {
     const equipmentTypeCode = pickEquipmentTypeCode();
     const baseRate = laneKind === "long" ? randInt(2200, 4600) : laneKind === "medium" ? randInt(1200, 2800) : randInt(650, 1700);
     const rate = Math.round(baseRate * opts.rateMultiplier * USD_TO_ETB_RATE);
-    const weight = randInt(8000, 45000);
+    const weight = Math.round(randInt(8000, 45000) / LBS_PER_QUINTAL);
     const driver = opts.assign ? pick(drivers) : null;
     const equip = opts.assign ? pickEquipmentForType(equipmentTypeCode) : null;
 

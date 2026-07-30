@@ -13,7 +13,17 @@ const VIEW_META: Record<string, { title: string; sub: string }> = {
   "/settings": { title: "Settings", sub: "Account preferences and demo data" },
 };
 
-export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMenuClick: () => void }) {
+export function Topbar({
+  onNewLoad,
+  onMenuClick,
+  showNewLoad = true,
+  showSearch = true,
+}: {
+  onNewLoad: () => void;
+  onMenuClick: () => void;
+  showNewLoad?: boolean;
+  showSearch?: boolean;
+}) {
   const pathname = usePathname() || "/dashboard";
   const meta = VIEW_META[pathname] ?? { title: "Edget", sub: "" };
 
@@ -27,20 +37,24 @@ export function Topbar({ onNewLoad, onMenuClick }: { onNewLoad: () => void; onMe
         <div className="topbar-sub">{meta.sub}</div>
       </div>
       <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
-        <button
-          type="button"
-          className="topbar-search-trigger"
-          onClick={() => window.dispatchEvent(new Event("haulwise:open-command-palette"))}
-          title="Search everything (Cmd/Ctrl+K)"
-          aria-label="Search everything"
-        >
-          <Icon name="search" size={14} />
-          <span className="topbar-search-label">Search loads, drivers, customers…</span>
-          <kbd className="cmdk-esc">⌘K</kbd>
-        </button>
-        <Button variant="primary" icon="plus" onClick={onNewLoad} title="New Load" aria-label="New Load">
-          <span className="btn-label-collapsible">New Load</span>
-        </Button>
+        {showSearch && (
+          <button
+            type="button"
+            className="topbar-search-trigger"
+            onClick={() => window.dispatchEvent(new Event("haulwise:open-command-palette"))}
+            title="Search everything (Cmd/Ctrl+K)"
+            aria-label="Search everything"
+          >
+            <Icon name="search" size={14} />
+            <span className="topbar-search-label">Search loads, drivers, customers…</span>
+            <kbd className="cmdk-esc">⌘K</kbd>
+          </button>
+        )}
+        {showNewLoad && (
+          <Button variant="primary" icon="plus" onClick={onNewLoad} title="New Load" aria-label="New Load">
+            <span className="btn-label-collapsible">New Load</span>
+          </Button>
+        )}
       </div>
     </div>
   );

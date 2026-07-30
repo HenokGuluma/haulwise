@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireInternalRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardView } from "@/components/DashboardView";
 import { demoScope } from "@/lib/demo-scope";
@@ -10,6 +10,7 @@ const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as con
 export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  requireInternalRole(user);
 
   const scope = demoScope(user);
   const now = new Date();

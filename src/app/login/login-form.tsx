@@ -37,7 +37,8 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      const next = searchParams.get("next") || "/dashboard";
+      const defaultHome = data.user?.role === "CUSTOMER" ? "/loads" : "/dashboard";
+      const next = searchParams.get("next") || defaultHome;
       router.push(next);
       router.refresh();
     } catch {

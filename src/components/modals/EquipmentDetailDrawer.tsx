@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Drawer, PanelHead, Button, Field, StatusPill, useToast } from "@/components/ui";
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
-import { fmtMoney, fmtDate, statusLabel } from "@/lib/format";
+import { fmtMoney, fmtDate, daysUntil, statusLabel } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import type { Equipment, EquipmentMaintenanceRecord, Load } from "@/types";
 
@@ -50,10 +50,23 @@ export function EquipmentDetailDrawer({ equipment, onClose }: { equipment: Equip
     [equipment.id]
   );
 
+  const regDays = equipment.registrationExpiration ? daysUntil(equipment.registrationExpiration) : null;
+
   return (
     <Drawer onClose={onClose} width={480}>
       <PanelHead title={equipment.unitNumber} sub={`${equipment.typeCode} · Next service ${fmtDate(equipment.nextMaintenance)}`} onClose={onClose} />
       <div className="panel-body">
+        <div className="section-title">Registration</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13, marginBottom: 16 }}>
+          <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>License plate</div>{equipment.licensePlate ? <span className="mono">{equipment.licensePlate}</span> : "—"}</div>
+          <div>
+            <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Registration expires</div>
+            {equipment.registrationExpiration ? (
+              <span style={{ color: regDays !== null && regDays < 30 ? "var(--danger)" : undefined }}>{fmtDate(equipment.registrationExpiration)}</span>
+            ) : "—"}
+          </div>
+        </div>
+
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>Maintenance History</div>
           {!adding && <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setAdding(true)}>+ Add record</button>}

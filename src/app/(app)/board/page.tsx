@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireInternalRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BoardView } from "@/components/BoardView";
 import { demoScope } from "@/lib/demo-scope";
@@ -8,6 +8,7 @@ import type { Load, Driver, Equipment, Customer } from "@/types";
 export default async function BoardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  requireInternalRole(user);
 
   const scope = demoScope(user);
   const [loads, drivers, equipment, customers] = await Promise.all([

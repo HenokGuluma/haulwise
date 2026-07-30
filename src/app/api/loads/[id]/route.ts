@@ -7,6 +7,7 @@ import { getStorageDriver } from "@/lib/storage";
 import { logActivity } from "@/lib/activity";
 import { statusLabel } from "@/lib/format";
 import { demoScope } from "@/lib/demo-scope";
+import { customerScope } from "@/lib/customer-scope";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -14,7 +15,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const load = await prisma.load.findUnique({ where: { id: params.id, ...demoScope(auth.user) }, include: LOAD_INCLUDE });
+  const load = await prisma.load.findUnique({
+    where: { id: params.id, ...demoScope(auth.user), ...customerScope(auth.user) },
+    include: LOAD_INCLUDE,
+  });
   if (!load) return NextResponse.json({ error: "Load not found." }, { status: 404 });
   return NextResponse.json({ load });
 }
@@ -24,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 const REQUIRES_ASSIGNMENT = new Set(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.load.findUnique({ where: { id: params.id } });

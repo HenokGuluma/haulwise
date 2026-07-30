@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { demoScope } from "@/lib/demo-scope";
 import type { LoadStatus } from "@prisma/client";
 
@@ -23,7 +23,7 @@ const TOP_CUSTOMER_LIMIT = 8;
  * cheap enough to just fetch once and reduce client-side.
  */
 export async function GET() {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const loads = await prisma.load.findMany({

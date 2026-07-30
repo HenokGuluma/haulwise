@@ -28,11 +28,16 @@ function ShellInner({
       <Sidebar user={user} counts={counts} mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <div className="main">
-        <Topbar onNewLoad={() => setNewLoadOpen(true)} onMenuClick={() => setSidebarOpen(true)} />
+        <Topbar
+          onNewLoad={() => setNewLoadOpen(true)}
+          onMenuClick={() => setSidebarOpen(true)}
+          showNewLoad={user.role !== "CUSTOMER"}
+          showSearch={user.role !== "CUSTOMER"}
+        />
         <div className="content">{children}</div>
       </div>
 
-      <CommandPalette />
+      {user.role !== "CUSTOMER" && <CommandPalette />}
 
       {newLoadOpen && (
         <LoadFormModal

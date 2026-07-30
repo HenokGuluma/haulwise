@@ -5,7 +5,7 @@ import { RouteLine } from "@/components/RouteLine";
 import { StatusPill, Drawer, PanelHead, Button, Icon, IconButton, ConfirmDialog } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { PaymentLogModal } from "@/components/modals/PaymentLogModal";
-import { fmtMoney, fmtDateTime, fmtBytes, fmtRelative, statusLabel } from "@/lib/format";
+import { fmtMoney, fmtWeight, fmtDateTime, fmtBytes, fmtRelative, statusLabel } from "@/lib/format";
 import { api, uploadFile, ApiRequestError } from "@/lib/api-client";
 import type { Load, LoadDocument, LoadActivityRow, LoadCommentRow, PaymentRow, SessionUser, DocumentType } from "@/types";
 
@@ -21,6 +21,7 @@ function DocumentSlot({
   label,
   docs,
   canDelete,
+  canUpload,
   onChanged,
 }: {
   loadId: string;
@@ -28,6 +29,7 @@ function DocumentSlot({
   label: string;
   docs: LoadDocument[];
   canDelete: boolean;
+  canUpload: boolean;
   onChanged: () => void;
 }) {
   const toast = useToast();
@@ -72,14 +74,14 @@ function DocumentSlot({
   return (
     <div
       className={"doc-slot" + (dragOver ? " drag-over" : "")}
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
+      onDragOver={canUpload ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
+      onDragLeave={canUpload ? () => setDragOver(false) : undefined}
+      onDrop={canUpload ? (e) => {
         e.preventDefault();
         setDragOver(false);
         const file = e.dataTransfer.files?.[0];
         if (file) doUpload(file);
-      }}
+      } : undefined}
     >
       <input
         ref={inputRef}
@@ -91,7 +93,7 @@ function DocumentSlot({
 
       <div className="doc-slot-head">
         <span className="doc-slot-label">{label}</span>
-        {current && !uploading && (
+        {canUpload && current && !uploading && (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()}>Replace</button>
         )}
       </div>
@@ -126,10 +128,14 @@ function DocumentSlot({
           </div>
           {canDelete && <IconButton icon="trash" title="Delete this version" onClick={() => removeDoc(current.id)} />}
         </div>
-      ) : (
+      ) : canUpload ? (
         <div className="doc-slot-empty" onClick={() => inputRef.current?.click()}>
           <Icon name="upload" size={15} />
           <span>Drop file or click to upload</span>
+        </div>
+      ) : (
+        <div className="doc-slot-empty" style={{ cursor: "default" }}>
+          <span style={{ color: "var(--muted)" }}>Not yet uploaded</span>
         </div>
       )}
 
@@ -275,14 +281,16 @@ export function LoadDetailDrawer({
   onClone?: (load: Load) => void;
 }) {
   const toast = useToast();
+  const isCustomer = user.role === "CUSTOMER";
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   useEffect(() => {
+    if (isCustomer) return;
     api.get<{ payments: PaymentRow[] }>(`/api/loads/${load.id}/payments`).then((res) => setPayments(res.payments)).catch(() => {});
-  }, [load.id]);
+  }, [load.id, isCustomer]);
 
   const amountPaid = payments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, load.driverPay - amountPaid);
@@ -355,8 +363,8 @@ export function LoadDetailDrawer({
       <div className="panel-body">
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <StatusPill status={load.status} label={statusLabel(load.status)} />
-          {prevStatus && <Button size="sm" variant="ghost" onClick={goBack} disabled={busy}>← {statusLabel(prevStatus)}</Button>}
-          {nextStatus && (
+          {!isCustomer && prevStatus && <Button size="sm" variant="ghost" onClick={goBack} disabled={busy}>← {statusLabel(prevStatus)}</Button>}
+          {!isCustomer && nextStatus && (
             <Button size="sm" variant="dark" onClick={advance} disabled={busy}>
               Advance to {statusLabel(nextStatus)} <Icon name="arrowRight" size={13} />
             </Button>
@@ -381,7 +389,7 @@ export function LoadDetailDrawer({
         <div className="section-title">Load details</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13, marginBottom: 16 }}>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Commodity</div>{load.commodity}</div>
-          <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Weight</div>{load.weight.toLocaleString()} lbs</div>
+          <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Weight</div>{fmtWeight(load.weight)}</div>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Equipment type</div>{load.equipmentTypeCode}</div>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Rate</div><span className="mono" style={{ fontWeight: 700 }}>{fmtMoney(load.rate)}</span></div>
         </div>
@@ -394,12 +402,12 @@ export function LoadDetailDrawer({
                 <div style={{ fontWeight: 600 }}>{load.driver ? load.driver.firstName + " " + load.driver.lastName : "No driver"}</div>
                 <div style={{ color: "var(--muted)", fontSize: 12 }}>{load.equipment ? load.equipment.unitNumber : "No equipment"}</div>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => onAssign(load)}>Reassign</Button>
+              {!isCustomer && <Button size="sm" variant="ghost" onClick={() => onAssign(load)}>Reassign</Button>}
             </div>
           ) : (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>Not yet assigned</span>
-              <Button size="sm" variant="primary" onClick={() => onAssign(load)}>Assign</Button>
+              {!isCustomer && <Button size="sm" variant="primary" onClick={() => onAssign(load)}>Assign</Button>}
             </div>
           )}
         </div>
@@ -414,56 +422,61 @@ export function LoadDetailDrawer({
               label={DOC_LABELS[type]}
               docs={load.documents.filter((d) => d.type === type)}
               canDelete={user.role === "ADMIN"}
+              canUpload={!isCustomer}
               onChanged={refreshLoad}
             />
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-          <div className="section-title" style={{ marginBottom: 0 }}>Billing</div>
-          {user.role === "ADMIN" && remaining > 0 && (
-            <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setPaymentModalOpen(true)}>Log payment</button>
-          )}
-        </div>
-        <div className="card" style={{ padding: 12, marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
-            <span style={{ color: "var(--muted)" }}>Driver pay</span>
-            <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(load.driverPay)}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
-            <span style={{ color: "var(--muted)" }}>Amount paid</span>
-            <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(amountPaid)}</span>
-          </div>
-          {remaining > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
-              <span style={{ color: "var(--muted)" }}>Remaining</span>
-              <span className="mono" style={{ fontWeight: 600, color: "var(--danger)" }}>{fmtMoney(remaining)}</span>
+        {!isCustomer && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+              <div className="section-title" style={{ marginBottom: 0 }}>Billing</div>
+              {user.role === "ADMIN" && remaining > 0 && (
+                <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setPaymentModalOpen(true)}>Log payment</button>
+              )}
             </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
-            <span style={{ color: "var(--muted)" }}>Status</span>
-            <span
-              className={"pill " + (computedStatus === "Paid" ? "pill-success" : computedStatus === "Partially Paid" ? "pill-warning" : "pill-muted")}
-              style={{ cursor: user.role === "ADMIN" && payments.length === 0 ? "pointer" : "default" }}
-              onClick={payments.length === 0 ? togglePayout : undefined}
-              title={user.role === "ADMIN" && payments.length === 0 ? "Click to toggle (or log a payment for partial amounts)" : undefined}
-            >
-              {computedStatus}
-            </span>
-          </div>
-          {payments.length > 0 && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line-soft)", display: "flex", flexDirection: "column", gap: 6 }}>
-              {payments.map((p) => (
-                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "var(--muted)" }}>
-                  <span>{fmtDateTime(p.paidAt)}{p.method ? " · " + p.method : ""}</span>
-                  <span className="mono">{fmtMoney(p.amount)}</span>
+            <div className="card" style={{ padding: 12, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+                <span style={{ color: "var(--muted)" }}>Driver pay</span>
+                <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(load.driverPay)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+                <span style={{ color: "var(--muted)" }}>Amount paid</span>
+                <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(amountPaid)}</span>
+              </div>
+              {remaining > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+                  <span style={{ color: "var(--muted)" }}>Remaining</span>
+                  <span className="mono" style={{ fontWeight: 600, color: "var(--danger)" }}>{fmtMoney(remaining)}</span>
                 </div>
-              ))}
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+                <span style={{ color: "var(--muted)" }}>Status</span>
+                <span
+                  className={"pill " + (computedStatus === "Paid" ? "pill-success" : computedStatus === "Partially Paid" ? "pill-warning" : "pill-muted")}
+                  style={{ cursor: user.role === "ADMIN" && payments.length === 0 ? "pointer" : "default" }}
+                  onClick={payments.length === 0 ? togglePayout : undefined}
+                  title={user.role === "ADMIN" && payments.length === 0 ? "Click to toggle (or log a payment for partial amounts)" : undefined}
+                >
+                  {computedStatus}
+                </span>
+              </div>
+              {payments.length > 0 && (
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line-soft)", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {payments.map((p) => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "var(--muted)" }}>
+                      <span>{fmtDateTime(p.paidAt)}{p.method ? " · " + p.method : ""}</span>
+                      <span className="mono">{fmtMoney(p.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <ActivityTimeline loadId={load.id} />
+            <ActivityTimeline loadId={load.id} />
+          </>
+        )}
       </div>
       <div className="panel-foot">
         {user.role === "ADMIN" && (
@@ -475,8 +488,8 @@ export function LoadDetailDrawer({
         <a href={`/loads/${load.id}/invoice`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
           <Button variant="ghost" icon="download">Invoice</Button>
         </a>
-        {onClone && <Button variant="ghost" icon="copy" onClick={() => onClone(load)}>Clone</Button>}
-        <Button variant="ghost" onClick={() => onEdit(load)}>Edit details</Button>
+        {!isCustomer && onClone && <Button variant="ghost" icon="copy" onClick={() => onClone(load)}>Clone</Button>}
+        {!isCustomer && <Button variant="ghost" onClick={() => onEdit(load)}>Edit details</Button>}
         <Button variant="dark" onClick={onClose}>Done</Button>
       </div>
 

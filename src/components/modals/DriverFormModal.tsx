@@ -84,7 +84,7 @@ export function DriverFormModal({
           <input className={"input" + (errors.phone ? " err" : "")} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
         </Field>
         <div className="field-row">
-          <Field label="CDL number" error={errors.licenseNo}>
+          <Field label="Driver's License number" error={errors.licenseNo}>
             <input className={"input" + (errors.licenseNo ? " err" : "")} value={form.licenseNo} onChange={(e) => set("licenseNo", e.target.value)} />
           </Field>
           <Field label="License expiration" error={errors.licenseExpiration}>

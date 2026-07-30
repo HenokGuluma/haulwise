@@ -4,7 +4,7 @@
 // Date objects at the point of use (see src/lib/format.ts helpers, which all
 // accept `Date | string`).
 
-export type Role = "ADMIN" | "DISPATCHER";
+export type Role = "ADMIN" | "DISPATCHER" | "CUSTOMER";
 
 export type LoadStatus = "DRAFT" | "ASSIGNED" | "DISPATCHED" | "IN_TRANSIT" | "DELIVERED" | "BILLED";
 export type DriverStatus = "AVAILABLE" | "ON_DUTY" | "OFF_DUTY";
@@ -96,9 +96,11 @@ export type Equipment = {
   typeCode: EquipmentTypeCode;
   status: EquipmentStatus;
   nextMaintenance: string;
+  licensePlate: string | null;
+  registrationExpiration: string | null;
 };
 
-export type DriverDocumentType = "CDL" | "MEDICAL_CERT" | "MVR";
+export type DriverDocumentType = "DRIVERS_LICENSE" | "MEDICAL_CERT" | "MVR";
 
 export type DriverDocument = {
   id: string;
@@ -195,6 +197,18 @@ export type SessionUser = {
   email: string;
   role: Role;
   showMockData: boolean;
+  customerId: string | null;
+};
+
+export type UserRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: Role;
+  customerId: string | null;
+  customer: { id: string; companyName: string } | null;
+  createdAt: string;
 };
 
 export type ApiError = { error: string; conflicts?: unknown[] };

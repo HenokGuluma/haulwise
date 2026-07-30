@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireInternalRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RosterView } from "@/components/RosterView";
 import { demoScope } from "@/lib/demo-scope";
@@ -10,6 +10,7 @@ const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as con
 export default async function RosterPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  requireInternalRole(user);
 
   const scope = demoScope(user);
   // Grouped counts instead of fetching every active load's id/driverId/

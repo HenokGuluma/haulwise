@@ -8,8 +8,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
   const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const doc = await prisma.document.findUnique({ where: { id: params.docId } });
+  const doc = await prisma.document.findUnique({ where: { id: params.docId }, include: { load: true } });
   if (!doc || doc.loadId !== params.id) return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  if (auth.user.role === "CUSTOMER" && doc.load.customerId !== auth.user.customerId) {
+    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  }
 
   const file = await getStorageDriver().get(doc.storageKey);
   if (!file) return NextResponse.json({ error: "File is missing from storage." }, { status: 404 });

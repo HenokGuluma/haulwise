@@ -5,17 +5,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { fullName } from "@/lib/format";
-import type { SessionUser } from "@/types";
+import type { SessionUser, Role } from "@/types";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "grid" },
-  { href: "/board", label: "Dispatch Board", icon: "columns" },
+type NavItem = { href: string; label: string; icon: string; roles?: Role[] };
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: "grid", roles: ["ADMIN", "DISPATCHER"] },
+  { href: "/board", label: "Dispatch Board", icon: "columns", roles: ["ADMIN", "DISPATCHER"] },
   { href: "/loads", label: "Loads", icon: "list" },
-  { href: "/customers", label: "Customers", icon: "briefcase" },
-  { href: "/roster", label: "Drivers & Equipment", icon: "users" },
-  { href: "/documents", label: "Documents & Billing", icon: "fileText" },
+  { href: "/customers", label: "Customers", icon: "briefcase", roles: ["ADMIN", "DISPATCHER"] },
+  { href: "/roster", label: "Drivers & Equipment", icon: "users", roles: ["ADMIN", "DISPATCHER"] },
+  { href: "/documents", label: "Documents & Billing", icon: "fileText", roles: ["ADMIN", "DISPATCHER"] },
+  { href: "/users", label: "Users", icon: "shield", roles: ["ADMIN"] },
   { href: "/settings", label: "Settings", icon: "settings" },
-] as const;
+];
 
 export function Sidebar({
   user,
@@ -24,7 +27,7 @@ export function Sidebar({
   onCloseMobile,
 }: {
   user: SessionUser;
-  counts: Partial<Record<(typeof NAV_ITEMS)[number]["href"], number>>;
+  counts: Partial<Record<string, number>>;
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
 }) {
@@ -56,7 +59,7 @@ export function Sidebar({
       </div>
 
       <div className="nav-group">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const count = counts[item.href];
           return (
@@ -70,10 +73,12 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <div className="role-avatar">{user.role === "ADMIN" ? "AD" : "DS"}</div>
+        <div className="role-avatar">{user.role === "ADMIN" ? "AD" : user.role === "DISPATCHER" ? "DS" : "CU"}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="role-name">{fullName(user.firstName, user.lastName)}</div>
-          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>{user.role === "ADMIN" ? "Admin" : "Dispatcher"}</div>
+          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>
+            {user.role === "ADMIN" ? "Admin" : user.role === "DISPATCHER" ? "Dispatcher" : "Customer"}
+          </div>
         </div>
         <ThemeToggle />
         <IconButtonInline onClick={signOut} />

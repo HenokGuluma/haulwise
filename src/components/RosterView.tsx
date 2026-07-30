@@ -257,6 +257,12 @@ export function RosterView({
               render: (e) => e.typeCode,
             },
             {
+              key: "licensePlate",
+              label: "Plate #",
+              render: (e) => (e.licensePlate ? <span className="mono">{e.licensePlate}</span> : <span style={{ color: "var(--muted)" }}>—</span>),
+              exportValue: (e) => e.licensePlate ?? "",
+            },
+            {
               key: "status",
               label: "Status",
               sortable: true,

@@ -11,10 +11,11 @@ export default async function LoadsPage() {
   if (!user) redirect("/login");
 
   const scope = demoScope(user);
+  const isCustomer = user.role === "CUSTOMER";
   const [customers, drivers, equipment] = await Promise.all([
-    prisma.customer.findMany({ where: scope, orderBy: { companyName: "asc" } }),
-    prisma.driver.findMany({ where: scope, orderBy: { firstName: "asc" } }),
-    prisma.equipment.findMany({ where: scope, orderBy: { unitNumber: "asc" } }),
+    isCustomer ? Promise.resolve([]) : prisma.customer.findMany({ where: scope, orderBy: { companyName: "asc" } }),
+    isCustomer ? Promise.resolve([]) : prisma.driver.findMany({ where: scope, orderBy: { firstName: "asc" } }),
+    isCustomer ? Promise.resolve([]) : prisma.equipment.findMany({ where: scope, orderBy: { unitNumber: "asc" } }),
   ]);
 
   return (

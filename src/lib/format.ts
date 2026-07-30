@@ -20,6 +20,16 @@ export function fmtMoney(n: number): string {
   return "ETB " + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+// Single source of truth for the lbs->Quintal scale used when the platform
+// switched weight units (1 quintal = 100kg) — applied once to convert every
+// existing stored weight figure (seed data, thresholds) to a realistic
+// quintal-scale amount, same treatment as USD_TO_ETB_RATE above.
+export const LBS_PER_QUINTAL = 220.462;
+
+export function fmtWeight(n: number): string {
+  return Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }) + " Quintals";
+}
+
 // Abbreviated form for tight spaces (chart axis ticks) — full precision
 // still shows in tooltips via fmtMoney. "ETB 33.8M" instead of
 // "ETB 33,800,000" keeps axis width sane at ETB's larger figure scale.

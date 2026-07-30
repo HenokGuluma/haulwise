@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -15,6 +16,9 @@ export type SessionUser = {
   email: string;
   role: Role;
   showMockData: boolean;
+  // Set only for CUSTOMER-role accounts — the single Customer this login is
+  // scoped to. Null for ADMIN/DISPATCHER.
+  customerId: string | null;
 };
 
 /** Verifies credentials and returns the matching user, or null. */
@@ -68,6 +72,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     email: session.user.email,
     role: session.user.role,
     showMockData: session.user.showMockData,
+    customerId: session.user.customerId,
   };
 }
 
@@ -88,4 +93,9 @@ export async function requireRole(
     return { error: "You don't have permission to perform this action.", status: 403 };
   }
   return result;
+}
+
+/** Pages open only to internal staff — bounces a CUSTOMER session to their portal home. */
+export function requireInternalRole(user: SessionUser, redirectTo = "/loads"): void {
+  if (user.role === "CUSTOMER") redirect(redirectTo);
 }

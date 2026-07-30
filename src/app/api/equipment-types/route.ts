@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { equipmentTypeCreateSchema } from "@/lib/validation";
 
 // Small, low-cardinality list (a handful of equipment types) — no pagination,
@@ -8,7 +8,7 @@ import { equipmentTypeCreateSchema } from "@/lib/validation";
 // wants the full set. Includes live in-use counts so the management tab can
 // show "3 units, 12 loads" and the delete guard can explain why it's blocked.
 export async function GET() {
-  const auth = await requireUser();
+  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const types = await prisma.equipmentType.findMany({

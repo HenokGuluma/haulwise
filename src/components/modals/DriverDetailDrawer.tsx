@@ -7,8 +7,8 @@ import { fmtMoney, fmtDate, fmtBytes, fmtRelative, daysUntil, statusLabel } from
 import { api, fetchTablePage, uploadFile, ApiRequestError } from "@/lib/api-client";
 import type { Driver, DriverDocument, DriverDocumentType, Load } from "@/types";
 
-const DOC_TYPES: DriverDocumentType[] = ["CDL", "MEDICAL_CERT", "MVR"];
-const DOC_LABELS: Record<DriverDocumentType, string> = { CDL: "CDL Scan", MEDICAL_CERT: "Medical Certificate", MVR: "MVR" };
+const DOC_TYPES: DriverDocumentType[] = ["DRIVERS_LICENSE", "MEDICAL_CERT", "MVR"];
+const DOC_LABELS: Record<DriverDocumentType, string> = { DRIVERS_LICENSE: "Driver's License Scan", MEDICAL_CERT: "Medical Certificate", MVR: "MVR" };
 const ACCEPTED_EXT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 
 function DriverDocSlot({ driverId, type, docs, canDelete, onChanged }: { driverId: string; type: DriverDocumentType; docs: DriverDocument[]; canDelete: boolean; onChanged: () => void }) {
@@ -126,7 +126,7 @@ export function DriverDetailDrawer({ driver, canDelete, onClose, onUpdated }: { 
       <div className="panel-body">
         <div className="section-title">License & Medical</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13, marginBottom: 16 }}>
-          <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>CDL #</div><span className="mono">{driver.licenseNo}</span></div>
+          <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>License #</div><span className="mono">{driver.licenseNo}</span></div>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>License expires</div>{fmtDate(driver.licenseExpiration)}</div>
           <div>
             <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Medical cert expires</div>

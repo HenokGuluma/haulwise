@@ -78,6 +78,8 @@ export const equipmentCreateSchema = z.object({
   typeCode: equipmentTypeCode,
   status: z.enum(["AVAILABLE", "IN_USE", "MAINTENANCE"]).default("AVAILABLE"),
   nextMaintenance: z.coerce.date(),
+  licensePlate: z.string().trim().max(20).optional().nullable(),
+  registrationExpiration: z.coerce.date().optional().nullable(),
 });
 
 export const equipmentUpdateSchema = equipmentCreateSchema.partial();
@@ -119,3 +121,28 @@ export const customerContactSchema = z.object({
 });
 
 export const customerContactUpdateSchema = customerContactSchema.partial();
+
+const userRole = z.enum(["ADMIN", "DISPATCHER", "CUSTOMER"]);
+
+export const userCreateSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "First name is required."),
+    lastName: z.string().trim().max(60).optional().default(""),
+    email: z.string().trim().email("Enter a valid email."),
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    role: userRole.default("DISPATCHER"),
+    customerId: z.string().min(1).optional().nullable(),
+  })
+  .refine((d) => d.role !== "CUSTOMER" || !!d.customerId, {
+    message: "Select a customer for a Customer-role account.",
+    path: ["customerId"],
+  });
+
+export const userUpdateSchema = z.object({
+  firstName: z.string().trim().min(1).optional(),
+  lastName: z.string().trim().max(60).optional(),
+  email: z.string().trim().email().optional(),
+  password: z.string().min(8).optional(),
+  role: userRole.optional(),
+  customerId: z.string().min(1).optional().nullable(),
+});

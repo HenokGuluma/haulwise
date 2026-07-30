@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
-import { fmtMoney, fmtDateTime, statusLabel } from "@/lib/format";
+import { fmtMoney, fmtWeight, fmtDateTime, statusLabel } from "@/lib/format";
 import { AutoPrint } from "@/components/AutoPrint";
 import { demoScope } from "@/lib/demo-scope";
+import { customerScope } from "@/lib/customer-scope";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const load = await prisma.load.findUnique({ where: { id: params.id }, select: { loadNumber: true } });
@@ -29,7 +30,7 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
   if (!user) redirect("/login");
 
   const load = await prisma.load.findUnique({
-    where: { id: params.id, ...demoScope(user) },
+    where: { id: params.id, ...demoScope(user), ...customerScope(user) },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },
   });
   if (!load) notFound();
@@ -62,7 +63,7 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
       <div className="section">Load Details</div>
       <div className="grid">
         <div className="row"><span className="label">Commodity</span><span>{load.commodity}</span></div>
-        <div className="row"><span className="label">Weight</span><span>{load.weight.toLocaleString()} lbs</span></div>
+        <div className="row"><span className="label">Weight</span><span>{fmtWeight(load.weight)}</span></div>
         <div className="row"><span className="label">Equipment</span><span>{load.equipmentTypeCode}</span></div>
         <div className="row"><span className="label">Rate</span><span>{fmtMoney(load.rate)}</span></div>
       </div>
@@ -70,7 +71,9 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
       <div className="section">Assignment</div>
       <div className="row"><span className="label">Driver</span><span>{load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : "Unassigned"}</span></div>
       <div className="row"><span className="label">Equipment</span><span>{load.equipment ? load.equipment.unitNumber : "Unassigned"}</span></div>
-      <div className="row"><span className="label">Driver Pay</span><span>{fmtMoney(load.driverPay)}</span></div>
+      {user.role !== "CUSTOMER" && (
+        <div className="row"><span className="label">Driver Pay</span><span>{fmtMoney(load.driverPay)}</span></div>
+      )}
 
       {currentDocs.length > 0 && (
         <>

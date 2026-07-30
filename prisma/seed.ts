@@ -1,7 +1,7 @@
 import { PrismaClient, LoadStatus, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
-import { USD_TO_ETB_RATE } from "../src/lib/format";
+import { USD_TO_ETB_RATE, LBS_PER_QUINTAL } from "../src/lib/format";
 
 const prisma = new PrismaClient();
 
@@ -75,6 +75,22 @@ async function main() {
     customers.push(await prisma.customer.create({ data: c }));
   }
 
+  // Portal login scoped to Meridian Foods Co. — for QA of the CUSTOMER role's
+  // restricted view (only that customer's own loads/documents).
+  const customerPortalPassword = await bcrypt.hash("customer123", 10);
+  await prisma.user.upsert({
+    where: { email: "customer@edget.local" },
+    update: { firstName: "Alem", lastName: "Tesfaye", customerId: customers[0].id },
+    create: {
+      firstName: "Alem",
+      lastName: "Tesfaye",
+      email: "customer@edget.local",
+      passwordHash: customerPortalPassword,
+      role: Role.CUSTOMER,
+      customerId: customers[0].id,
+    },
+  });
+
   // --- Drivers -------------------------------------------------------------
   const driverData = [
     { firstName: "Marcus", lastName: "Reed", phone: "(555) 410-2201", licenseNo: "DL-88213", licenseExpiration: daysFromNow(12), status: DriverStatus.AVAILABLE },
@@ -104,12 +120,12 @@ async function main() {
 
   // --- Equipment -----------------------------------------------------------
   const equipmentData = [
-    { unitNumber: "TRL-104", typeCode: "V", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(45) },
-    { unitNumber: "TRL-118", typeCode: "R", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(8) },
-    { unitNumber: "TRL-092", typeCode: "F", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(120) },
-    { unitNumber: "TRK-221", typeCode: "PO", status: EquipmentStatus.MAINTENANCE, nextMaintenance: daysFromNow(-2) },
-    { unitNumber: "TRL-137", typeCode: "V", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(75) },
-    { unitNumber: "TRL-146", typeCode: "R", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(3) },
+    { unitNumber: "TRL-104", typeCode: "V", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(45), licensePlate: "AA-10442", registrationExpiration: daysFromNow(210) },
+    { unitNumber: "TRL-118", typeCode: "R", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(8), licensePlate: "AA-11803", registrationExpiration: daysFromNow(95) },
+    { unitNumber: "TRL-092", typeCode: "F", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(120), licensePlate: "AA-09221", registrationExpiration: daysFromNow(340) },
+    { unitNumber: "TRK-221", typeCode: "PO", status: EquipmentStatus.MAINTENANCE, nextMaintenance: daysFromNow(-2), licensePlate: "AA-22105", registrationExpiration: daysFromNow(20) },
+    { unitNumber: "TRL-137", typeCode: "V", status: EquipmentStatus.IN_USE, nextMaintenance: daysFromNow(75), licensePlate: "AA-13709", registrationExpiration: daysFromNow(150) },
+    { unitNumber: "TRL-146", typeCode: "R", status: EquipmentStatus.AVAILABLE, nextMaintenance: daysFromNow(3), licensePlate: "AA-14611", registrationExpiration: daysFromNow(400) },
   ];
   const equipment = [];
   for (const e of equipmentData) {
@@ -155,7 +171,7 @@ async function main() {
     const [origin, destination] = cities[i % cities.length];
     const customer = customers[i % customers.length];
     const rate = (1450 + ((i * 137) % 1800)) * USD_TO_ETB_RATE;
-    const weight = 12000 + ((i * 900) % 26000);
+    const weight = Math.round((12000 + ((i * 900) % 26000)) / LBS_PER_QUINTAL);
     const commodity = commodities[i % commodities.length];
     const equipmentTypeCode = equipTypes[i % equipTypes.length];
 
@@ -221,6 +237,7 @@ async function main() {
   console.log("Seed complete.");
   console.log("Login with: admin@edget.local / admin123  (Admin)");
   console.log("        or: dispatcher@edget.local / dispatch123  (Dispatcher)");
+  console.log("        or: customer@edget.local / customer123  (Customer portal)");
 }
 
 main()

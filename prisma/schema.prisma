@@ -18,6 +18,9 @@ datasource db {
 enum Role {
   ADMIN
   DISPATCHER
+  // Portal login scoped to a single Customer (see User.customerId) — sees
+  // only that customer's own loads/documents, nothing fleet-wide.
+  CUSTOMER
 }
 
 model User {
@@ -32,6 +35,10 @@ model User {
   // seeded as demo data (isDemo: true on Customer/Driver/Equipment/Load).
   // Off by default so demo data never leaks into a normal account's view.
   showMockData Boolean  @default(false)
+  // Required (and enforced in application code) when role is CUSTOMER;
+  // null/unused for ADMIN and DISPATCHER accounts.
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   sessions     Session[]
@@ -41,6 +48,7 @@ model User {
   loadActivities    LoadActivity[]
   loadComments      LoadComment[]
 
+  @@index([customerId])
   @@map("users")
 }
 
@@ -82,6 +90,8 @@ model Customer {
   loads        Load[]
   contacts     CustomerContact[]
   documents    CustomerDocument[]
+  // Portal logins scoped to this customer (Role.CUSTOMER) — usually 0 or 1.
+  users        User[]
 
   @@index([isDemo])
   @@map("customers")
@@ -153,7 +163,7 @@ model Driver {
 }
 
 enum DriverDocumentType {
-  CDL
+  DRIVERS_LICENSE
   MEDICAL_CERT
   MVR
 }
@@ -210,6 +220,9 @@ model Equipment {
   equipmentType       EquipmentType     @relation(fields: [typeCode], references: [code], onUpdate: Cascade)
   status              EquipmentStatus   @default(AVAILABLE)
   nextMaintenance     DateTime
+  // Nullable — no data on file for equipment added before this field existed.
+  licensePlate           String?
+  registrationExpiration DateTime?
   isDemo              Boolean           @default(false)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
