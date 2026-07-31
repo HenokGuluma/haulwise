@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { userCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
 
 const SORT_MAP: Record<string, keyof Prisma.UserOrderByWithRelationInput> = {
   firstName: "firstName",
   email: "email",
-  role: "role",
   createdAt: "createdAt",
 };
 
@@ -18,14 +17,14 @@ const USER_SELECT = {
   firstName: true,
   lastName: true,
   email: true,
-  role: true,
+  role: { select: { id: true, name: true } },
   customerId: true,
   customer: { select: { id: true, companyName: true } },
   createdAt: true,
 } satisfies Prisma.UserSelect;
 
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("users:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { searchParams } = new URL(req.url);
@@ -41,8 +40,10 @@ export async function GET(req: NextRequest) {
       : undefined,
   };
 
-  const orderKey = (sortBy && SORT_MAP[sortBy]) || "firstName";
-  const orderBy = { [orderKey]: sortDir } as Prisma.UserOrderByWithRelationInput;
+  // role sorts by the related Role's name, not a scalar column on User —
+  // needs its own branch since it's not in SORT_MAP.
+  const orderBy: Prisma.UserOrderByWithRelationInput =
+    sortBy === "role" ? { role: { name: sortDir } } : { [SORT_MAP[sortBy ?? ""] ?? "firstName"]: sortDir };
 
   const [rows, total] = await Promise.all([
     prisma.user.findMany({ where, select: USER_SELECT, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("users:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase().trim() } });
   if (existing) return NextResponse.json({ error: "A user with this email already exists." }, { status: 409 });
+
+  const role = await prisma.role.findUnique({ where: { id: data.roleId } });
+  if (!role) return NextResponse.json({ error: "Unknown role." }, { status: 400 });
+  if (role.isCustomerScoped && !data.customerId) {
+    return NextResponse.json({ error: "Select a customer for a customer-scoped role." }, { status: 400 });
+  }
 
   if (data.customerId) {
     const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
@@ -79,8 +86,8 @@ export async function POST(req: NextRequest) {
       lastName: data.lastName ?? "",
       email: data.email.toLowerCase().trim(),
       passwordHash,
-      role: data.role,
-      customerId: data.role === "CUSTOMER" ? data.customerId : null,
+      roleId: data.roleId,
+      customerId: role.isCustomerScoped ? data.customerId : null,
     },
     select: USER_SELECT,
   });

@@ -11,7 +11,7 @@ export default async function LoadsPage() {
   if (!user) redirect("/login");
 
   const scope = demoScope(user);
-  const isCustomer = user.role === "CUSTOMER";
+  const isCustomer = user.isCustomerScoped;
   const [customers, drivers, equipment] = await Promise.all([
     isCustomer ? Promise.resolve([]) : prisma.customer.findMany({ where: scope, orderBy: { companyName: "asc" } }),
     isCustomer ? Promise.resolve([]) : prisma.driver.findMany({ where: scope, orderBy: { firstName: "asc" } }),

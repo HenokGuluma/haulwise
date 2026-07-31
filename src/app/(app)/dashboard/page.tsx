@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, requireInternalRole } from "@/lib/auth";
+import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardView } from "@/components/DashboardView";
 import { demoScope } from "@/lib/demo-scope";
@@ -11,6 +11,7 @@ export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   requireInternalRole(user);
+  requirePagePermission(user, "dashboard:view");
 
   const scope = demoScope(user);
   const now = new Date();

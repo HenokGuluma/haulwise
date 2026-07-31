@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { maintenanceRecordSchema } from "@/lib/validation";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("roster:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const records = await prisma.equipmentMaintenanceRecord.findMany({ where: { equipmentId: params.id }, orderBy: { date: "desc" } });
@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("roster:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const equipment = await prisma.equipment.findUnique({ where: { id: params.id } });

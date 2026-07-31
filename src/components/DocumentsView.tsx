@@ -142,8 +142,8 @@ export function DocumentsView({
   const fetchPage = useCallback((params: FetchPageParams) => fetchTablePage<Load>("/api/loads", params), []);
 
   async function togglePayout(load: Load) {
-    if (user.role !== "ADMIN") {
-      toast.error("Only Admin can update payout status.");
+    if (!user.permissions.includes("payments:manage")) {
+      toast.error("You don't have permission to update payout status.");
       return;
     }
     const next = load.payoutStatus === "PAID" ? "PENDING" : "PAID";
@@ -246,9 +246,9 @@ export function DocumentsView({
             render: (l) => (
               <span
                 className={"pill " + (l.payoutStatus === "PAID" ? "pill-success" : l.payoutStatus === "PENDING" ? "pill-warning" : "pill-muted")}
-                style={{ cursor: user.role === "ADMIN" ? "pointer" : "default" }}
+                style={{ cursor: user.permissions.includes("payments:manage") ? "pointer" : "default" }}
                 onClick={(e) => { e.stopPropagation(); togglePayout(l); }}
-                title={user.role === "ADMIN" ? "Click to toggle" : "Admin only"}
+                title={user.permissions.includes("payments:manage") ? "Click to toggle" : "You don't have permission to change this"}
               >
                 {payoutLabel(l.payoutStatus)}
               </span>

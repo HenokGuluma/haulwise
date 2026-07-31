@@ -17,7 +17,6 @@ import {
   PayoutStatus,
   DocumentType,
   CustomerStatus,
-  Role,
   type Prisma,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -207,6 +206,28 @@ async function main() {
   const startedAt = Date.now();
 
   // --- Demo user -----------------------------------------------------------
+  // Standalone script (not chained after seed.ts) — upsert the Manager role
+  // here too rather than assuming it already exists, same precedent as the
+  // equipment types upsert below.
+  const managerRole = await prisma.role.upsert({
+    where: { name: "Manager" },
+    update: {},
+    create: {
+      name: "Manager",
+      isCustomerScoped: false,
+      permissions: [
+        "loads:view", "loads:create", "loads:edit", "loads:assign", "loads:delete", "loads:comment",
+        "payments:view", "payments:manage",
+        "customers:view", "customers:create", "customers:edit", "customers:delete",
+        "documents:view", "documents:upload", "documents:delete",
+        "roster:view", "roster:manage", "roster:delete",
+        "equipment-types:manage",
+        "dashboard:view", "search:use",
+        "users:view", "users:manage", "roles:manage",
+      ],
+    },
+  });
+
   const passwordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 10);
   const demoUser = await prisma.user.upsert({
     where: { email: DEMO_USER_EMAIL },
@@ -216,7 +237,7 @@ async function main() {
       lastName: DEMO_USER_LAST_NAME,
       email: DEMO_USER_EMAIL,
       passwordHash,
-      role: Role.ADMIN,
+      roleId: managerRole.id,
       showMockData: true,
     },
   });

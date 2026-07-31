@@ -1,4 +1,4 @@
-import { PrismaClient, LoadStatus, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType, Role } from "@prisma/client";
+import { PrismaClient, LoadStatus, DriverStatus, EquipmentStatus, PayoutStatus, DocumentType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getStorageDriver } from "../src/lib/storage";
 import { USD_TO_ETB_RATE, LBS_PER_QUINTAL } from "../src/lib/format";
@@ -34,6 +34,65 @@ function daysFromNow(n: number, hour = 8): Date {
 async function main() {
   console.log("Seeding Edget database...");
 
+  // --- Roles -------------------------------------------------------------
+  // Also seeded directly in the dynamic_roles_and_permissions migration, but
+  // upserted here too so a `prisma db push` + `seed` flow (no migration
+  // history) still has them — same precedent as equipment types.
+  const managerRole = await prisma.role.upsert({
+    where: { name: "Manager" },
+    update: {},
+    create: {
+      name: "Manager",
+      isCustomerScoped: false,
+      permissions: [
+        "loads:view", "loads:create", "loads:edit", "loads:assign", "loads:delete", "loads:comment",
+        "payments:view", "payments:manage",
+        "customers:view", "customers:create", "customers:edit", "customers:delete",
+        "documents:view", "documents:upload", "documents:delete",
+        "roster:view", "roster:manage", "roster:delete",
+        "equipment-types:manage",
+        "dashboard:view", "search:use",
+        "users:view", "users:manage", "roles:manage",
+      ],
+    },
+  });
+  const dispatcherRole = await prisma.role.upsert({
+    where: { name: "Dispatcher" },
+    update: {},
+    create: {
+      name: "Dispatcher",
+      isCustomerScoped: false,
+      permissions: [
+        "loads:view", "loads:create", "loads:edit", "loads:assign", "loads:comment",
+        "payments:view",
+        "customers:view", "customers:create", "customers:edit",
+        "documents:view", "documents:upload",
+        "roster:view", "roster:manage",
+        "dashboard:view", "search:use",
+      ],
+    },
+  });
+  await prisma.role.upsert({
+    where: { name: "Accountant" },
+    update: {},
+    create: {
+      name: "Accountant",
+      isCustomerScoped: false,
+      permissions: [
+        "loads:view", "loads:comment",
+        "payments:view", "payments:manage",
+        "customers:view",
+        "documents:view",
+        "dashboard:view", "search:use",
+      ],
+    },
+  });
+  const customerRole = await prisma.role.upsert({
+    where: { name: "Customer" },
+    update: {},
+    create: { name: "Customer", isCustomerScoped: true, permissions: [] },
+  });
+
   // --- Users -----------------------------------------------------------
   const adminPassword = await bcrypt.hash("admin123", 10);
   const dispatcherPassword = await bcrypt.hash("dispatch123", 10);
@@ -46,7 +105,7 @@ async function main() {
       lastName: "",
       email: "admin@edget.local",
       passwordHash: adminPassword,
-      role: Role.ADMIN,
+      roleId: managerRole.id,
     },
   });
 
@@ -58,7 +117,7 @@ async function main() {
       lastName: "Chen",
       email: "dispatcher@edget.local",
       passwordHash: dispatcherPassword,
-      role: Role.DISPATCHER,
+      roleId: dispatcherRole.id,
     },
   });
 
@@ -75,8 +134,8 @@ async function main() {
     customers.push(await prisma.customer.create({ data: c }));
   }
 
-  // Portal login scoped to Meridian Foods Co. — for QA of the CUSTOMER role's
-  // restricted view (only that customer's own loads/documents).
+  // Portal login scoped to Meridian Foods Co. — for QA of the Customer
+  // role's restricted view (only that customer's own loads/documents).
   const customerPortalPassword = await bcrypt.hash("customer123", 10);
   await prisma.user.upsert({
     where: { email: "customer@edget.local" },
@@ -86,7 +145,7 @@ async function main() {
       lastName: "Tesfaye",
       email: "customer@edget.local",
       passwordHash: customerPortalPassword,
-      role: Role.CUSTOMER,
+      roleId: customerRole.id,
       customerId: customers[0].id,
     },
   });

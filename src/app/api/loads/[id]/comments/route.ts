@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { fullName } from "@/lib/format";
 import { z } from "zod";
 
 const bodySchema = z.object({ body: z.string().trim().min(1, "Comment can't be empty.").max(2000) });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("loads:comment");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const load = await prisma.load.findUnique({ where: { id: params.id } });

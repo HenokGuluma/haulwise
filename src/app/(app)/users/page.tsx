@@ -5,7 +5,7 @@ import { UsersView } from "@/components/UsersView";
 export default async function UsersPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (user.role !== "ADMIN") redirect("/dashboard");
+  if (!user.permissions.includes("users:view")) redirect("/dashboard");
 
   return <UsersView user={user} />;
 }

@@ -90,7 +90,7 @@ export function SettingsView({ user }: { user: SessionUser }) {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
             <span style={{ color: "var(--muted)" }}>Role</span>
-            <span style={{ fontWeight: 600 }}>{user.role === "ADMIN" ? "Admin" : user.role === "DISPATCHER" ? "Dispatcher" : "Customer"}</span>
+            <span style={{ fontWeight: 600 }}>{user.roleName}</span>
           </div>
         </div>
       </div>

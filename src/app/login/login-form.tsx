@@ -37,7 +37,7 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      const defaultHome = data.user?.role === "CUSTOMER" ? "/loads" : "/dashboard";
+      const defaultHome = data.user?.isCustomerScoped ? "/loads" : "/dashboard";
       const next = searchParams.get("next") || defaultHome;
       router.push(next);
       router.refresh();

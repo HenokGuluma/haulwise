@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { equipmentTypeCreateSchema } from "@/lib/validation";
 
 // Small, low-cardinality list (a handful of equipment types) — no pagination,
@@ -8,7 +8,7 @@ import { equipmentTypeCreateSchema } from "@/lib/validation";
 // wants the full set. Includes live in-use counts so the management tab can
 // show "3 units, 12 loads" and the delete guard can explain why it's blocked.
 export async function GET() {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("roster:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const types = await prisma.equipmentType.findMany({
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("equipment-types:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);

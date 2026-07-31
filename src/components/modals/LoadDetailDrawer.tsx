@@ -65,7 +65,7 @@ function DocumentSlot({
       toast.info("Document removed.");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can remove documents.");
+      toast.error(err instanceof ApiRequestError ? err.message : "You don't have permission to remove documents.");
     }
   }
 
@@ -281,7 +281,7 @@ export function LoadDetailDrawer({
   onClone?: (load: Load) => void;
 }) {
   const toast = useToast();
-  const isCustomer = user.role === "CUSTOMER";
+  const isCustomer = user.isCustomerScoped;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -344,7 +344,7 @@ export function LoadDetailDrawer({
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { payoutStatus: next });
       onUpdated(res.load);
     } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can update payout status.");
+      toast.error(err instanceof ApiRequestError ? err.message : "You don't have permission to update payout status.");
     }
   }
 
@@ -421,7 +421,7 @@ export function LoadDetailDrawer({
               type={type}
               label={DOC_LABELS[type]}
               docs={load.documents.filter((d) => d.type === type)}
-              canDelete={user.role === "ADMIN"}
+              canDelete={user.permissions.includes("documents:delete")}
               canUpload={!isCustomer}
               onChanged={refreshLoad}
             />
@@ -432,7 +432,7 @@ export function LoadDetailDrawer({
           <>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
               <div className="section-title" style={{ marginBottom: 0 }}>Billing</div>
-              {user.role === "ADMIN" && remaining > 0 && (
+              {user.permissions.includes("payments:manage") && remaining > 0 && (
                 <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setPaymentModalOpen(true)}>Log payment</button>
               )}
             </div>
@@ -455,9 +455,9 @@ export function LoadDetailDrawer({
                 <span style={{ color: "var(--muted)" }}>Status</span>
                 <span
                   className={"pill " + (computedStatus === "Paid" ? "pill-success" : computedStatus === "Partially Paid" ? "pill-warning" : "pill-muted")}
-                  style={{ cursor: user.role === "ADMIN" && payments.length === 0 ? "pointer" : "default" }}
+                  style={{ cursor: user.permissions.includes("payments:manage") && payments.length === 0 ? "pointer" : "default" }}
                   onClick={payments.length === 0 ? togglePayout : undefined}
-                  title={user.role === "ADMIN" && payments.length === 0 ? "Click to toggle (or log a payment for partial amounts)" : undefined}
+                  title={user.permissions.includes("payments:manage") && payments.length === 0 ? "Click to toggle (or log a payment for partial amounts)" : undefined}
                 >
                   {computedStatus}
                 </span>
@@ -479,7 +479,7 @@ export function LoadDetailDrawer({
         )}
       </div>
       <div className="panel-foot">
-        {user.role === "ADMIN" && (
+        {user.permissions.includes("loads:delete") && (
           <Button variant="danger-ghost" onClick={() => setConfirmDelete(true)}>Delete</Button>
         )}
         <a href={`/loads/${load.id}/print`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>

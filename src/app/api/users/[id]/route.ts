@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { userUpdateSchema } from "@/lib/validation";
 
 const USER_SELECT = {
@@ -10,14 +10,14 @@ const USER_SELECT = {
   firstName: true,
   lastName: true,
   email: true,
-  role: true,
+  role: { select: { id: true, name: true } },
   customerId: true,
   customer: { select: { id: true, companyName: true } },
   createdAt: true,
 } satisfies Prisma.UserSelect;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("users:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.user.findUnique({ where: { id: params.id } });
@@ -38,11 +38,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Validate the merged (existing + patch) role/customerId state — a partial
-  // update can't see prior state inside the Zod schema itself.
-  const mergedRole = patch.role ?? existing.role;
+  // update can't see prior state inside the Zod schema itself. Whether a
+  // role requires a customerId is DB data now (Role.isCustomerScoped), not a
+  // static union, so this needs a lookup rather than a string comparison.
+  const mergedRoleId = patch.roleId ?? existing.roleId;
   const mergedCustomerId = patch.customerId !== undefined ? patch.customerId : existing.customerId;
-  if (mergedRole === "CUSTOMER" && !mergedCustomerId) {
-    return NextResponse.json({ error: "Select a customer for a Customer-role account." }, { status: 400 });
+  const mergedRole = await prisma.role.findUnique({ where: { id: mergedRoleId } });
+  if (!mergedRole) return NextResponse.json({ error: "Unknown role." }, { status: 400 });
+  if (mergedRole.isCustomerScoped && !mergedCustomerId) {
+    return NextResponse.json({ error: "Select a customer for a customer-scoped role." }, { status: 400 });
   }
 
   if (patch.customerId) {
@@ -56,8 +60,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       firstName: patch.firstName,
       lastName: patch.lastName,
       email: patch.email ? patch.email.toLowerCase().trim() : undefined,
-      role: patch.role,
-      customerId: mergedRole === "CUSTOMER" ? mergedCustomerId : null,
+      roleId: patch.roleId,
+      customerId: mergedRole.isCustomerScoped ? mergedCustomerId : null,
       passwordHash: patch.password ? await bcrypt.hash(patch.password, 10) : undefined,
     },
     select: USER_SELECT,
@@ -67,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("users:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   if (params.id === auth.user.id) {

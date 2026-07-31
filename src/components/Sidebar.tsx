@@ -5,18 +5,22 @@ import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { fullName } from "@/lib/format";
-import type { SessionUser, Role } from "@/types";
+import type { SessionUser } from "@/types";
 
-type NavItem = { href: string; label: string; icon: string; roles?: Role[] };
+type NavItem = { href: string; label: string; icon: string; requiredPermission?: string };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "grid", roles: ["ADMIN", "DISPATCHER"] },
-  { href: "/board", label: "Dispatch Board", icon: "columns", roles: ["ADMIN", "DISPATCHER"] },
+  { href: "/dashboard", label: "Dashboard", icon: "grid", requiredPermission: "dashboard:view" },
+  // Gated on loads:assign (not loads:view) so a view-only role (e.g.
+  // Accountant) doesn't see a dispatch board whose drag actions it can't
+  // perform.
+  { href: "/board", label: "Dispatch Board", icon: "columns", requiredPermission: "loads:assign" },
   { href: "/loads", label: "Loads", icon: "list" },
-  { href: "/customers", label: "Customers", icon: "briefcase", roles: ["ADMIN", "DISPATCHER"] },
-  { href: "/roster", label: "Drivers & Equipment", icon: "users", roles: ["ADMIN", "DISPATCHER"] },
-  { href: "/documents", label: "Documents & Billing", icon: "fileText", roles: ["ADMIN", "DISPATCHER"] },
-  { href: "/users", label: "Users", icon: "shield", roles: ["ADMIN"] },
+  { href: "/customers", label: "Customers", icon: "briefcase", requiredPermission: "customers:view" },
+  { href: "/roster", label: "Drivers & Equipment", icon: "users", requiredPermission: "roster:view" },
+  { href: "/documents", label: "Documents & Billing", icon: "fileText", requiredPermission: "documents:view" },
+  { href: "/roles", label: "Roles", icon: "shield", requiredPermission: "roles:manage" },
+  { href: "/users", label: "Users", icon: "shield", requiredPermission: "users:view" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -59,7 +63,7 @@ export function Sidebar({
       </div>
 
       <div className="nav-group">
-        {NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => {
+        {NAV_ITEMS.filter((item) => !item.requiredPermission || user.permissions.includes(item.requiredPermission)).map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const count = counts[item.href];
           return (
@@ -73,12 +77,10 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <div className="role-avatar">{user.role === "ADMIN" ? "AD" : user.role === "DISPATCHER" ? "DS" : "CU"}</div>
+        <div className="role-avatar">{user.roleName.slice(0, 2).toUpperCase()}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="role-name">{fullName(user.firstName, user.lastName)}</div>
-          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>
-            {user.role === "ADMIN" ? "Admin" : user.role === "DISPATCHER" ? "Dispatcher" : "Customer"}
-          </div>
+          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>{user.roleName}</div>
         </div>
         <ThemeToggle />
         <IconButtonInline onClick={signOut} />

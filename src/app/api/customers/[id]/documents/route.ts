@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { getStorageDriver, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "@/lib/storage";
 import { fullName } from "@/lib/format";
 
@@ -9,7 +9,7 @@ function sanitizeFileName(name: string): string {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("documents:upload");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const customer = await prisma.customer.findUnique({ where: { id: params.id } });

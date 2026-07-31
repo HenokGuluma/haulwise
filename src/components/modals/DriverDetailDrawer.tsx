@@ -41,7 +41,7 @@ function DriverDocSlot({ driverId, type, docs, canDelete, onChanged }: { driverI
       toast.info("Document removed.");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can remove documents.");
+      toast.error(err instanceof ApiRequestError ? err.message : "You don't have permission to remove documents.");
     }
   }
 

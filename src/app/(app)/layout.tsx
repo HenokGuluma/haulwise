@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const scope = { ...demoScope(user), ...customerScope(user) };
 
-  if (user.role === "CUSTOMER") {
+  if (user.isCustomerScoped) {
     const loadsCount = await prisma.load.count({ where: scope });
     return (
       <AppShellClient user={user} counts={{ "/loads": loadsCount }}>

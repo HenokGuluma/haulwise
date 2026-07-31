@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { getStorageDriver, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "@/lib/storage";
 import { logActivity } from "@/lib/activity";
 import { fullName } from "@/lib/format";
@@ -17,7 +17,7 @@ function sanitizeFileName(name: string): string {
 // (src/lib/storage.ts) and versions it — a new upload for a type doesn't
 // delete the previous one, it just becomes the new "current" row.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("documents:upload");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const load = await prisma.load.findUnique({ where: { id: params.id } });

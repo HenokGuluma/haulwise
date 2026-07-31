@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EQUIPMENT_TYPE_ICONS, EQUIPMENT_TYPE_TONES } from "@/lib/equipment-types";
+import { PERMISSION_KEYS } from "@/lib/permissions";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -122,27 +123,32 @@ export const customerContactSchema = z.object({
 
 export const customerContactUpdateSchema = customerContactSchema.partial();
 
-const userRole = z.enum(["ADMIN", "DISPATCHER", "CUSTOMER"]);
-
-export const userCreateSchema = z
-  .object({
-    firstName: z.string().trim().min(1, "First name is required."),
-    lastName: z.string().trim().max(60).optional().default(""),
-    email: z.string().trim().email("Enter a valid email."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    role: userRole.default("DISPATCHER"),
-    customerId: z.string().min(1).optional().nullable(),
-  })
-  .refine((d) => d.role !== "CUSTOMER" || !!d.customerId, {
-    message: "Select a customer for a Customer-role account.",
-    path: ["customerId"],
-  });
+// Whether a role requires a linked customerId (isCustomerScoped) can't be
+// known statically anymore — roles are DB data now, not a fixed union — so
+// that invariant is checked in the route handler (a DB lookup) instead of a
+// Zod .refine() here.
+export const userCreateSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required."),
+  lastName: z.string().trim().max(60).optional().default(""),
+  email: z.string().trim().email("Enter a valid email."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+  roleId: z.string().min(1, "Select a role."),
+  customerId: z.string().min(1).optional().nullable(),
+});
 
 export const userUpdateSchema = z.object({
   firstName: z.string().trim().min(1).optional(),
   lastName: z.string().trim().max(60).optional(),
   email: z.string().trim().email().optional(),
   password: z.string().min(8).optional(),
-  role: userRole.optional(),
+  roleId: z.string().min(1).optional(),
   customerId: z.string().min(1).optional().nullable(),
 });
+
+export const roleCreateSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(60),
+  isCustomerScoped: z.boolean().default(false),
+  permissions: z.array(z.enum(PERMISSION_KEYS)).default([]),
+});
+
+export const roleUpdateSchema = roleCreateSchema.partial();

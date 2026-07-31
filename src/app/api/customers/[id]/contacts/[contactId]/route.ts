@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { customerContactUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; contactId: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("customers:edit");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.customerContact.findUnique({ where: { id: params.contactId } });
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string; contactId: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("customers:edit");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.customerContact.findUnique({ where: { id: params.contactId } });

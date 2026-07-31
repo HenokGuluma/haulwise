@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { getStorageDriver } from "@/lib/storage";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string; docId: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("documents:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const doc = await prisma.driverDocument.findUnique({ where: { id: params.docId } });
@@ -23,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string; docId: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("documents:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const doc = await prisma.driverDocument.findUnique({ where: { id: params.docId } });

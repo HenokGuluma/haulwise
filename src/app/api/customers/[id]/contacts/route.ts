@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { customerContactSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("customers:edit");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const customer = await prisma.customer.findUnique({ where: { id: params.id } });

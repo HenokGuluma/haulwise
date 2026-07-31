@@ -65,7 +65,8 @@ export function RosterView({
   const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const canDelete = user.role === "ADMIN";
+  const canDelete = user.permissions.includes("roster:delete");
+  const canManageTypes = user.permissions.includes("equipment-types:manage");
 
   // Deep-link support: /roster?tab=drivers&driverId=<id> (or equipmentId=)
   // from the command palette or the Dashboard's "Needs attention" feed.
@@ -210,7 +211,7 @@ export function RosterView({
                   <IconButton icon="edit" title="Edit driver" onClick={() => setDriverForm({ open: true, driver: d })} />
                   <IconButton
                     icon="trash"
-                    title={canDelete ? "Delete driver" : "Admin only"}
+                    title={canDelete ? "Delete driver" : "You don't have permission"}
                     onClick={canDelete ? () => setConfirm({
                       title: "Delete driver",
                       message: `Remove ${d.firstName} ${d.lastName} from the roster? This cannot be undone.`,
@@ -293,7 +294,7 @@ export function RosterView({
                   <IconButton icon="edit" title="Edit equipment" onClick={() => setEquipmentForm({ open: true, equipment: e })} />
                   <IconButton
                     icon="trash"
-                    title={canDelete ? "Delete equipment" : "Admin only"}
+                    title={canDelete ? "Delete equipment" : "You don't have permission"}
                     onClick={canDelete ? () => setConfirm({
                       title: "Delete equipment",
                       message: `Remove unit ${e.unitNumber} from the fleet? This cannot be undone.`,
@@ -364,13 +365,13 @@ export function RosterView({
                     <IconButton icon="edit" title="Edit type" onClick={() => setTypeForm({ open: true, type: t })} />
                     <IconButton
                       icon="trash"
-                      title={!canDelete ? "Admin only" : inUse ? `In use by ${t.equipmentCount} unit(s) and ${t.loadCount} load(s)` : "Delete type"}
-                      onClick={canDelete && !inUse ? () => setConfirm({
+                      title={!canManageTypes ? "You don't have permission" : inUse ? `In use by ${t.equipmentCount} unit(s) and ${t.loadCount} load(s)` : "Delete type"}
+                      onClick={canManageTypes && !inUse ? () => setConfirm({
                         title: "Delete equipment type",
                         message: `Remove "${t.label}" (${t.code})? This cannot be undone.`,
                         onConfirm: () => deleteType(t.id),
                       }) : undefined}
-                      style={!canDelete || inUse ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                      style={!canManageTypes || inUse ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
                     />
                   </span>
                 );

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
 import { useCustomers } from "@/lib/useCustomers";
+import { useRoles } from "@/lib/useRoles";
 import { api, ApiRequestError } from "@/lib/api-client";
-import type { UserRow, Role } from "@/types";
+import type { UserRow } from "@/types";
 
 export function UserFormModal({
   row,
@@ -17,17 +18,21 @@ export function UserFormModal({
 }) {
   const isEdit = !!row;
   const customers = useCustomers();
+  const roles = useRoles();
   const [form, setForm] = useState({
     firstName: row?.firstName ?? "",
     lastName: row?.lastName ?? "",
     email: row?.email ?? "",
     password: "",
-    role: (row?.role ?? "DISPATCHER") as Role,
+    roleId: row?.role.id ?? "",
     customerId: row?.customerId ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const selectedRole = roles.find((r) => r.id === form.roleId);
+  const needsCustomer = selectedRole?.isCustomerScoped ?? false;
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -39,7 +44,8 @@ export function UserFormModal({
     if (!form.email.trim()) e.email = "Required.";
     if (!isEdit && form.password.length < 8) e.password = "At least 8 characters.";
     if (isEdit && form.password && form.password.length < 8) e.password = "At least 8 characters.";
-    if (form.role === "CUSTOMER" && !form.customerId) e.customerId = "Select a customer.";
+    if (!form.roleId) e.roleId = "Select a role.";
+    if (needsCustomer && !form.customerId) e.customerId = "Select a customer.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -52,8 +58,8 @@ export function UserFormModal({
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
-      role: form.role,
-      customerId: form.role === "CUSTOMER" ? form.customerId : null,
+      roleId: form.roleId,
+      customerId: needsCustomer ? form.customerId : null,
     };
     if (form.password) payload.password = form.password;
     try {
@@ -90,14 +96,15 @@ export function UserFormModal({
         <Field label={isEdit ? "Reset password" : "Password"} error={errors.password} hint={isEdit ? "Leave blank to keep current password" : undefined}>
           <input type="password" className={"input" + (errors.password ? " err" : "")} value={form.password} onChange={(e) => set("password", e.target.value)} />
         </Field>
-        <Field label="Role">
-          <select className="input" value={form.role} onChange={(e) => set("role", e.target.value as Role)}>
-            <option value="ADMIN">Admin</option>
-            <option value="DISPATCHER">Dispatcher</option>
-            <option value="CUSTOMER">Customer</option>
+        <Field label="Role" error={errors.roleId}>
+          <select className={"input" + (errors.roleId ? " err" : "")} value={form.roleId} onChange={(e) => set("roleId", e.target.value)}>
+            <option value="">Select a role…</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
           </select>
         </Field>
-        {form.role === "CUSTOMER" && (
+        {needsCustomer && (
           <Field label="Customer" error={errors.customerId} hint="This account will only see this customer's loads and documents">
             <select className={"input" + (errors.customerId ? " err" : "")} value={form.customerId} onChange={(e) => set("customerId", e.target.value)}>
               <option value="">Select a customer…</option>

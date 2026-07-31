@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, requireInternalRole } from "@/lib/auth";
+import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DocumentsView } from "@/components/DocumentsView";
 import { demoScope } from "@/lib/demo-scope";
@@ -8,6 +8,7 @@ export default async function DocumentsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   requireInternalRole(user);
+  requirePagePermission(user, "documents:view");
 
   const scope = demoScope(user);
   const [payAgg, pendingAgg, withDocs, loadCount] = await Promise.all([

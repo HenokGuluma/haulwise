@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { fullName } from "@/lib/format";
 
 /** Combined audit trail + comments for a load's detail-drawer timeline. */
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("loads:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const [activities, comments] = await Promise.all([

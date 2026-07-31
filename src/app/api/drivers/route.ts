@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, DriverStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { driverCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
 import { demoScope } from "@/lib/demo-scope";
@@ -17,7 +17,7 @@ const SORT_MAP: Record<string, Prisma.DriverOrderByWithRelationInput> = {
 };
 
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("roster:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { searchParams } = new URL(req.url);
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("roster:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);

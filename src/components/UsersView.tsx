@@ -6,10 +6,7 @@ import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { UserFormModal } from "@/components/modals/UserFormModal";
 import { fullName, fmtDate } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
-import type { SessionUser, UserRow, Role } from "@/types";
-
-const ROLE_LABEL: Record<Role, string> = { ADMIN: "Admin", DISPATCHER: "Dispatcher", CUSTOMER: "Customer" };
-const ROLE_TONE: Record<Role, "success" | "warning" | "muted"> = { ADMIN: "success", DISPATCHER: "warning", CUSTOMER: "muted" };
+import type { SessionUser, UserRow } from "@/types";
 
 export function UsersView({ user }: { user: SessionUser }) {
   const [reloadKey, setReloadKey] = useState(0);
@@ -59,8 +56,8 @@ export function UsersView({ user }: { user: SessionUser }) {
           {
             key: "role",
             label: "Role",
-            render: (u) => <Pill tone={ROLE_TONE[u.role]} dot>{ROLE_LABEL[u.role]}</Pill>,
-            exportValue: (u) => ROLE_LABEL[u.role],
+            render: (u) => <Pill tone="muted" dot>{u.role.name}</Pill>,
+            exportValue: (u) => u.role.name,
           },
           {
             key: "customer",

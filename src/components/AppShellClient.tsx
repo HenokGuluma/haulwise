@@ -31,13 +31,13 @@ function ShellInner({
         <Topbar
           onNewLoad={() => setNewLoadOpen(true)}
           onMenuClick={() => setSidebarOpen(true)}
-          showNewLoad={user.role !== "CUSTOMER"}
-          showSearch={user.role !== "CUSTOMER"}
+          showNewLoad={!user.isCustomerScoped}
+          showSearch={!user.isCustomerScoped}
         />
         <div className="content">{children}</div>
       </div>
 
-      {user.role !== "CUSTOMER" && <CommandPalette />}
+      {!user.isCustomerScoped && <CommandPalette />}
 
       {newLoadOpen && (
         <LoadFormModal

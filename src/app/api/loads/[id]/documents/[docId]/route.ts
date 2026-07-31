@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requireUser, requirePermission } from "@/lib/auth";
 import { getStorageDriver } from "@/lib/storage";
 
 /** Streams the stored file back — used for inline preview (images/PDFs) and download links. */
@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
 
   const doc = await prisma.document.findUnique({ where: { id: params.docId }, include: { load: true } });
   if (!doc || doc.loadId !== params.id) return NextResponse.json({ error: "Document not found." }, { status: 404 });
-  if (auth.user.role === "CUSTOMER" && doc.load.customerId !== auth.user.customerId) {
+  if (auth.user.isCustomerScoped && doc.load.customerId !== auth.user.customerId) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }
 
@@ -26,9 +26,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
   });
 }
 
-/** Removes one specific document version (both the DB row and the stored file). Admin only. */
+/** Removes one specific document version (both the DB row and the stored file). */
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string; docId: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("documents:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const doc = await prisma.document.findUnique({ where: { id: params.docId } });

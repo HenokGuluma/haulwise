@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, requireInternalRole } from "@/lib/auth";
+import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { CustomerDetailView } from "@/components/CustomerDetailView";
 import { demoScope } from "@/lib/demo-scope";
@@ -10,6 +10,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
   const user = await getSessionUser();
   if (!user) redirect("/login");
   requireInternalRole(user);
+  requirePagePermission(user, "customers:view");
 
   const customer = await prisma.customer.findUnique({
     where: { id: params.id, ...demoScope(user) },

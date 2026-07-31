@@ -17,7 +17,17 @@ export async function POST(req: NextRequest) {
   const session = await createSession(user.id);
 
   const res = NextResponse.json({
-    user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role, showMockData: user.showMockData },
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      roleId: user.roleId,
+      roleName: user.role.name,
+      isCustomerScoped: user.role.isCustomerScoped,
+      permissions: user.role.permissions,
+      showMockData: user.showMockData,
+    },
   });
   res.cookies.set(SESSION_COOKIE, session.id, {
     httpOnly: true,

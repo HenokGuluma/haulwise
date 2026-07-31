@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { demoScope } from "@/lib/demo-scope";
 
 const LIMIT = 6;
 
 /** Backs the global command palette (Cmd/Ctrl+K) — a small top-N slice per entity type. */
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("search:use");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const q = (new URL(req.url).searchParams.get("q") || "").trim();

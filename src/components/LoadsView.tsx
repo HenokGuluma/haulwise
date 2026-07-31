@@ -34,7 +34,7 @@ export function LoadsView({
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isCustomer = user.role === "CUSTOMER";
+  const isCustomer = user.isCustomerScoped;
 
   // Deep-link support: /loads?open=<id> (from the command palette, or a
   // future external link) opens that load's detail drawer directly.

@@ -62,7 +62,7 @@ function CustomerDocumentsPanel({
       toast.info("Document removed.");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof ApiRequestError ? err.message : "Only Admin can remove documents.");
+      toast.error(err instanceof ApiRequestError ? err.message : "You don't have permission to remove documents.");
     }
   }
 
@@ -126,7 +126,7 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
 
   const router = useRouter();
   const toast = useToast();
-  const canDelete = user.role === "ADMIN";
+  const canDelete = user.permissions.includes("customers:delete");
 
   async function refreshCustomer() {
     const res = await api.get<{ customer: CustomerWithDetail }>(`/api/customers/${customer.id}`);

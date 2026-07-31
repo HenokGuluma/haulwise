@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { parseListParams } from "@/lib/pagination";
 import { demoScope } from "@/lib/demo-scope";
 import { fullName } from "@/lib/format";
@@ -14,7 +14,7 @@ const SORT_MAP: Record<string, keyof Prisma.DocumentOrderByWithRelationInput> = 
 
 /** Cross-load document library — every uploaded document, searchable without opening each load. */
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("documents:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { searchParams } = new URL(req.url);

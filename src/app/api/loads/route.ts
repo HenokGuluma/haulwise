@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, LoadStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requireUser, requirePermission } from "@/lib/auth";
 import { loadCreateSchema } from "@/lib/validation";
 import { parseListParams } from "@/lib/pagination";
 import { logActivity } from "@/lib/activity";
@@ -102,7 +102,7 @@ async function nextLoadNumber(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("loads:create");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);

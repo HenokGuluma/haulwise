@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { fmtMoney } from "@/lib/format";
 import { z } from "zod";
@@ -13,7 +13,7 @@ const paymentSchema = z.object({
 });
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("payments:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const payments = await prisma.payment.findMany({ where: { loadId: params.id }, orderBy: { paidAt: "desc" } });
@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // payoutStatus directly. Recomputes and syncs payoutStatus from the running
 // total so existing filters/CSV/dashboard code keeps working unchanged.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("payments:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const load = await prisma.load.findUnique({ where: { id: params.id } });

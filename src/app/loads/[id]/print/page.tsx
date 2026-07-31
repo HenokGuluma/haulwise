@@ -71,7 +71,7 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
       <div className="section">Assignment</div>
       <div className="row"><span className="label">Driver</span><span>{load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : "Unassigned"}</span></div>
       <div className="row"><span className="label">Equipment</span><span>{load.equipment ? load.equipment.unitNumber : "Unassigned"}</span></div>
-      {user.role !== "CUSTOMER" && (
+      {!user.isCustomerScoped && (
         <div className="row"><span className="label">Driver Pay</span><span>{fmtMoney(load.driverPay)}</span></div>
       )}
 

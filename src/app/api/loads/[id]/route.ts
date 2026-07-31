@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requireUser, requirePermission } from "@/lib/auth";
 import { loadUpdateSchema } from "@/lib/validation";
 import { findConflicts } from "@/lib/conflicts";
 import { getStorageDriver } from "@/lib/storage";
@@ -28,8 +28,21 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 const REQUIRES_ASSIGNMENT = new Set(["ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requireUser();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  // Split permission model: general load fields need loads:edit, but
+  // rate/payoutStatus are finance actions gated on payments:manage instead —
+  // this lets an Accountant (payments:manage, no loads:edit) log payouts
+  // and correct rates without being able to touch dispatch details, while a
+  // Dispatcher (loads:edit, no payments:manage) can't touch payout status,
+  // mirroring the original Admin-only payout-toggle rule.
+  const perms = auth.user.permissions;
+  const canEditLoad = perms.includes("loads:edit");
+  const canManagePayments = perms.includes("payments:manage");
+  if (!canEditLoad && !canManagePayments) {
+    return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
+  }
 
   const existing = await prisma.load.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Load not found." }, { status: 404 });
@@ -41,10 +54,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const patch = parsed.data;
 
-  // Only Admin can directly toggle payout status (mirrors the UI's role gating).
-  if (patch.payoutStatus !== undefined) {
-    const roleCheck = await requireRole(["ADMIN"]);
-    if ("error" in roleCheck) return NextResponse.json({ error: roleCheck.error }, { status: roleCheck.status });
+  if (patch.payoutStatus !== undefined && !canManagePayments) {
+    return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
+  }
+  const otherFields = Object.keys(patch).filter((k) => k !== "payoutStatus" && k !== "rate");
+  if (otherFields.length > 0 && !canEditLoad) {
+    return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
 
   if (patch.equipmentTypeCode) {
@@ -108,7 +123,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("loads:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.load.findUnique({ where: { id: params.id } });

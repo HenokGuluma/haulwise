@@ -4,8 +4,6 @@
 // Date objects at the point of use (see src/lib/format.ts helpers, which all
 // accept `Date | string`).
 
-export type Role = "ADMIN" | "DISPATCHER" | "CUSTOMER";
-
 export type LoadStatus = "DRAFT" | "ASSIGNED" | "DISPATCHED" | "IN_TRANSIT" | "DELIVERED" | "BILLED";
 export type DriverStatus = "AVAILABLE" | "ON_DUTY" | "OFF_DUTY";
 export type EquipmentStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
@@ -195,9 +193,22 @@ export type SessionUser = {
   firstName: string;
   lastName: string;
   email: string;
-  role: Role;
+  roleId: string;
+  roleName: string;
+  isCustomerScoped: boolean;
+  permissions: string[];
   showMockData: boolean;
   customerId: string | null;
+};
+
+export type RoleRow = {
+  id: string;
+  name: string;
+  isCustomerScoped: boolean;
+  permissions: string[];
+  userCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type UserRow = {
@@ -205,7 +216,7 @@ export type UserRow = {
   firstName: string;
   lastName: string;
   email: string;
-  role: Role;
+  role: { id: string; name: string };
   customerId: string | null;
   customer: { id: string; companyName: string } | null;
   createdAt: string;

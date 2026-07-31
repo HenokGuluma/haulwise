@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireRole } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { customerUpdateSchema } from "@/lib/validation";
 import { getStorageDriver } from "@/lib/storage";
 import { demoScope } from "@/lib/demo-scope";
@@ -9,7 +9,7 @@ import { fullName } from "@/lib/format";
 const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN", "DISPATCHER"]);
+  const auth = await requirePermission("customers:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const customer = await prisma.customer.findUnique({
@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireUser();
+  const auth = await requirePermission("customers:edit");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.customer.findUnique({ where: { id: params.id } });
@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(["ADMIN"]);
+  const auth = await requirePermission("customers:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const existing = await prisma.customer.findUnique({ where: { id: params.id } });
