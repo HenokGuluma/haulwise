@@ -95,30 +95,32 @@ export function SettingsView({ user }: { user: SessionUser }) {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 20 }}>
-        <div className="section-title">
-          <span className="section-title-icon" style={{ background: "var(--purple-bg)", color: "var(--purple)" }}>
-            <Icon name="database" size={16} />
-          </span>
-          Demo data
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>Show demo data</div>
-            <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>
-              Edget can be pre-populated with a large set of realistic sample customers, drivers,
-              equipment, and loads spanning three years of operations — useful for exploring every
-              feature (including the dashboard charts) without real data. When this is off, demo
-              rows are hidden everywhere: the dispatch board, loads, customers, roster, documents,
-              and dashboard all show only your real, ordinary data.
-            </p>
+      {!user.isCustomerScoped && (
+        <div className="card" style={{ padding: 20 }}>
+          <div className="section-title">
+            <span className="section-title-icon" style={{ background: "var(--purple-bg)", color: "var(--purple)" }}>
+              <Icon name="database" size={16} />
+            </span>
+            Demo data
           </div>
-          <label className="switch" title={showMockData ? "Turn off demo data" : "Turn on demo data"}>
-            <input type="checkbox" checked={showMockData} disabled={saving} onChange={toggle} />
-            <span className="switch-track" />
-          </label>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>Show demo data</div>
+              <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>
+                Edget can be pre-populated with a large set of realistic sample customers, drivers,
+                equipment, and loads spanning three years of operations — useful for exploring every
+                feature (including the dashboard charts) without real data. When this is off, demo
+                rows are hidden everywhere: the dispatch board, loads, customers, roster, documents,
+                and dashboard all show only your real, ordinary data.
+              </p>
+            </div>
+            <label className="switch" title={showMockData ? "Turn off demo data" : "Turn on demo data"}>
+              <input type="checkbox" checked={showMockData} disabled={saving} onChange={toggle} />
+              <span className="switch-track" />
+            </label>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
