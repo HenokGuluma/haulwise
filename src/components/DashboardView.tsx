@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon, StatusPill, useToast } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { fmtMoney, fitFontSize, daysUntil, statusLabel } from "@/lib/format";
 import { useAnalytics } from "@/lib/useAnalytics";
 import { api, ApiRequestError } from "@/lib/api-client";
@@ -115,7 +116,10 @@ export function DashboardView({
   const [openingId, setOpeningId] = useState<string | null>(null);
   const router = useRouter();
   const toast = useToast();
-  const { data: analytics } = useAnalytics();
+  // Defaults to "all time" — matches this route's pre-filter behavior, so
+  // nothing changes for anyone who never touches the picker.
+  const [range, setRange] = useState<DateRange>({ from: null, to: null });
+  const { data: analytics, loading: analyticsLoading } = useAnalytics(range);
 
   async function openLoad(id: string) {
     setOpeningId(id);
@@ -162,7 +166,11 @@ export function DashboardView({
         <KPI label="Revenue This Week" value={fmtMoney(stats.revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight href={deliveredThisWeekHref} />
       </div>
 
-      <div className="analytics-grid">
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+        <DateRangeFilter value={range} onChange={setRange} />
+      </div>
+
+      <div className="analytics-grid" style={{ opacity: analyticsLoading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
         <div className="card chart-card">
           <div className="section-title">
             <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
@@ -183,7 +191,7 @@ export function DashboardView({
         </div>
       </div>
 
-      <div className="analytics-grid-row2">
+      <div className="analytics-grid-row2" style={{ opacity: analyticsLoading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
         <div className="card chart-card">
           <div className="section-title">
             <span className="section-title-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
@@ -198,7 +206,7 @@ export function DashboardView({
             <span className="section-title-icon" style={{ background: "var(--amber-bg)", color: "var(--amber-ink)" }}>
               <Icon name="barChart" size={16} />
             </span>
-            Equipment volume (last 12 months)
+            Equipment volume {range.from ? "(selected range)" : "(last 12 months)"}
           </div>
           <EquipmentVolumeChart data={analytics.equipmentVolume} />
         </div>

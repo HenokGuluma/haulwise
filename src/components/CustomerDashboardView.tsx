@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon, StatusPill, useToast } from "@/components/ui";
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { KPI } from "@/components/DashboardView";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { fmtMoney, statusLabel } from "@/lib/format";
 import { useAnalytics } from "@/lib/useAnalytics";
 import { api, ApiRequestError } from "@/lib/api-client";
@@ -97,7 +98,10 @@ export function CustomerDashboardView({ stats, user }: { stats: CustomerDashboar
   const [openingId, setOpeningId] = useState<string | null>(null);
   const router = useRouter();
   const toast = useToast();
-  const { data: analytics } = useAnalytics();
+  // Defaults to "all time" — matches this route's pre-filter behavior, so
+  // nothing changes for anyone who never touches the picker.
+  const [range, setRange] = useState<DateRange>({ from: null, to: null });
+  const { data: analytics, loading: analyticsLoading } = useAnalytics(range);
 
   async function openLoad(id: string) {
     setOpeningId(id);
@@ -120,7 +124,11 @@ export function CustomerDashboardView({ stats, user }: { stats: CustomerDashboar
         <KPI label="Billed This Week" value={fmtMoney(stats.billedThisWeek)} icon="money" iconTone="amber" tone="success" highlight href="/loads?status=DELIVERED,BILLED" />
       </div>
 
-      <div className="analytics-grid">
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+        <DateRangeFilter value={range} onChange={setRange} />
+      </div>
+
+      <div className="analytics-grid" style={{ opacity: analyticsLoading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
         <div className="card chart-card">
           <div className="section-title">
             <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>

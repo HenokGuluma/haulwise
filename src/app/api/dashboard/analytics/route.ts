@@ -23,12 +23,23 @@ const TOP_CUSTOMER_LIMIT = 8;
  * volume here (at most a few thousand rows even with demo data) makes that
  * cheap enough to just fetch once and reduce client-side.
  */
-export async function GET() {
+export async function GET(req: Request) {
   const auth = await requirePermission("dashboard:view");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+  // Optional ?from=yyyy-mm-dd&to=yyyy-mm-dd from the dashboard's date-range
+  // filter — bounds every series below by pickupTime so the numbers always
+  // agree with each other. Omitted entirely (both null) means "all time",
+  // matching this route's pre-filter behavior.
+  const { searchParams } = new URL(req.url);
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const from = fromParam ? new Date(fromParam + "T00:00:00.000Z") : null;
+  const to = toParam ? new Date(toParam + "T23:59:59.999Z") : null;
+  const pickupTimeFilter = from || to ? { pickupTime: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {};
+
   const loads = await prisma.load.findMany({
-    where: { ...demoScope(auth.user), ...customerScope(auth.user) },
+    where: { ...demoScope(auth.user), ...customerScope(auth.user), ...pickupTimeFilter },
     select: {
       rate: true,
       status: true,
@@ -76,12 +87,15 @@ export async function GET() {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, TOP_CUSTOMER_LIMIT);
 
-  // --- Equipment type volume (last 12 months) ---------------------------------
+  // --- Equipment type volume (last 12 months, or the caller's own range if
+  // one was given — an explicit `from` overrides this default so a wider
+  // range isn't silently clipped back to 12 months). ---------------------
   const twelveMonthsAgo = new Date();
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+  const equipCutoff = from ?? twelveMonthsAgo;
   const equipVolume = new Map<string, { label: string; tone: string; loads: number }>();
   for (const l of loads) {
-    if (l.pickupTime < twelveMonthsAgo) continue;
+    if (l.pickupTime < equipCutoff) continue;
     const key = l.equipmentTypeCode;
     const entry = equipVolume.get(key) ?? { label: l.equipmentType?.label ?? key, tone: l.equipmentType?.tone ?? "slate", loads: 0 };
     entry.loads += 1;
