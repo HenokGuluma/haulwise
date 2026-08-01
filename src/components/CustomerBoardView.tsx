@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, useToast } from "@/components/ui";
 import { RouteLine } from "@/components/RouteLine";
@@ -18,6 +18,21 @@ const STATUS_ICONS: Record<LoadStatus, string> = {
   DELIVERED: "checkCircle",
   BILLED: "money",
 };
+const STATUS_ACCENT: Record<LoadStatus, string> = {
+  DRAFT: "var(--slate)",
+  ASSIGNED: "var(--route)",
+  DISPATCHED: "var(--purple)",
+  IN_TRANSIT: "var(--amber)",
+  DELIVERED: "var(--success)",
+  BILLED: "var(--navy-status)",
+};
+
+type BoardViewMode = "compact" | "detailed";
+const VIEW_MODE_KEY = "edget-customer-board-view-mode";
+function loadViewMode(): BoardViewMode {
+  if (typeof window === "undefined") return "compact";
+  return localStorage.getItem(VIEW_MODE_KEY) === "detailed" ? "detailed" : "compact";
+}
 
 function CustomerLoadCard({ load, opening, onOpen }: { load: Load; opening: boolean; onOpen: () => void }) {
   return (
@@ -62,11 +77,40 @@ function CustomerLoadCard({ load, opening, onOpen }: { load: Load; opening: bool
   );
 }
 
+function CustomerLoadCardCompact({ load, opening, onOpen }: { load: Load; opening: boolean; onOpen: () => void }) {
+  return (
+    <div
+      className={"load-card-compact" + (opening ? " opening" : "")}
+      style={{ borderLeftColor: STATUS_ACCENT[load.status] }}
+      onClick={onOpen}
+    >
+      <div className="lcc-top">
+        <span className="lcc-id mono">{load.loadNumber}</span>
+        <span className="lcc-rate mono">{fmtMoney(load.rate)}</span>
+      </div>
+      <div className="lcc-route">
+        {load.origin} <span className="lcc-route-arrow">→</span> {load.destination}
+      </div>
+    </div>
+  );
+}
+
 export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: Load[] }) {
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  // Defaults to "compact" on both server and first client render — the
+  // saved preference (if any) is applied after mount to avoid an
+  // SSR/hydration mismatch, same pattern as the internal board's toggle.
+  const [viewMode, setViewMode] = useState<BoardViewMode>("compact");
   const router = useRouter();
   const toast = useToast();
+
+  useEffect(() => setViewMode(loadViewMode()), []);
+
+  function changeViewMode(mode: BoardViewMode) {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  }
 
   // Cards only carry the fields needed to render the board (no documents —
   // see board/page.tsx), so opening one lazy-fetches the complete Load
@@ -85,9 +129,32 @@ export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: L
 
   return (
     <div>
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16 }}>
-        A read-only view of where each of your shipments stands right now.
-      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>
+          A read-only view of where each of your shipments stands right now.
+        </p>
+        <div className="board-view-toggle" role="tablist" aria-label="Board view" style={{ marginLeft: "auto" }}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === "compact"}
+            className={"board-view-toggle-btn" + (viewMode === "compact" ? " active" : "")}
+            onClick={() => changeViewMode("compact")}
+          >
+            <Icon name="list" size={13} /> Compact
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === "detailed"}
+            className={"board-view-toggle-btn" + (viewMode === "detailed" ? " active" : "")}
+            onClick={() => changeViewMode("detailed")}
+          >
+            <Icon name="columns" size={13} /> Detailed
+          </button>
+        </div>
+      </div>
+
       <div className="customer-board-scroll">
         {STATUSES.map((status) => {
           const items = loads
@@ -108,6 +175,10 @@ export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: L
                   <div style={{ padding: "18px 6px", textAlign: "center", color: "var(--muted)", fontSize: 12 }}>
                     No shipments
                   </div>
+                ) : viewMode === "compact" ? (
+                  items.map((load) => (
+                    <CustomerLoadCardCompact key={load.id} load={load} opening={openingId === load.id} onOpen={() => openLoad(load.id)} />
+                  ))
                 ) : (
                   items.map((load) => (
                     <CustomerLoadCard key={load.id} load={load} opening={openingId === load.id} onOpen={() => openLoad(load.id)} />

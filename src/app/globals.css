@@ -590,6 +590,25 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .load-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--scrollbar-thumb-hover); }
 .load-card.dragging { opacity: 0.4; }
 .load-card.opening { opacity: 0.55; pointer-events: none; }
+
+/* Compact customer board card — a dense single-row alternative to
+   .load-card, distinguished by a status-colored left edge since it has no
+   room for the full equipment badge. */
+.load-card-compact {
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 8px; padding: 7px 10px; cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+.load-card-compact:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.load-card-compact.opening { opacity: 0.55; pointer-events: none; }
+.load-card-compact .lcc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.load-card-compact .lcc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 12px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
+.load-card-compact .lcc-rate { font-family: var(--font-mono), monospace; font-size: 12px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.load-card-compact .lcc-route {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.load-card-compact .lcc-route-arrow { opacity: 0.7; }
 .load-card .lc-top { display: flex; align-items: flex-start; gap: 9px; }
 .load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.2; }
 .load-card .lc-customer { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
