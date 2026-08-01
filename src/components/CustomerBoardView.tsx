@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon, useToast } from "@/components/ui";
 import { RouteLine } from "@/components/RouteLine";
@@ -18,14 +19,27 @@ const STATUS_ICONS: Record<LoadStatus, string> = {
   DELIVERED: "checkCircle",
   BILLED: "money",
 };
-const STATUS_ACCENT: Record<LoadStatus, string> = {
-  DRAFT: "var(--slate)",
-  ASSIGNED: "var(--route)",
-  DISPATCHED: "var(--purple)",
-  IN_TRANSIT: "var(--amber)",
-  DELIVERED: "var(--success)",
-  BILLED: "var(--navy-status)",
+
+// Same boustrophedon pipeline layout as the internal board (BoardView.tsx):
+// Draft → Assigned → Dispatched along the top row, the flow drops down on
+// the right, then reverses — In Transit → Delivered → Billed — along the
+// bottom row. Kept as a local copy rather than a shared import since
+// BoardView's version is tightly coupled to its own drag/drop constants.
+const COL_POSITION: Record<LoadStatus, { gridColumn: number; gridRow: number }> = {
+  DRAFT: { gridColumn: 1, gridRow: 1 },
+  ASSIGNED: { gridColumn: 3, gridRow: 1 },
+  DISPATCHED: { gridColumn: 5, gridRow: 1 },
+  IN_TRANSIT: { gridColumn: 5, gridRow: 3 },
+  DELIVERED: { gridColumn: 3, gridRow: 3 },
+  BILLED: { gridColumn: 1, gridRow: 3 },
 };
+const CONNECTORS: { key: string; gridColumn: number; gridRow: number; dir: "h" | "v"; icon: string }[] = [
+  { key: "draft-assigned", gridColumn: 2, gridRow: 1, dir: "h", icon: "chevronRight" },
+  { key: "assigned-dispatched", gridColumn: 4, gridRow: 1, dir: "h", icon: "chevronRight" },
+  { key: "dispatched-transit", gridColumn: 5, gridRow: 2, dir: "v", icon: "chevronDown" },
+  { key: "transit-delivered", gridColumn: 4, gridRow: 3, dir: "h", icon: "chevronLeft" },
+  { key: "delivered-billed", gridColumn: 2, gridRow: 3, dir: "h", icon: "chevronLeft" },
+];
 
 type BoardViewMode = "compact" | "detailed";
 const VIEW_MODE_KEY = "edget-customer-board-view-mode";
@@ -77,24 +91,6 @@ function CustomerLoadCard({ load, opening, onOpen }: { load: Load; opening: bool
   );
 }
 
-function CustomerLoadCardCompact({ load, opening, onOpen }: { load: Load; opening: boolean; onOpen: () => void }) {
-  return (
-    <div
-      className={"load-card-compact" + (opening ? " opening" : "")}
-      style={{ borderLeftColor: STATUS_ACCENT[load.status] }}
-      onClick={onOpen}
-    >
-      <div className="lcc-top">
-        <span className="lcc-id mono">{load.loadNumber}</span>
-        <span className="lcc-rate mono">{fmtMoney(load.rate)}</span>
-      </div>
-      <div className="lcc-route">
-        {load.origin} <span className="lcc-route-arrow">→</span> {load.destination}
-      </div>
-    </div>
-  );
-}
-
 export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: Load[] }) {
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -141,7 +137,7 @@ export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: L
             className={"board-view-toggle-btn" + (viewMode === "compact" ? " active" : "")}
             onClick={() => changeViewMode("compact")}
           >
-            <Icon name="list" size={13} /> Compact
+            <Icon name="grid" size={13} /> Compact
           </button>
           <button
             type="button"
@@ -155,45 +151,71 @@ export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: L
         </div>
       </div>
 
-      <div className="customer-board-scroll">
-        {STATUSES.map((status) => {
-          const items = loads
-            .filter((l) => l.status === status)
-            .sort((a, b) => new Date(a.pickupTime).getTime() - new Date(b.pickupTime).getTime());
-          const total = items.reduce((s, l) => s + l.rate, 0);
-          return (
-            <div key={status} className="board-col customer-board-col">
-              <div className="board-col-head">
-                <span className={"board-col-icon status-" + status.replace(/_/g, "")}>
-                  <Icon name={STATUS_ICONS[status]} size={22} />
+      {viewMode === "compact" ? (
+        <div className="board-summary-grid">
+          {STATUSES.map((status) => {
+            const items = loads.filter((l) => l.status === status);
+            const total = items.reduce((s, l) => s + l.rate, 0);
+            return (
+              <Link key={status} href={`/loads?status=${status}`} className="kpi-card kpi-card-link">
+                <span className={"kpi-icon-badge status-" + status.replace(/_/g, "")}>
+                  <Icon name={STATUS_ICONS[status]} size={28} />
                 </span>
-                <span className="board-col-title">{statusLabel(status)}</span>
-                <span className="board-col-count">{items.length}</span>
-              </div>
-              <div className="board-col-body">
-                {items.length === 0 ? (
-                  <div style={{ padding: "18px 6px", textAlign: "center", color: "var(--muted)", fontSize: 12 }}>
-                    No shipments
+                <div className="kpi-body">
+                  <div className="kpi-label">{statusLabel(status)}</div>
+                  <div className="kpi-value">{items.length}</div>
+                  <div className="kpi-delta">{fmtMoney(total)}</div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="board-scroll">
+          {STATUSES.map((status) => {
+            const items = loads
+              .filter((l) => l.status === status)
+              .sort((a, b) => new Date(a.pickupTime).getTime() - new Date(b.pickupTime).getTime());
+            const total = items.reduce((s, l) => s + l.rate, 0);
+            const pos = COL_POSITION[status];
+            return (
+              <div key={status} className="board-col" style={{ gridColumn: pos.gridColumn, gridRow: pos.gridRow }}>
+                <div className="board-col-head">
+                  <span className={"board-col-icon status-" + status.replace(/_/g, "")}>
+                    <Icon name={STATUS_ICONS[status]} size={24} />
+                  </span>
+                  <span className="board-col-title">{statusLabel(status)}</span>
+                  <span className="board-col-count">{items.length}</span>
+                </div>
+                <div className="board-col-body">
+                  {items.length === 0 ? (
+                    <div style={{ padding: "18px 6px", textAlign: "center", color: "var(--muted)", fontSize: 12 }}>
+                      No shipments
+                    </div>
+                  ) : (
+                    items.map((load) => (
+                      <CustomerLoadCard key={load.id} load={load} opening={openingId === load.id} onOpen={() => openLoad(load.id)} />
+                    ))
+                  )}
+                </div>
+                {items.length > 0 && (
+                  <div style={{ padding: "8px 14px 12px 14px", fontSize: 11, color: "var(--muted)" }} className="mono">
+                    {fmtMoney(total)} total
                   </div>
-                ) : viewMode === "compact" ? (
-                  items.map((load) => (
-                    <CustomerLoadCardCompact key={load.id} load={load} opening={openingId === load.id} onOpen={() => openLoad(load.id)} />
-                  ))
-                ) : (
-                  items.map((load) => (
-                    <CustomerLoadCard key={load.id} load={load} opening={openingId === load.id} onOpen={() => openLoad(load.id)} />
-                  ))
                 )}
               </div>
-              {items.length > 0 && (
-                <div style={{ padding: "8px 14px 12px 14px", fontSize: 11, color: "var(--muted)" }} className="mono">
-                  {fmtMoney(total)} total
-                </div>
-              )}
+            );
+          })}
+
+          {CONNECTORS.map((c) => (
+            <div key={c.key} className={"board-connector " + c.dir} style={{ gridColumn: c.gridColumn, gridRow: c.gridRow }}>
+              <span className="board-connector-badge">
+                <Icon name={c.icon} size={15} />
+              </span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {detailLoad && (
         <LoadDetailDrawer
