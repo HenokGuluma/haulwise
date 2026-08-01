@@ -567,6 +567,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .board-scroll .board-connector { display: none; }
 }
 
+/* Customer-facing board: a plain single-row pipeline (no boustrophedon fold
+   or drag connectors — those exist for the internal board's density, not
+   needed for six read-only columns) that scrolls horizontally on narrow
+   screens instead of stacking, so the left-to-right status order stays
+   legible at any width. */
+.customer-board-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.customer-board-col { max-height: none; }
+
 .load-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
   cursor: grab; box-shadow: var(--shadow-sm);
@@ -574,6 +589,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .load-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--scrollbar-thumb-hover); }
 .load-card.dragging { opacity: 0.4; }
+.load-card.opening { opacity: 0.55; pointer-events: none; }
 .load-card .lc-top { display: flex; align-items: flex-start; gap: 9px; }
 .load-card .lc-id { font-family: var(--font-heading), var(--font-mono), monospace; font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; line-height: 1.2; }
 .load-card .lc-customer { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
