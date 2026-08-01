@@ -14,14 +14,14 @@ import { TopCustomersChart } from "@/components/charts/TopCustomersChart";
 import { EquipmentVolumeChart } from "@/components/charts/EquipmentVolumeChart";
 import type { Load, Driver, Equipment, SessionUser, LoadStatus } from "@/types";
 
-const KPI_TONES: Record<string, { bg: string; fg: string }> = {
+export const KPI_TONES: Record<string, { bg: string; fg: string }> = {
   accent: { bg: "var(--accent-bg)", fg: "var(--accent)" },
   success: { bg: "var(--success-bg)", fg: "var(--success)" },
   route: { bg: "var(--route-bg)", fg: "var(--route)" },
   amber: { bg: "var(--amber-bg)", fg: "var(--amber-ink)" },
 };
 
-function KPI({
+export function KPI({
   label,
   value,
   icon,

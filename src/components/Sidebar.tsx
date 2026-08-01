@@ -7,14 +7,20 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { fullName } from "@/lib/format";
 import type { SessionUser } from "@/types";
 
-type NavItem = { href: string; label: string; icon: string; requiredPermission?: string };
+type NavItem = { href: string; label: string; icon: string; requiredPermission?: string; showIf?: (user: SessionUser) => boolean };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "grid", requiredPermission: "dashboard:view" },
-  // Gated on loads:assign (not loads:view) so a view-only role (e.g.
-  // Accountant) doesn't see a dispatch board whose drag actions it can't
-  // perform.
-  { href: "/board", label: "Dispatch Board", icon: "columns", requiredPermission: "loads:assign" },
+  {
+    href: "/board",
+    label: "Dispatch Board",
+    icon: "columns",
+    // Internal roles need loads:assign — it's a drag-and-drop assignment
+    // tool there, so a view-only role like Accountant shouldn't see it. A
+    // customer-scoped role gets a read-only status board instead, gated on
+    // loads:view (no assignment capability applies to them at all).
+    showIf: (u) => (u.isCustomerScoped ? u.permissions.includes("loads:view") : u.permissions.includes("loads:assign")),
+  },
   { href: "/loads", label: "Loads", icon: "list" },
   { href: "/customers", label: "Customers", icon: "briefcase", requiredPermission: "customers:view" },
   { href: "/roster", label: "Drivers & Equipment", icon: "users", requiredPermission: "roster:view" },
@@ -63,7 +69,7 @@ export function Sidebar({
       </div>
 
       <div className="nav-group">
-        {NAV_ITEMS.filter((item) => !item.requiredPermission || user.permissions.includes(item.requiredPermission)).map((item) => {
+        {NAV_ITEMS.filter((item) => (item.showIf ? item.showIf(user) : !item.requiredPermission || user.permissions.includes(item.requiredPermission))).map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const count = counts[item.href];
           return (

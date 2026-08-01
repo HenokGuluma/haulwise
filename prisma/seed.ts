@@ -90,7 +90,7 @@ async function main() {
   const customerRole = await prisma.role.upsert({
     where: { name: "Customer" },
     update: {},
-    create: { name: "Customer", isCustomerScoped: true, permissions: [] },
+    create: { name: "Customer", isCustomerScoped: true, permissions: ["dashboard:view", "loads:view"] },
   });
 
   // --- Users -----------------------------------------------------------

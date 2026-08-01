@@ -2,12 +2,27 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BoardView } from "@/components/BoardView";
+import { CustomerBoardView } from "@/components/CustomerBoardView";
 import { demoScope } from "@/lib/demo-scope";
+import { customerScope } from "@/lib/customer-scope";
 import type { Load, Driver, Equipment, Customer } from "@/types";
 
 export default async function BoardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+
+  if (user.isCustomerScoped) {
+    requirePagePermission(user, "loads:view");
+
+    const loads = await prisma.load.findMany({
+      where: customerScope(user),
+      include: { customer: true, driver: true, equipment: true },
+      orderBy: { pickupTime: "asc" },
+    });
+
+    return <CustomerBoardView user={user} loads={JSON.parse(JSON.stringify(loads)) as Load[]} />;
+  }
+
   requireInternalRole(user);
   requirePagePermission(user, "loads:assign");
 

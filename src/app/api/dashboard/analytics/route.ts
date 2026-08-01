@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { demoScope } from "@/lib/demo-scope";
+import { customerScope } from "@/lib/customer-scope";
 import type { LoadStatus } from "@prisma/client";
 
 const STATUS_LABELS: Record<LoadStatus, string> = {
@@ -27,7 +28,7 @@ export async function GET() {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const loads = await prisma.load.findMany({
-    where: demoScope(auth.user),
+    where: { ...demoScope(auth.user), ...customerScope(auth.user) },
     select: {
       rate: true,
       status: true,
