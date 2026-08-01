@@ -18,13 +18,16 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-// Two series on two different scales sharing one plot area — the axis
-// titles (below) say what each numeric axis measures, and this legend says
-// which mark (line vs. bar) belongs to which axis, so neither reading
-// depends on color alone.
+// Two series on two different scales sharing one plot area, so color alone
+// can't carry which mark belongs to which axis. This plain-HTML legend
+// (rendered below the SVG, not inside it) is the only place that's said —
+// an in-plot axis title (recharts' insideTopLeft/insideTopRight) was tried
+// first but collided with the topmost tick's number right in that corner,
+// especially with this chart's negative left margin tightening the space
+// further. Flow HTML has no such collision risk.
 function ChartLegend({ c }: { c: ChartColors }) {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 4, fontSize: 11.5, color: c["--muted"] }}>
+    <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 10, fontSize: 11.5, color: c["--muted"] }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 14, height: 2, borderRadius: 1, background: c["--accent"], display: "inline-block" }} />
         Revenue (left axis)
@@ -47,8 +50,6 @@ export function RevenueTrendChart({ data }: { data: MonthlyAnalyticsPoint[] }) {
     return <div className="chart-empty">No load history in this range.</div>;
   }
 
-  const axisLabelStyle = { fill: c["--muted"], fontSize: 10.5, fontWeight: 600 };
-
   return (
     <>
       <ResponsiveContainer width="100%" height={260}>
@@ -62,7 +63,6 @@ export function RevenueTrendChart({ data }: { data: MonthlyAnalyticsPoint[] }) {
             axisLine={false}
             tickFormatter={(v) => fmtMoneyCompact(v)}
             width={72}
-            label={{ value: "Revenue", position: "insideTopLeft", offset: -4, style: axisLabelStyle }}
           />
           <YAxis
             yAxisId="loads"
@@ -72,7 +72,6 @@ export function RevenueTrendChart({ data }: { data: MonthlyAnalyticsPoint[] }) {
             axisLine={false}
             width={36}
             allowDecimals={false}
-            label={{ value: "Loads", position: "insideTopRight", offset: -4, style: axisLabelStyle }}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: c["--line-soft"] }} />
           <Bar yAxisId="loads" dataKey="loads" fill={c["--accent-bg"]} radius={[4, 4, 0, 0]} barSize={10} />
