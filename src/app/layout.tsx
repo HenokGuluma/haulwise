@@ -23,7 +23,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Edget · Dispatch",
+  title: {
+    default: "Edget · Dispatch",
+    template: "%s · Edget",
+  },
   description: "Internal freight dispatching platform",
   icons: {
     icon:

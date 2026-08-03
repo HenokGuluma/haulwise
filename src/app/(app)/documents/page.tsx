@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DocumentsView } from "@/components/DocumentsView";
 import { demoScope } from "@/lib/demo-scope";
+
+export const metadata: Metadata = { title: "Documents & Billing" };
 
 export default async function DocumentsPage() {
   const user = await getSessionUser();

@@ -1,6 +1,9 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { Icon } from "@/components/ui";
+
+export const metadata: Metadata = { title: "Sign In" };
 
 const FEATURES = [
   { icon: "route", title: "Dispatch Board", desc: "Drag-and-drop loads through your pipeline in real time." },

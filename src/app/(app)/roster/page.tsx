@@ -1,9 +1,12 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RosterView } from "@/components/RosterView";
 import { demoScope } from "@/lib/demo-scope";
+
+export const metadata: Metadata = { title: "Drivers & Equipment" };
 
 const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as const;
 

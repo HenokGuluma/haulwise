@@ -1,10 +1,13 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoadsView } from "@/components/LoadsView";
 import { demoScope } from "@/lib/demo-scope";
 import type { Customer, Driver, Equipment } from "@/types";
+
+export const metadata: Metadata = { title: "Loads" };
 
 export default async function LoadsPage() {
   const user = await getSessionUser();

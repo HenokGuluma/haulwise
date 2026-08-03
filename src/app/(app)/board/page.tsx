@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -6,6 +7,8 @@ import { CustomerBoardView } from "@/components/CustomerBoardView";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
 import type { Load, Driver, Equipment, Customer } from "@/types";
+
+export const metadata: Metadata = { title: "Dispatch Board" };
 
 export default async function BoardPage() {
   const user = await getSessionUser();

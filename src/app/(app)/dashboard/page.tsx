@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, requireInternalRole, requirePagePermission } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -6,6 +7,8 @@ import { CustomerDashboardView } from "@/components/CustomerDashboardView";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
 import type { Driver, Equipment } from "@/types";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 const ACTIVE_STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] as const;
 
