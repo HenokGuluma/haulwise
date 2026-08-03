@@ -19,6 +19,75 @@ function statusTone(status: CustomerStatus): "success" | "warning" | "muted" {
   return "muted";
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+/** One contact row — used both for the always-present company contact on
+ * file and for the optional additional CustomerContact entries below it,
+ * so the card never collapses to a single muted "no contacts" line. */
+function ContactRow({
+  name,
+  title,
+  phone,
+  email,
+  badge,
+  accent,
+  onEdit,
+  onDelete,
+}: {
+  name: string;
+  title?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  badge?: string;
+  accent?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 0", borderBottom: "1px solid var(--line-soft)" }}>
+      <span
+        style={{
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+          background: accent ? "var(--accent-bg)" : "var(--slate-bg)",
+          color: accent ? "var(--accent)" : "var(--slate)",
+          fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {initials(name)}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13.5, fontWeight: 700 }}>{name}</span>
+          {badge && <Pill tone={accent ? "muted" : "success"}>{badge}</Pill>}
+        </div>
+        {title && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{title}</div>}
+        <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 6 }}>
+          {phone && (
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+              <Icon name="phone" size={12} style={{ color: "var(--muted)", flexShrink: 0 }} /> {phone}
+            </span>
+          )}
+          {email && (
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+              <Icon name="mail" size={12} style={{ color: "var(--muted)", flexShrink: 0 }} /> {email}
+            </span>
+          )}
+          {!phone && !email && <span style={{ fontSize: 12, color: "var(--muted)" }}>—</span>}
+        </div>
+      </div>
+      {(onEdit || onDelete) && (
+        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+          {onEdit && <IconButton icon="edit" title="Edit contact" onClick={onEdit} />}
+          {onDelete && <IconButton icon="trash" title="Remove contact" onClick={onDelete} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CustomerDocumentsPanel({
   customerId,
   documents,
@@ -115,7 +184,7 @@ function CustomerDocumentsPanel({
 
 export function CustomerDetailView({ user, initialCustomer }: { user: SessionUser; initialCustomer: CustomerWithDetail }) {
   const [customer, setCustomer] = useState(initialCustomer);
-  const [tab, setTab] = useState<"overview" | "loads" | "documents">("overview");
+  const [tab, setTab] = useState<"overview" | "documents">("overview");
   const [editOpen, setEditOpen] = useState(false);
   const [contactForm, setContactForm] = useState<{ open: boolean; contact?: CustomerContact }>({ open: false });
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
@@ -205,81 +274,77 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
 
       <div className="tabbar">
         <button className={"tab" + (tab === "overview" ? " active" : "")} onClick={() => setTab("overview")}>Overview</button>
-        <button className={"tab" + (tab === "loads" ? " active" : "")} onClick={() => setTab("loads")}>Load History</button>
         <button className={"tab" + (tab === "documents" ? " active" : "")} onClick={() => setTab("documents")}>Documents</button>
       </div>
 
       {tab === "overview" && (
-        <div className="panels-grid-even">
-          <div className="card" style={{ padding: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-              <div className="section-title" style={{ marginBottom: 0 }}>Contacts</div>
-              <Button size="sm" variant="ghost" icon="plus" style={{ marginLeft: "auto" }} onClick={() => setContactForm({ open: true })}>Add</Button>
-            </div>
-            {customer.contacts.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>No additional contacts yet — {customer.contactName} is the contact on file above.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="customer-overview-grid">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="card" style={{ padding: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+                <div className="section-title" style={{ marginBottom: 0 }}>Contacts</div>
+                <Button size="sm" variant="ghost" icon="plus" style={{ marginLeft: "auto" }} onClick={() => setContactForm({ open: true })}>Add</Button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <ContactRow name={customer.contactName} phone={customer.phone} email={customer.email} badge="On file" accent />
                 {customer.contacts.map((c) => (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 8, borderBottom: "1px solid var(--line-soft)" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                        {c.name}
-                        {c.isPrimary && <Pill tone="success">Primary</Pill>}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                        {[c.title, c.phone, c.email].filter(Boolean).join(" · ") || "—"}
-                      </div>
-                    </div>
-                    <IconButton icon="edit" title="Edit contact" onClick={() => setContactForm({ open: true, contact: c })} />
-                    <IconButton icon="trash" title="Remove contact" onClick={() => deleteContact(c.id)} />
-                  </div>
+                  <ContactRow
+                    key={c.id}
+                    name={c.name}
+                    title={c.title}
+                    phone={c.phone}
+                    email={c.email}
+                    badge={c.isPrimary ? "Primary" : undefined}
+                    onEdit={() => setContactForm({ open: true, contact: c })}
+                    onDelete={() => deleteContact(c.id)}
+                  />
                 ))}
               </div>
-            )}
+            </div>
+
+            <div className="card" style={{ padding: 18 }}>
+              <div className="section-title">Details</div>
+              <div style={{ fontSize: 13, marginBottom: 14 }}>
+                <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Payment terms</div>
+                {customer.paymentTerms || "—"}
+              </div>
+              <div className="section-title">Notes</div>
+              <textarea
+                className="input"
+                rows={6}
+                placeholder="Internal notes about this customer…"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                style={{ resize: "vertical" }}
+              />
+              <Button size="sm" variant="primary" onClick={saveNotes} disabled={savingNotes} style={{ marginTop: 8 }}>
+                {savingNotes ? "Saving…" : "Save notes"}
+              </Button>
+            </div>
           </div>
 
-          <div className="card" style={{ padding: 18 }}>
-            <div className="section-title">Details</div>
-            <div style={{ fontSize: 13, marginBottom: 14 }}>
-              <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Payment terms</div>
-              {customer.paymentTerms || "—"}
-            </div>
-            <div className="section-title">Notes</div>
-            <textarea
-              className="input"
-              rows={6}
-              placeholder="Internal notes about this customer…"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{ resize: "vertical" }}
+          <div>
+            <div className="section-title">Load History</div>
+            <DataTable<Load>
+              tableId={"customer-loads-" + customer.id}
+              fetchPage={fetchLoads}
+              reloadKey={loadsReload}
+              rowKey={(l) => l.id}
+              onRowClick={(l) => setDetailLoad(l)}
+              searchPlaceholder="Search this customer's loads…"
+              emptyIcon="list"
+              emptyTitle="No loads yet"
+              initialSort={{ by: "pickupTime", dir: "desc" }}
+              columns={[
+                { key: "loadNumber", label: "Load", sortable: true, render: (l) => <span className="mono" style={{ fontWeight: 600 }}>{l.loadNumber}</span> },
+                { key: "route", label: "Route", render: (l) => `${l.origin} → ${l.destination}` },
+                { key: "pickupTime", label: "Pickup", sortable: true, render: (l) => fmtDate(l.pickupTime) },
+                { key: "status", label: "Status", sortable: true, render: (l) => <StatusPill status={l.status} label={statusLabel(l.status)} /> },
+                { key: "rate", label: "Rate", sortable: true, align: "right", render: (l) => <span className="mono">{fmtMoney(l.rate)}</span> },
+              ]}
             />
-            <Button size="sm" variant="primary" onClick={saveNotes} disabled={savingNotes} style={{ marginTop: 8 }}>
-              {savingNotes ? "Saving…" : "Save notes"}
-            </Button>
           </div>
         </div>
-      )}
-
-      {tab === "loads" && (
-        <DataTable<Load>
-          tableId={"customer-loads-" + customer.id}
-          fetchPage={fetchLoads}
-          reloadKey={loadsReload}
-          rowKey={(l) => l.id}
-          onRowClick={(l) => setDetailLoad(l)}
-          searchPlaceholder="Search this customer's loads…"
-          emptyIcon="list"
-          emptyTitle="No loads yet"
-          initialSort={{ by: "pickupTime", dir: "desc" }}
-          columns={[
-            { key: "loadNumber", label: "Load", sortable: true, render: (l) => <span className="mono" style={{ fontWeight: 600 }}>{l.loadNumber}</span> },
-            { key: "route", label: "Route", render: (l) => `${l.origin} → ${l.destination}` },
-            { key: "pickupTime", label: "Pickup", sortable: true, render: (l) => fmtDate(l.pickupTime) },
-            { key: "status", label: "Status", sortable: true, render: (l) => <StatusPill status={l.status} label={statusLabel(l.status)} /> },
-            { key: "rate", label: "Rate", sortable: true, align: "right", render: (l) => <span className="mono">{fmtMoney(l.rate)}</span> },
-          ]}
-        />
       )}
 
       {tab === "documents" && (

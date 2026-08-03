@@ -398,6 +398,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
 .panels-grid-uneven { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .panels-grid-even { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+/* Customer detail's merged Overview tab — a narrow contact/detail rail
+   beside the (usually much taller) load history table, rather than two
+   equal-width cards stacked above it. Keeps the page from reading empty
+   at a glance for a customer with no extra contacts or notes: the rail is
+   compact, but real load data fills the rest of the row immediately. */
+.customer-overview-grid { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .stat-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
 /* ---------------- Dashboard analytics charts ---------------- */
@@ -904,7 +911,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .cmdk { width: 94vw; }
 
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .panels-grid-uneven, .panels-grid-even { grid-template-columns: minmax(0, 1fr); }
+  .panels-grid-uneven, .panels-grid-even, .customer-overview-grid { grid-template-columns: minmax(0, 1fr); }
   .stat-grid-3 { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .board-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
