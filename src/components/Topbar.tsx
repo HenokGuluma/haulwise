@@ -10,8 +10,20 @@ const VIEW_META: Record<string, { title: string; sub: string }> = {
   "/customers": { title: "Customers", sub: "Accounts, contacts, and load history" },
   "/roster": { title: "Drivers & Equipment", sub: "Manage your fleet and roster" },
   "/documents": { title: "Documents & Billing", sub: "Attachments, driver pay, and payout status" },
+  "/roles": { title: "Roles", sub: "Define what each role can see and do" },
+  "/users": { title: "Users", sub: "Team members and their assigned role" },
   "/settings": { title: "Settings", sub: "Account preferences and demo data" },
 };
+
+// /customers/[id] isn't in the exact-match map above since its path is
+// dynamic — matched by prefix instead. The customer's own name already
+// appears prominently in the page body below, so a generic heading here
+// (matching how every other detail-style page behaves) is enough.
+function resolveViewMeta(pathname: string): { title: string; sub: string } {
+  if (VIEW_META[pathname]) return VIEW_META[pathname];
+  if (pathname.startsWith("/customers/")) return { title: "Customer Details", sub: "Account overview and load history" };
+  return { title: "Edget", sub: "" };
+}
 
 export function Topbar({
   onNewLoad,
@@ -25,7 +37,7 @@ export function Topbar({
   showSearch?: boolean;
 }) {
   const pathname = usePathname() || "/dashboard";
-  const meta = VIEW_META[pathname] ?? { title: "Edget", sub: "" };
+  const meta = resolveViewMeta(pathname);
 
   return (
     <div className="topbar">
