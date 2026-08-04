@@ -6,14 +6,17 @@ import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
-import { USD_TO_ETB_RATE } from "@/lib/format";
 import type { Customer, Load, EquipmentTypeCode } from "@/types";
 
 const NEW_CUSTOMER_VALUE = "__new__";
 // Data-entry safety net, not routing logic — flags fat-finger entry errors
 // (e.g. an extra zero) for a second look, doesn't block submission outright.
-const RATE_WARN_THRESHOLD = 50_000 * USD_TO_ETB_RATE;
-const WEIGHT_WARN_THRESHOLD = 218; // ~ single-trailer legal max payload (48,000 lbs in Quintals)
+// Both have to be unusually high together (not either alone) — the
+// previous either/or check combined with a 218-Quintal weight ceiling
+// (a single-trailer's legal max payload) meant almost any real load
+// tripped it, since a normal full truckload sits right around there.
+const RATE_WARN_THRESHOLD = 2_000;
+const WEIGHT_WARN_THRESHOLD = 5_000;
 const MIN_PLAUSIBLE_TRANSIT_HOURS = 3;
 
 type FormState = {
@@ -95,7 +98,7 @@ export function LoadFormModal({
     }
   }, [equipmentTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD || Number(form.weight) > WEIGHT_WARN_THRESHOLD;
+  const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD && Number(form.weight) > WEIGHT_WARN_THRESHOLD;
   const transitHours = form.pickupTime && form.deliveryTime
     ? (new Date(form.deliveryTime).getTime() - new Date(form.pickupTime).getTime()) / 3_600_000
     : null;
