@@ -42,6 +42,7 @@ export async function GET(req: Request) {
     where: { ...demoScope(auth.user), ...customerScope(auth.user), ...pickupTimeFilter },
     select: {
       rate: true,
+      driverPay: true,
       status: true,
       pickupTime: true,
       customerId: true,
@@ -51,12 +52,19 @@ export async function GET(req: Request) {
     },
   });
 
-  // --- Monthly revenue + load count -----------------------------------------
-  const monthMap = new Map<string, { revenue: number; loads: number; sortKey: string }>();
+  // --- Monthly gross volume (+ net revenue for internal callers) + load count
+  // "revenue" here is gross customer billing — unchanged wire shape/meaning,
+  // so the customer-facing dashboard (which reads this field as-is) needs no
+  // changes. netRevenue is each load's rate minus its driverPay, summed:
+  // the company's actual take after the driver-pay split. It's internal
+  // business data (profit margin), so it's computed here but only ever
+  // attached to the response for non-customer-scoped callers below.
+  const monthMap = new Map<string, { revenue: number; netRevenue: number; loads: number; sortKey: string }>();
   for (const l of loads) {
     const key = `${l.pickupTime.getFullYear()}-${String(l.pickupTime.getMonth() + 1).padStart(2, "0")}`;
-    const entry = monthMap.get(key) ?? { revenue: 0, loads: 0, sortKey: key };
+    const entry = monthMap.get(key) ?? { revenue: 0, netRevenue: 0, loads: 0, sortKey: key };
     entry.revenue += l.rate;
+    entry.netRevenue += l.rate - l.driverPay;
     entry.loads += 1;
     monthMap.set(key, entry);
   }
@@ -65,7 +73,13 @@ export async function GET(req: Request) {
     .slice(-MAX_MONTHS)
     .map(([key, v]) => {
       const [y, m] = key.split("-").map(Number);
-      return { month: key, label: MONTH_FORMATTER.format(new Date(y, m - 1, 1)), revenue: v.revenue, loads: v.loads };
+      return {
+        month: key,
+        label: MONTH_FORMATTER.format(new Date(y, m - 1, 1)),
+        revenue: v.revenue,
+        ...(auth.user.isCustomerScoped ? {} : { netRevenue: v.netRevenue }),
+        loads: v.loads,
+      };
     });
 
   // --- Status breakdown (current snapshot) -----------------------------------

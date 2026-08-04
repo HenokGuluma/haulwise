@@ -8,6 +8,7 @@ import { logActivity } from "@/lib/activity";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
 import { computeRate } from "@/lib/rate-calc";
+import { computeDriverPay, DEFAULT_DRIVER_PAY_TYPE, DEFAULT_DRIVER_PAY_VALUE } from "@/lib/driver-pay-calc";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -122,8 +123,12 @@ export async function POST(req: NextRequest) {
   }
   const data = parsed.data;
 
-  if (data.rateType !== "FLAT" && !auth.user.permissions.includes("loads:configure-rate")) {
+  const canConfigureRate = auth.user.permissions.includes("loads:configure-rate");
+  if (data.rateType !== "FLAT" && !canConfigureRate) {
     return NextResponse.json({ error: "You don't have permission to change how a load's rate is calculated." }, { status: 403 });
+  }
+  if ((data.driverPayType !== DEFAULT_DRIVER_PAY_TYPE || data.driverPayValue !== DEFAULT_DRIVER_PAY_VALUE) && !canConfigureRate) {
+    return NextResponse.json({ error: "You don't have permission to change how driver pay is calculated." }, { status: 403 });
   }
 
   const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
@@ -146,6 +151,11 @@ export async function POST(req: NextRequest) {
     deliveryTime: data.deliveryTime,
   });
 
+  if (data.driverPayType === "FLAT" && data.driverPayValue > rate) {
+    return NextResponse.json({ error: "Driver pay can't exceed the rate." }, { status: 400 });
+  }
+  const driverPay = computeDriverPay({ driverPayType: data.driverPayType, driverPayValue: data.driverPayValue, rate });
+
   const load = await prisma.load.create({
     data: {
       loadNumber,
@@ -161,7 +171,9 @@ export async function POST(req: NextRequest) {
       distanceKm: data.rateType === "PER_KM" ? data.distanceKm : null,
       commodity: data.commodity,
       equipmentTypeCode: data.equipmentTypeCode,
-      driverPay: Math.round(rate * 0.68),
+      driverPay,
+      driverPayType: data.driverPayType,
+      driverPayValue: data.driverPayValue,
       status: "DRAFT",
     },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },

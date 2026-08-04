@@ -291,6 +291,16 @@ enum RateType {
   PER_HOUR
 }
 
+// How Load.driverPay is derived from Load.rate — see
+// src/lib/driver-pay-calc.ts, authoritative both client- and server-side.
+// PERCENTAGE (default, 68) matches the original hardcoded 0.68 behavior;
+// FLAT lets a Manager set an exact ETB amount instead. Either way the
+// computed driverPay is clamped so it can never exceed rate.
+enum DriverPayType {
+  PERCENTAGE
+  FLAT
+}
+
 model Load {
   id                String            @id @default(cuid())
   loadNumber        String            @unique
@@ -322,9 +332,11 @@ model Load {
   equipmentId String?
   equipment   Equipment? @relation(fields: [equipmentId], references: [id])
 
-  driverPay    Int
-  payoutStatus PayoutStatus @default(NOT_BILLED)
-  isDemo       Boolean      @default(false)
+  driverPay      Int
+  driverPayType  DriverPayType @default(PERCENTAGE)
+  driverPayValue Int           @default(68)
+  payoutStatus   PayoutStatus  @default(NOT_BILLED)
+  isDemo         Boolean       @default(false)
 
   documents         Document[]
   externalPostings  ExternalPosting[]

@@ -26,7 +26,7 @@ export const PERMISSION_CATALOG: { category: string; items: { key: PermissionKey
     { key: "loads:assign", label: "Assign driver & equipment" },
     { key: "loads:delete", label: "Delete loads" },
     { key: "loads:comment", label: "Comment on loads" },
-    { key: "loads:configure-rate", label: "Choose how a load's rate is calculated (per Quintal, per km, etc.)" },
+    { key: "loads:configure-rate", label: "Configure a load's rate basis and driver pay split" },
   ]},
   { category: "Payments", items: [
     { key: "payments:view", label: "View payment ledger" },

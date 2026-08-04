@@ -2,6 +2,7 @@ import { z } from "zod";
 import { EQUIPMENT_TYPE_ICONS, EQUIPMENT_TYPE_TONES } from "@/lib/equipment-types";
 import { PERMISSION_KEYS } from "@/lib/permissions";
 import { RATE_TYPES } from "@/lib/rate-calc";
+import { DRIVER_PAY_TYPES, DEFAULT_DRIVER_PAY_TYPE, DEFAULT_DRIVER_PAY_VALUE } from "@/lib/driver-pay-calc";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -31,6 +32,11 @@ export const loadCreateSchema = z
     rateType: z.enum(RATE_TYPES).default("FLAT"),
     rateBasisValue: z.coerce.number().positive().optional().nullable(),
     distanceKm: z.coerce.number().positive().optional().nullable(),
+    // Same "harmless default, server is authoritative" shape as the rate
+    // fields above — driverPay itself is computed in the route handler,
+    // clamped there so it can never exceed the final rate.
+    driverPayType: z.enum(DRIVER_PAY_TYPES).default(DEFAULT_DRIVER_PAY_TYPE),
+    driverPayValue: z.coerce.number().nonnegative().default(DEFAULT_DRIVER_PAY_VALUE),
   })
   .refine((d) => d.deliveryTime > d.pickupTime, {
     message: "Delivery must be after pickup.",
@@ -47,6 +53,10 @@ export const loadCreateSchema = z
   .refine((d) => d.rateType !== "PER_KM" || (d.distanceKm ?? 0) > 0, {
     message: "Enter the distance in kilometers.",
     path: ["distanceKm"],
+  })
+  .refine((d) => d.driverPayType !== "PERCENTAGE" || d.driverPayValue <= 100, {
+    message: "Percentage can't exceed 100.",
+    path: ["driverPayValue"],
   });
 
 export const loadUpdateSchema = z
@@ -65,6 +75,8 @@ export const loadUpdateSchema = z
     rateType: z.enum(RATE_TYPES).optional(),
     rateBasisValue: z.coerce.number().positive().optional().nullable(),
     distanceKm: z.coerce.number().positive().optional().nullable(),
+    driverPayType: z.enum(DRIVER_PAY_TYPES).optional(),
+    driverPayValue: z.coerce.number().nonnegative().optional(),
   })
   .partial();
 

@@ -86,6 +86,9 @@ export type DashboardStats = {
   activeCount: number;
   inTransitCount: number;
   deliveredThisWeekCount: number;
+  /** Gross customer billing for the week (sum of rate) — what "Revenue" used to mean before the net split below. */
+  grossVolumeThisWeek: number;
+  /** Each delivered load's rate minus its driverPay, summed — the company's actual take after the driver-pay split. */
   revenueThisWeek: number;
   weekAgoIso: string;
   nowIso: string;
@@ -163,7 +166,16 @@ export function DashboardView({
         <KPI label="Active Loads" value={stats.activeCount} icon="package" iconTone="accent" href={activeLoadsHref} />
         <KPI label="In Transit" value={stats.inTransitCount} icon="truck" iconTone="success" href={inTransitHref} />
         <KPI label="Delivered This Week" value={stats.deliveredThisWeekCount} icon="checkCircle" iconTone="route" href={deliveredThisWeekHref} />
-        <KPI label="Revenue This Week" value={fmtMoney(stats.revenueThisWeek)} icon="money" iconTone="amber" tone="success" highlight href={deliveredThisWeekHref} />
+        <KPI
+          label="Revenue This Week"
+          value={fmtMoney(stats.revenueThisWeek)}
+          icon="money"
+          iconTone="amber"
+          highlight
+          href={deliveredThisWeekHref}
+          deltaIcon="layers"
+          deltaText={"Gross Volume: " + fmtMoney(stats.grossVolumeThisWeek)}
+        />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
@@ -176,7 +188,7 @@ export function DashboardView({
             <span className="section-title-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
               <Icon name="trendingUp" size={16} />
             </span>
-            Revenue &amp; volume over time
+            Gross Volume &amp; Revenue over time
           </div>
           <RevenueTrendChart data={analytics.monthly} />
         </div>
@@ -197,7 +209,7 @@ export function DashboardView({
             <span className="section-title-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
               <Icon name="briefcase" size={16} />
             </span>
-            Top customers by revenue
+            Top customers by volume
           </div>
           <TopCustomersChart data={analytics.topCustomers} />
         </div>

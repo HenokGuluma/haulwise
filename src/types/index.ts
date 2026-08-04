@@ -187,6 +187,8 @@ export type Load = {
   equipmentId: string | null;
   equipment: Equipment | null;
   driverPay: number;
+  driverPayType: "PERCENTAGE" | "FLAT";
+  driverPayValue: number;
   payoutStatus: PayoutStatus;
   documents: LoadDocument[];
 };
@@ -227,7 +229,12 @@ export type UserRow = {
 
 export type ApiError = { error: string; conflicts?: unknown[] };
 
-export type MonthlyAnalyticsPoint = { month: string; label: string; revenue: number; loads: number };
+// `revenue` is gross customer billing (sum of rate) — kept as the name
+// customer-facing dashboards read unchanged. `netRevenue`, when present
+// (internal callers only — see the analytics route), is each load's
+// rate minus its driverPay, summed: the company's actual take after the
+// driver-pay split, not shown to customer-scoped accounts.
+export type MonthlyAnalyticsPoint = { month: string; label: string; revenue: number; netRevenue?: number; loads: number };
 export type StatusBreakdownPoint = { status: string; label: string; count: number };
 export type TopCustomerPoint = { name: string; revenue: number };
 export type EquipmentVolumePoint = { label: string; tone: string; loads: number };

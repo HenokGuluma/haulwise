@@ -101,7 +101,7 @@ export default async function DashboardPage() {
     prisma.load.aggregate({
       where: { ...scope, status: { in: ["DELIVERED", "BILLED"] }, deliveryTime: { gte: weekAgo, lte: now } },
       _count: true,
-      _sum: { rate: true },
+      _sum: { rate: true, driverPay: true },
     }),
     prisma.load.findMany({
       where: { ...scope, status: "ASSIGNED", OR: [{ driverId: null }, { equipmentId: null }] },
@@ -129,7 +129,8 @@ export default async function DashboardPage() {
         activeCount,
         inTransitCount,
         deliveredThisWeekCount: deliveredThisWeekAgg._count,
-        revenueThisWeek: deliveredThisWeekAgg._sum.rate ?? 0,
+        grossVolumeThisWeek: deliveredThisWeekAgg._sum.rate ?? 0,
+        revenueThisWeek: (deliveredThisWeekAgg._sum.rate ?? 0) - (deliveredThisWeekAgg._sum.driverPay ?? 0),
         weekAgoIso: weekAgo.toISOString(),
         nowIso: now.toISOString(),
         unassigned,

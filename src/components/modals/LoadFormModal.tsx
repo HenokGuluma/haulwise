@@ -7,6 +7,7 @@ import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
 import { RATE_TYPES, RATE_TYPE_META, computeRate, type RateType } from "@/lib/rate-calc";
+import { DRIVER_PAY_TYPES, DEFAULT_DRIVER_PAY_VALUE, computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
 import { notifyDataChange } from "@/lib/data-events";
 import type { Customer, Load, EquipmentTypeCode, SessionUser } from "@/types";
 
@@ -34,6 +35,8 @@ type FormState = {
   rateType: RateType;
   rateBasisValue: string;
   distanceKm: string;
+  driverPayType: DriverPayType;
+  driverPayValue: string;
 };
 
 function toInputDateTime(iso: string): string {
@@ -78,6 +81,8 @@ export function LoadFormModal({
     rateType: seed?.rateType ?? "FLAT",
     rateBasisValue: seed?.rateBasisValue != null ? String(seed.rateBasisValue) : "",
     distanceKm: seed?.distanceKm != null ? String(seed.distanceKm) : "",
+    driverPayType: seed?.driverPayType ?? "PERCENTAGE",
+    driverPayValue: seed?.driverPayValue != null ? String(seed.driverPayValue) : String(DEFAULT_DRIVER_PAY_VALUE),
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -131,6 +136,15 @@ export function LoadFormModal({
     setForm((f) => (f.rate === String(computed) ? f : { ...f, rate: String(computed) }));
   }, [form.rateType, form.rateBasisValue, form.weight, form.distanceKm, form.pickupTime, form.deliveryTime]);
 
+  // Live preview only — the server clamps and computes this authoritatively
+  // on save, same as rate above, so this can never disagree with what's
+  // actually persisted.
+  const driverPayPreview = computeDriverPay({
+    driverPayType: form.driverPayType,
+    driverPayValue: Number(form.driverPayValue) || 0,
+    rate: Number(form.rate) || 0,
+  });
+
   const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD && Number(form.weight) > WEIGHT_WARN_THRESHOLD;
   const transitHours = form.pickupTime && form.deliveryTime
     ? (new Date(form.deliveryTime).getTime() - new Date(form.pickupTime).getTime()) / 3_600_000
@@ -160,6 +174,17 @@ export function LoadFormModal({
     }
     if (canConfigureRate && form.rateType === "PER_KM" && (!form.distanceKm || Number(form.distanceKm) <= 0)) {
       e.distanceKm = "Enter the distance in kilometers.";
+    }
+    if (canConfigureRate) {
+      if (form.driverPayType === "PERCENTAGE" && (Number(form.driverPayValue) < 0 || Number(form.driverPayValue) > 100)) {
+        e.driverPayValue = "Enter a percentage between 0 and 100.";
+      }
+      if (form.driverPayType === "FLAT" && (!form.driverPayValue || Number(form.driverPayValue) <= 0)) {
+        e.driverPayValue = "Enter a driver pay amount greater than 0.";
+      }
+      if (form.driverPayType === "FLAT" && Number(form.driverPayValue) > Number(form.rate)) {
+        e.driverPayValue = "Driver pay can't exceed the rate.";
+      }
     }
     if (!form.weight || Number(form.weight) <= 0) e.weight = "Enter a weight greater than 0.";
     if (!form.commodity.trim()) e.commodity = "Commodity is required.";
@@ -193,6 +218,8 @@ export function LoadFormModal({
             rateType: form.rateType,
             rateBasisValue: form.rateType === "FLAT" ? undefined : Number(form.rateBasisValue),
             distanceKm: form.rateType === "PER_KM" ? Number(form.distanceKm) : undefined,
+            driverPayType: form.driverPayType,
+            driverPayValue: Number(form.driverPayValue),
           }
         : {}),
     };
@@ -317,6 +344,35 @@ export function LoadFormModal({
           <div className="field-row">
             <Field label="Total rate (ETB)">
               <input className="input" value={form.rate ? Number(form.rate).toLocaleString() : "0"} disabled readOnly />
+            </Field>
+          </div>
+        )}
+
+        {canConfigureRate && (
+          <div className="field-row">
+            <Field label="Driver pay basis">
+              <select className="input" value={form.driverPayType} onChange={(e) => set("driverPayType", e.target.value as DriverPayType)}>
+                {DRIVER_PAY_TYPES.map((t) => (
+                  <option key={t} value={t}>{t === "PERCENTAGE" ? "% of rate" : "Flat amount (ETB)"}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label={form.driverPayType === "PERCENTAGE" ? "Driver pay (%)" : "Driver pay (ETB)"} error={errors.driverPayValue}>
+              <input
+                type="number"
+                min="0"
+                max={form.driverPayType === "PERCENTAGE" ? 100 : undefined}
+                className={"input" + (errors.driverPayValue ? " err" : "")}
+                value={form.driverPayValue}
+                onChange={(e) => set("driverPayValue", e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
+        {canConfigureRate && (
+          <div className="field-row">
+            <Field label="Driver pay total (ETB)">
+              <input className="input" value={driverPayPreview.toLocaleString()} disabled readOnly />
             </Field>
           </div>
         )}

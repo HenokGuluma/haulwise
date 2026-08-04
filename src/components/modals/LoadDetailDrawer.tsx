@@ -465,7 +465,13 @@ export function LoadDetailDrawer({
             </div>
             <div className="card" style={{ padding: 12, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
-                <span style={{ color: "var(--muted)" }}>Driver pay</span>
+                <span style={{ color: "var(--muted)" }}>
+                  Driver pay
+                  {" "}
+                  <span style={{ fontSize: 11 }}>
+                    ({load.driverPayType === "PERCENTAGE" ? `${load.driverPayValue}% of rate` : "flat"})
+                  </span>
+                </span>
                 <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(load.driverPay)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
@@ -510,7 +516,7 @@ export function LoadDetailDrawer({
           <Button variant="danger-ghost" onClick={() => setConfirmDelete(true)}>Delete</Button>
         )}
         <a href={`/loads/${load.id}/print`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-          <Button variant="ghost" icon="fileText">Print</Button>
+          <Button variant="ghost" icon="fileText">Dispatch Paper</Button>
         </a>
         <a href={`/loads/${load.id}/invoice`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
           <Button variant="ghost" icon="download">Invoice</Button>

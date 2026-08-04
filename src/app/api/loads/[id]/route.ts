@@ -9,6 +9,7 @@ import { statusLabel } from "@/lib/format";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
 import { computeRate, type RateType } from "@/lib/rate-calc";
+import { computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -63,12 +64,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (patch.payoutStatus !== undefined && !canManagePayments) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
-  const changesRateBasis = patch.rateType !== undefined || patch.rateBasisValue !== undefined || patch.distanceKm !== undefined;
+  const changesRateBasis =
+    patch.rateType !== undefined ||
+    patch.rateBasisValue !== undefined ||
+    patch.distanceKm !== undefined ||
+    patch.driverPayType !== undefined ||
+    patch.driverPayValue !== undefined;
   if (changesRateBasis && !canConfigureRate) {
-    return NextResponse.json({ error: "You don't have permission to change how this load's rate is calculated." }, { status: 403 });
+    return NextResponse.json({ error: "You don't have permission to change how this load's rate or driver pay is calculated." }, { status: 403 });
   }
   const otherFields = Object.keys(patch).filter(
-    (k) => !["payoutStatus", "rate", "rateType", "rateBasisValue", "distanceKm"].includes(k)
+    (k) => !["payoutStatus", "rate", "rateType", "rateBasisValue", "distanceKm", "driverPayType", "driverPayValue"].includes(k)
   );
   if (otherFields.length > 0 && !canEditLoad) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
@@ -137,7 +143,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   } else if (patch.rate !== undefined) {
     nextRate = patch.rate;
   }
-  const rateChanged = nextRate !== existing.rate;
+
+  // Same idea for driverPay — always recomputed from the effective basis
+  // against nextRate (which may have just changed above), so it stays
+  // consistent even when this patch never mentions driverPay at all.
+  const effectiveDriverPayType = (patch.driverPayType ?? existing.driverPayType) as DriverPayType;
+  const effectiveDriverPayValue = patch.driverPayValue !== undefined ? patch.driverPayValue : existing.driverPayValue;
+  if (effectiveDriverPayType === "FLAT" && effectiveDriverPayValue > nextRate) {
+    return NextResponse.json({ error: "Driver pay can't exceed the rate." }, { status: 400 });
+  }
+  const nextDriverPay = computeDriverPay({ driverPayType: effectiveDriverPayType, driverPayValue: effectiveDriverPayValue, rate: nextRate });
 
   const load = await prisma.load.update({
     where: { id: params.id },
@@ -153,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             distanceKm: patch.rateType === "PER_KM" ? patch.distanceKm ?? existing.distanceKm : null,
           }
         : {}),
-      driverPay: rateChanged ? Math.round(nextRate * 0.68) : undefined,
+      driverPay: nextDriverPay,
     },
     include: LOAD_INCLUDE,
   });
