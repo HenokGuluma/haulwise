@@ -90,12 +90,21 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ rows, total });
 }
 
-// Generates the next sequential load number, e.g. HL-2415. Not safe against
-// race conditions under heavy concurrent writes (a real production system
-// would use a DB sequence) — acceptable for the MVP's internal-dispatcher
-// write volume.
+// Generates the next sequential load number, e.g. HL-2415. Sorts by
+// loadNumber itself, not createdAt — seeded/demo rows can have createdAt
+// timestamps that don't line up with their load-number sequence (e.g. a
+// backfilled load history), so "most recently created" isn't reliably
+// "highest number" and using it here previously produced a number that
+// already existed, failing every create on the loadNumber unique
+// constraint. String-descending works because every load number is
+// currently the same digit count (4); this'll need revisiting if the
+// sequence ever reaches HL-10000.
+//
+// Not safe against race conditions under heavy concurrent writes (a real
+// production system would use a DB sequence) — acceptable for the MVP's
+// internal-dispatcher write volume.
 async function nextLoadNumber(): Promise<string> {
-  const last = await prisma.load.findFirst({ orderBy: { createdAt: "desc" }, select: { loadNumber: true } });
+  const last = await prisma.load.findFirst({ orderBy: { loadNumber: "desc" }, select: { loadNumber: true } });
   const lastNum = last ? parseInt(last.loadNumber.replace("HL-", ""), 10) : 2400;
   const next = Number.isFinite(lastNum) ? lastNum + 1 : 2401;
   return "HL-" + next;
