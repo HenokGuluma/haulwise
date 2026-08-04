@@ -7,8 +7,8 @@ import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
 import { fmtMoney } from "@/lib/format";
-import { RATE_TYPES, RATE_TYPE_META, computeRate, type RateType } from "@/lib/rate-calc";
-import { DRIVER_PAY_TYPES, DEFAULT_DRIVER_PAY_VALUE, computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
+import { RATE_TYPES, RATE_TYPE_META, computeRate, rateBasisQuantity, type RateType } from "@/lib/rate-calc";
+import { DRIVER_PAY_TYPES, DRIVER_PAY_TYPE_LABELS, DEFAULT_DRIVER_PAY_VALUE, computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
 import { notifyDataChange } from "@/lib/data-events";
 import type { Customer, Load, EquipmentTypeCode, SessionUser } from "@/types";
 
@@ -126,27 +126,41 @@ export function LoadFormModal({
     }
   }, [equipmentTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keeps the displayed total in sync with its basis for non-FLAT types —
-  // the same computeRate the server uses authoritatively, so this preview
-  // never disagrees with what actually gets saved. Left untouched for
-  // FLAT, where `rate` is the direct manual entry.
-  useEffect(() => {
-    if (form.rateType === "FLAT") return;
-    if (!form.pickupTime || !form.deliveryTime) return;
-    const pickup = new Date(form.pickupTime);
-    const delivery = new Date(form.deliveryTime);
-    if (Number.isNaN(pickup.getTime()) || Number.isNaN(delivery.getTime())) return;
-    const computed = computeRate({
-      rateType: form.rateType,
-      rateBasisValue: form.rateBasisValue ? Number(form.rateBasisValue) : null,
-      flatRate: 0,
-      weight: Number(form.weight) || 0,
-      distanceKm: form.distanceKm ? Number(form.distanceKm) : null,
-      pickupTime: pickup,
-      deliveryTime: delivery,
-    });
-    setForm((f) => (f.rate === String(computed) ? f : { ...f, rate: String(computed) }));
-  }, [form.rateType, form.rateBasisValue, form.weight, form.distanceKm, form.pickupTime, form.deliveryTime]);
+  // Computed directly during render instead of synced into state via a
+  // useEffect — the previous version stored the non-FLAT total back into
+  // form.rate from an effect, which only runs after a render commits, so
+  // every keystroke showed the *previous* total for one extra render
+  // cycle before catching up. Deriving it directly here means the
+  // figures on screen are never stale, not even briefly. FLAT is
+  // unaffected either way — `rate` there is always the direct manual
+  // entry, no derivation involved.
+  const pickup = form.pickupTime ? new Date(form.pickupTime) : null;
+  const delivery = form.deliveryTime ? new Date(form.deliveryTime) : null;
+  const datesValid = !!pickup && !!delivery && !Number.isNaN(pickup.getTime()) && !Number.isNaN(delivery.getTime());
+
+  const basisQuantity =
+    form.rateType !== "FLAT" && datesValid
+      ? rateBasisQuantity({
+          rateType: form.rateType,
+          weight: Number(form.weight) || 0,
+          distanceKm: form.distanceKm ? Number(form.distanceKm) : null,
+          pickupTime: pickup!,
+          deliveryTime: delivery!,
+        })
+      : null;
+
+  const effectiveRate =
+    form.rateType === "FLAT"
+      ? Number(form.rate) || 0
+      : computeRate({
+          rateType: form.rateType,
+          rateBasisValue: form.rateBasisValue ? Number(form.rateBasisValue) : null,
+          flatRate: 0,
+          weight: Number(form.weight) || 0,
+          distanceKm: form.distanceKm ? Number(form.distanceKm) : null,
+          pickupTime: pickup ?? new Date(0),
+          deliveryTime: delivery ?? new Date(0),
+        });
 
   // Live preview only — the server clamps and computes this authoritatively
   // on save, same as rate above, so this can never disagree with what's
@@ -154,10 +168,20 @@ export function LoadFormModal({
   const driverPayPreview = computeDriverPay({
     driverPayType: form.driverPayType,
     driverPayValue: Number(form.driverPayValue) || 0,
-    rate: Number(form.rate) || 0,
+    rate: effectiveRate,
+    basisQuantity,
   });
+  // Unclamped, for the "exceeds rate" validation message below —
+  // driverPayPreview above is already capped at effectiveRate, so
+  // comparing against that would never trip.
+  const rawDriverPay =
+    form.driverPayType === "FIXED"
+      ? Number(form.driverPayValue) || 0
+      : form.driverPayType === "PER_UNIT"
+      ? (Number(form.driverPayValue) || 0) * (basisQuantity ?? 0)
+      : null;
 
-  const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD && Number(form.weight) > WEIGHT_WARN_THRESHOLD;
+  const isOversized = effectiveRate > RATE_WARN_THRESHOLD && Number(form.weight) > WEIGHT_WARN_THRESHOLD;
   const transitHours = form.pickupTime && form.deliveryTime
     ? (new Date(form.deliveryTime).getTime() - new Date(form.pickupTime).getTime()) / 3_600_000
     : null;
@@ -191,10 +215,10 @@ export function LoadFormModal({
       if (form.driverPayType === "PERCENTAGE" && (Number(form.driverPayValue) < 0 || Number(form.driverPayValue) > 100)) {
         e.driverPayValue = "Enter a percentage between 0 and 100.";
       }
-      if (form.driverPayType === "FLAT" && (!form.driverPayValue || Number(form.driverPayValue) <= 0)) {
-        e.driverPayValue = "Enter a driver pay amount greater than 0.";
+      if (form.driverPayType !== "PERCENTAGE" && (!form.driverPayValue || Number(form.driverPayValue) <= 0)) {
+        e.driverPayValue = form.driverPayType === "PER_UNIT" ? "Enter a driver rate greater than 0." : "Enter a driver pay amount greater than 0.";
       }
-      if (form.driverPayType === "FLAT" && Number(form.driverPayValue) > Number(form.rate)) {
+      if (rawDriverPay !== null && rawDriverPay > effectiveRate) {
         e.driverPayValue = "Driver pay can't exceed the rate.";
       }
     }
@@ -218,7 +242,7 @@ export function LoadFormModal({
       pickupTime: new Date(form.pickupTime).toISOString(),
       deliveryTime: new Date(form.deliveryTime).toISOString(),
       weight: Number(form.weight),
-      rate: Number(form.rate),
+      rate: effectiveRate,
       commodity: form.commodity.trim(),
       equipmentTypeCode: form.equipmentTypeCode,
       // Only sent at all when this user can actually configure it — an
@@ -308,7 +332,25 @@ export function LoadFormModal({
           </Field>
           {canConfigureRate ? (
             <Field label="Rate basis">
-              <select className="input" value={form.rateType} onChange={(e) => set("rateType", e.target.value as RateType)}>
+              <select
+                className="input"
+                value={form.rateType}
+                onChange={(e) => {
+                  const nextRateType = e.target.value as RateType;
+                  setForm((f) => ({
+                    ...f,
+                    rateType: nextRateType,
+                    // Own-rate driver pay only makes sense with a
+                    // quantity to correlate against — falls back to the
+                    // default percentage if the rate basis switches to
+                    // Flat out from under it.
+                    ...(nextRateType === "FLAT" && f.driverPayType === "PER_UNIT"
+                      ? { driverPayType: "PERCENTAGE" as DriverPayType, driverPayValue: String(DEFAULT_DRIVER_PAY_VALUE) }
+                      : {}),
+                  }));
+                  setOversizedAck(false);
+                }}
+              >
                 {RATE_TYPES.map((rt) => (
                   <option key={rt} value={rt}>{RATE_TYPE_META[rt].label}</option>
                 ))}
@@ -320,7 +362,7 @@ export function LoadFormModal({
                 type="number"
                 min="0"
                 className={"input" + (errors.rate ? " err" : "")}
-                value={form.rate}
+                value={form.rateType === "FLAT" ? form.rate : String(effectiveRate)}
                 disabled={form.rateType !== "FLAT"}
                 title={form.rateType !== "FLAT" ? `Calculated as ${RATE_TYPE_META[form.rateType].label} — only a Manager can change how this is set.` : undefined}
                 onChange={(e) => set("rate", e.target.value)}
@@ -346,7 +388,7 @@ export function LoadFormModal({
               </Field>
             ) : form.rateType !== "FLAT" ? (
               <Field label="Total rate">
-                <ComputedFigure value={Number(form.rate) || 0} />
+                <ComputedFigure value={effectiveRate} />
               </Field>
             ) : null}
           </div>
@@ -355,7 +397,7 @@ export function LoadFormModal({
         {canConfigureRate && form.rateType === "PER_KM" && (
           <div className="field-row">
             <Field label="Total rate">
-              <ComputedFigure value={Number(form.rate) || 0} />
+              <ComputedFigure value={effectiveRate} />
             </Field>
           </div>
         )}
@@ -364,12 +406,19 @@ export function LoadFormModal({
           <div className="field-row">
             <Field label="Driver pay basis">
               <select className="input" value={form.driverPayType} onChange={(e) => set("driverPayType", e.target.value as DriverPayType)}>
-                {DRIVER_PAY_TYPES.map((t) => (
-                  <option key={t} value={t}>{t === "PERCENTAGE" ? "% of rate" : "Flat amount (ETB)"}</option>
+                {DRIVER_PAY_TYPES.filter((t) => t !== "PER_UNIT" || form.rateType !== "FLAT").map((t) => (
+                  <option key={t} value={t}>{DRIVER_PAY_TYPE_LABELS[t]}</option>
                 ))}
               </select>
             </Field>
-            <Field label={form.driverPayType === "PERCENTAGE" ? "Driver pay (%)" : "Driver pay (ETB)"} error={errors.driverPayValue}>
+            <Field
+              label={
+                form.driverPayType === "PERCENTAGE" ? "Driver pay (%)"
+                : form.driverPayType === "PER_UNIT" ? `Driver rate (${RATE_TYPE_META[form.rateType].unit})`
+                : "Driver pay (ETB)"
+              }
+              error={errors.driverPayValue}
+            >
               <input
                 type="number"
                 min="0"

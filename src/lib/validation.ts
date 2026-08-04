@@ -57,6 +57,10 @@ export const loadCreateSchema = z
   .refine((d) => d.driverPayType !== "PERCENTAGE" || d.driverPayValue <= 100, {
     message: "Percentage can't exceed 100.",
     path: ["driverPayValue"],
+  })
+  .refine((d) => d.driverPayType !== "PER_UNIT" || d.rateType !== "FLAT", {
+    message: "Own-rate driver pay needs a non-flat rate type.",
+    path: ["driverPayType"],
   });
 
 export const loadUpdateSchema = z

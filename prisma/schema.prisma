@@ -293,12 +293,15 @@ enum RateType {
 
 // How Load.driverPay is derived from Load.rate — see
 // src/lib/driver-pay-calc.ts, authoritative both client- and server-side.
-// PERCENTAGE (default, 68) matches the original hardcoded 0.68 behavior;
-// FLAT lets a Manager set an exact ETB amount instead. Either way the
-// computed driverPay is clamped so it can never exceed rate.
+// PERCENTAGE (default, 68) matches the original hardcoded 0.68 behavior.
+// PER_UNIT pays the driver their own per-unit rate on the same quantity
+// the load's own rateType uses (only meaningful when rateType isn't
+// FLAT). FIXED lets a Manager set an exact ETB amount instead. Whichever
+// type, the computed driverPay is clamped so it can never exceed rate.
 enum DriverPayType {
   PERCENTAGE
-  FLAT
+  PER_UNIT
+  FIXED
 }
 
 model Load {

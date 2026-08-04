@@ -469,7 +469,11 @@ export function LoadDetailDrawer({
                   Driver pay
                   {" "}
                   <span style={{ fontSize: 11 }}>
-                    ({load.driverPayType === "PERCENTAGE" ? `${load.driverPayValue}% of rate` : "flat"})
+                    ({load.driverPayType === "PERCENTAGE"
+                      ? `${load.driverPayValue}% of rate`
+                      : load.driverPayType === "PER_UNIT"
+                      ? `${fmtMoney(load.driverPayValue)} / ${load.rateType === "PER_QUINTAL" ? "Quintal" : load.rateType === "PER_KM" ? "km" : "hr"}`
+                      : "fixed"})
                   </span>
                 </span>
                 <span className="mono" style={{ fontWeight: 600 }}>{fmtMoney(load.driverPay)}</span>

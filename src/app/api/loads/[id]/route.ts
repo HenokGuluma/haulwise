@@ -8,7 +8,7 @@ import { logActivity } from "@/lib/activity";
 import { statusLabel } from "@/lib/format";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
-import { computeRate, type RateType } from "@/lib/rate-calc";
+import { computeRate, rateBasisQuantity, type RateType } from "@/lib/rate-calc";
 import { computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
@@ -149,10 +149,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // consistent even when this patch never mentions driverPay at all.
   const effectiveDriverPayType = (patch.driverPayType ?? existing.driverPayType) as DriverPayType;
   const effectiveDriverPayValue = patch.driverPayValue !== undefined ? patch.driverPayValue : existing.driverPayValue;
-  if (effectiveDriverPayType === "FLAT" && effectiveDriverPayValue > nextRate) {
+  if (effectiveDriverPayType === "PER_UNIT" && effectiveRateType === "FLAT") {
+    return NextResponse.json({ error: "Own-rate driver pay needs a non-flat rate type." }, { status: 400 });
+  }
+  const effectiveBasisQuantity = rateBasisQuantity({
+    rateType: effectiveRateType,
+    weight: effectiveWeight,
+    distanceKm: effectiveDistanceKm,
+    pickupTime: nextPickup,
+    deliveryTime: nextDelivery,
+  });
+  const rawDriverPay =
+    effectiveDriverPayType === "FIXED" ? effectiveDriverPayValue
+    : effectiveDriverPayType === "PER_UNIT" ? effectiveDriverPayValue * (effectiveBasisQuantity ?? 0)
+    : null; // PERCENTAGE can't exceed rate by construction (capped 0-100)
+  if (rawDriverPay !== null && rawDriverPay > nextRate) {
     return NextResponse.json({ error: "Driver pay can't exceed the rate." }, { status: 400 });
   }
-  const nextDriverPay = computeDriverPay({ driverPayType: effectiveDriverPayType, driverPayValue: effectiveDriverPayValue, rate: nextRate });
+  const nextDriverPay = computeDriverPay({
+    driverPayType: effectiveDriverPayType,
+    driverPayValue: effectiveDriverPayValue,
+    rate: nextRate,
+    basisQuantity: effectiveBasisQuantity,
+  });
 
   const load = await prisma.load.update({
     where: { id: params.id },

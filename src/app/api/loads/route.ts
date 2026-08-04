@@ -7,7 +7,7 @@ import { parseListParams } from "@/lib/pagination";
 import { logActivity } from "@/lib/activity";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
-import { computeRate } from "@/lib/rate-calc";
+import { computeRate, rateBasisQuantity } from "@/lib/rate-calc";
 import { computeDriverPay, DEFAULT_DRIVER_PAY_TYPE, DEFAULT_DRIVER_PAY_VALUE } from "@/lib/driver-pay-calc";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
@@ -151,10 +151,24 @@ export async function POST(req: NextRequest) {
     deliveryTime: data.deliveryTime,
   });
 
-  if (data.driverPayType === "FLAT" && data.driverPayValue > rate) {
+  if (data.driverPayType === "PER_UNIT" && data.rateType === "FLAT") {
+    return NextResponse.json({ error: "Own-rate driver pay needs a non-flat rate type." }, { status: 400 });
+  }
+  const basisQuantity = rateBasisQuantity({
+    rateType: data.rateType,
+    weight: data.weight,
+    distanceKm: data.distanceKm,
+    pickupTime: data.pickupTime,
+    deliveryTime: data.deliveryTime,
+  });
+  const rawDriverPay =
+    data.driverPayType === "FIXED" ? data.driverPayValue
+    : data.driverPayType === "PER_UNIT" ? data.driverPayValue * (basisQuantity ?? 0)
+    : null; // PERCENTAGE can't exceed rate by construction (capped 0-100)
+  if (rawDriverPay !== null && rawDriverPay > rate) {
     return NextResponse.json({ error: "Driver pay can't exceed the rate." }, { status: 400 });
   }
-  const driverPay = computeDriverPay({ driverPayType: data.driverPayType, driverPayValue: data.driverPayValue, rate });
+  const driverPay = computeDriverPay({ driverPayType: data.driverPayType, driverPayValue: data.driverPayValue, rate, basisQuantity });
 
   const load = await prisma.load.create({
     data: {

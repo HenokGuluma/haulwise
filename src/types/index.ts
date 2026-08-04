@@ -187,7 +187,7 @@ export type Load = {
   equipmentId: string | null;
   equipment: Equipment | null;
   driverPay: number;
-  driverPayType: "PERCENTAGE" | "FLAT";
+  driverPayType: "PERCENTAGE" | "PER_UNIT" | "FIXED";
   driverPayValue: number;
   payoutStatus: PayoutStatus;
   documents: LoadDocument[];

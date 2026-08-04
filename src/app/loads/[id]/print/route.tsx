@@ -94,7 +94,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         <Row label="Equipment" value={load.equipment ? load.equipment.unitNumber : "Unassigned"} />
         {!user.isCustomerScoped && (
           <Row
-            label={`Driver Pay (${load.driverPayType === "PERCENTAGE" ? `${load.driverPayValue}% of rate` : "flat"})`}
+            label={`Driver Pay (${
+              load.driverPayType === "PERCENTAGE"
+                ? `${load.driverPayValue}% of rate`
+                : load.driverPayType === "PER_UNIT"
+                ? `${fmtMoney(load.driverPayValue)} / ${load.rateType === "PER_QUINTAL" ? "Quintal" : load.rateType === "PER_KM" ? "km" : "hr"}`
+                : "fixed"
+            })`}
             value={fmtMoney(load.driverPay)}
           />
         )}
