@@ -136,18 +136,24 @@ export function LoadFormModal({
   // entry, no derivation involved.
   const pickup = form.pickupTime ? new Date(form.pickupTime) : null;
   const delivery = form.deliveryTime ? new Date(form.deliveryTime) : null;
-  const datesValid = !!pickup && !!delivery && !Number.isNaN(pickup.getTime()) && !Number.isNaN(delivery.getTime());
 
+  // Falls back to an epoch dummy date when pickup/delivery aren't filled
+  // in yet, same as effectiveRate below — Per Quintal and Per Kilometer
+  // don't use pickup/delivery at all, so gating this on both dates being
+  // present (as an earlier version did) needlessly zeroed out Own Rate
+  // driver pay for those two types whenever the dates just hadn't been
+  // reached yet in the form. Only Per Transit Hour actually depends on
+  // the dates, and correctly reads as 0 until they're real.
   const basisQuantity =
-    form.rateType !== "FLAT" && datesValid
-      ? rateBasisQuantity({
+    form.rateType === "FLAT"
+      ? null
+      : rateBasisQuantity({
           rateType: form.rateType,
           weight: Number(form.weight) || 0,
           distanceKm: form.distanceKm ? Number(form.distanceKm) : null,
-          pickupTime: pickup!,
-          deliveryTime: delivery!,
-        })
-      : null;
+          pickupTime: pickup ?? new Date(0),
+          deliveryTime: delivery ?? new Date(0),
+        });
 
   const effectiveRate =
     form.rateType === "FLAT"
