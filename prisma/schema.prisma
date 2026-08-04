@@ -278,6 +278,19 @@ enum PayoutStatus {
   PAID
 }
 
+// What `Load.rate` means. FLAT (default) is the original behavior — a
+// dispatcher enters the total directly. Every other value derives the
+// total from rateBasisValue × a quantity the load already carries (weight
+// for PER_QUINTAL, distanceKm for PER_KM, pickup→delivery span for
+// PER_HOUR) — see src/lib/rate-calc.ts, which is authoritative for this
+// computation both client- and server-side.
+enum RateType {
+  FLAT
+  PER_QUINTAL
+  PER_KM
+  PER_HOUR
+}
+
 model Load {
   id                String            @id @default(cuid())
   loadNumber        String            @unique
@@ -293,6 +306,12 @@ model Load {
   deliveryTime      DateTime
   status            LoadStatus        @default(DRAFT)
   rate              Int // cents-free integer USD for simplicity; swap to Decimal if sub-dollar precision is needed
+  // How `rate` was derived — see RateType above. rateBasisValue is the
+  // per-unit rate (e.g. ETB per Quintal) for non-FLAT types, null for
+  // FLAT. distanceKm only applies to PER_KM; null otherwise.
+  rateType          RateType          @default(FLAT)
+  rateBasisValue    Int?
+  distanceKm        Int?
   weight            Int // lbs
   commodity         String
   equipmentTypeCode String

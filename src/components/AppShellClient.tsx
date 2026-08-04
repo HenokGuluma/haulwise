@@ -42,6 +42,7 @@ function ShellInner({
       {newLoadOpen && (
         <LoadFormModal
           mode="create"
+          user={user}
           onClose={() => setNewLoadOpen(false)}
           onSaved={(load) => {
             toast.success(load.loadNumber + " created as a Draft.");

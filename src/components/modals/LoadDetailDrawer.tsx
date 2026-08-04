@@ -7,6 +7,8 @@ import { useToast } from "@/components/ui";
 import { PaymentLogModal } from "@/components/modals/PaymentLogModal";
 import { fmtMoney, fmtWeight, fmtDateTime, fmtBytes, fmtRelative, statusLabel } from "@/lib/format";
 import { api, uploadFile, ApiRequestError } from "@/lib/api-client";
+import { notifyDataChange } from "@/lib/data-events";
+import { RATE_TYPE_META, rateBasisQuantity } from "@/lib/rate-calc";
 import type { Load, LoadDocument, LoadActivityRow, LoadCommentRow, PaymentRow, SessionUser, DocumentType } from "@/types";
 
 const STATUSES = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"] as const;
@@ -351,6 +353,7 @@ export function LoadDetailDrawer({
   async function handleDelete() {
     try {
       await api.del(`/api/loads/${load.id}`);
+      notifyDataChange("loads");
       onDeleted();
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete load.");
@@ -392,6 +395,30 @@ export function LoadDetailDrawer({
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Weight</div>{fmtWeight(load.weight)}</div>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Equipment type</div>{load.equipmentTypeCode}</div>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>Rate</div><span className="mono" style={{ fontWeight: 700 }}>{fmtMoney(load.rate)}</span></div>
+          {load.rateType !== "FLAT" && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Rate basis</div>
+              {RATE_TYPE_META[load.rateType].label}
+              {load.rateBasisValue != null && (
+                <>
+                  {": "}
+                  <span className="mono">{fmtMoney(load.rateBasisValue)}</span>
+                  {" × "}
+                  <span className="mono">
+                    {rateBasisQuantity({
+                      rateType: load.rateType,
+                      weight: load.weight,
+                      distanceKm: load.distanceKm,
+                      pickupTime: new Date(load.pickupTime),
+                      deliveryTime: new Date(load.deliveryTime),
+                    })?.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  </span>
+                  {" "}
+                  {load.rateType === "PER_QUINTAL" ? "Quintals" : load.rateType === "PER_KM" ? "km" : "hrs"}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="section-title">Assignment</div>

@@ -6,6 +6,7 @@ import { fmtMoney, fmtWeight, fmtDateTime, statusLabel } from "@/lib/format";
 import { AutoPrint } from "@/components/AutoPrint";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
+import { RATE_TYPE_META, rateBasisQuantity } from "@/lib/rate-calc";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const load = await prisma.load.findUnique({ where: { id: params.id }, select: { loadNumber: true } });
@@ -66,6 +67,22 @@ export default async function LoadPrintPage({ params }: { params: { id: string }
         <div className="row"><span className="label">Weight</span><span>{fmtWeight(load.weight)}</span></div>
         <div className="row"><span className="label">Equipment</span><span>{load.equipmentTypeCode}</span></div>
         <div className="row"><span className="label">Rate</span><span>{fmtMoney(load.rate)}</span></div>
+        {load.rateType !== "FLAT" && load.rateBasisValue != null && (
+          <div className="row">
+            <span className="label">Rate basis</span>
+            <span>
+              {RATE_TYPE_META[load.rateType].label}: {fmtMoney(load.rateBasisValue)} ×{" "}
+              {rateBasisQuantity({
+                rateType: load.rateType,
+                weight: load.weight,
+                distanceKm: load.distanceKm,
+                pickupTime: load.pickupTime,
+                deliveryTime: load.deliveryTime,
+              })?.toLocaleString(undefined, { maximumFractionDigits: 1 })}{" "}
+              {load.rateType === "PER_QUINTAL" ? "Quintals" : load.rateType === "PER_KM" ? "km" : "hrs"}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="section">Assignment</div>

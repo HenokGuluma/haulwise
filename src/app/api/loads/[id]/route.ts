@@ -8,6 +8,7 @@ import { logActivity } from "@/lib/activity";
 import { statusLabel } from "@/lib/format";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
+import { computeRate, type RateType } from "@/lib/rate-calc";
 
 const LOAD_INCLUDE = { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } } as const;
 
@@ -40,11 +41,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const perms = auth.user.permissions;
   const canEditLoad = perms.includes("loads:edit");
   const canManagePayments = perms.includes("payments:manage");
+  const canConfigureRate = perms.includes("loads:configure-rate");
   if (!canEditLoad && !canManagePayments) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
 
-  const existing = await prisma.load.findUnique({ where: { id: params.id } });
+  // Same tenant/demo scope GET applies — without it, a customer-scoped
+  // role that's been granted loads:edit/loads:delete via /roles (nothing
+  // stops an admin from doing that) could patch or delete any load by id,
+  // not just its own customer's.
+  const existing = await prisma.load.findUnique({ where: { id: params.id, ...demoScope(auth.user), ...customerScope(auth.user) } });
   if (!existing) return NextResponse.json({ error: "Load not found." }, { status: 404 });
 
   const body = await req.json().catch(() => null);
@@ -57,7 +63,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (patch.payoutStatus !== undefined && !canManagePayments) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
-  const otherFields = Object.keys(patch).filter((k) => k !== "payoutStatus" && k !== "rate");
+  const changesRateBasis = patch.rateType !== undefined || patch.rateBasisValue !== undefined || patch.distanceKm !== undefined;
+  if (changesRateBasis && !canConfigureRate) {
+    return NextResponse.json({ error: "You don't have permission to change how this load's rate is calculated." }, { status: 403 });
+  }
+  const otherFields = Object.keys(patch).filter(
+    (k) => !["payoutStatus", "rate", "rateType", "rateBasisValue", "distanceKm"].includes(k)
+  );
   if (otherFields.length > 0 && !canEditLoad) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
@@ -99,11 +111,49 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  // Rate stays consistent with its own basis: whenever the effective
+  // (merged) rate type is non-FLAT, the total is always recomputed from
+  // rateBasisValue × the type's quantity — even when this particular
+  // patch only touched an unrelated field like weight — so a PER_QUINTAL
+  // load's rate can never silently drift out of sync with a changed
+  // weight. FLAT keeps the original behavior: trust whatever `rate` was
+  // sent, or leave it alone if it wasn't.
+  const effectiveRateType = (patch.rateType ?? existing.rateType) as RateType;
+  const effectiveWeight = patch.weight ?? existing.weight;
+  const effectiveDistanceKm = patch.distanceKm !== undefined ? patch.distanceKm : existing.distanceKm;
+  const effectiveRateBasisValue = patch.rateBasisValue !== undefined ? patch.rateBasisValue : existing.rateBasisValue;
+
+  let nextRate = existing.rate;
+  if (effectiveRateType !== "FLAT") {
+    nextRate = computeRate({
+      rateType: effectiveRateType,
+      rateBasisValue: effectiveRateBasisValue,
+      flatRate: existing.rate,
+      weight: effectiveWeight,
+      distanceKm: effectiveDistanceKm,
+      pickupTime: nextPickup,
+      deliveryTime: nextDelivery,
+    });
+  } else if (patch.rate !== undefined) {
+    nextRate = patch.rate;
+  }
+  const rateChanged = nextRate !== existing.rate;
+
   const load = await prisma.load.update({
     where: { id: params.id },
     data: {
       ...patch,
-      driverPay: patch.rate !== undefined ? Math.round(patch.rate * 0.68) : undefined,
+      rate: nextRate,
+      // Explicit rate-basis change — null out whatever doesn't apply to
+      // the new type so a stale per-unit value or distance from a
+      // previous type doesn't linger unused in the row.
+      ...(patch.rateType !== undefined
+        ? {
+            rateBasisValue: patch.rateType === "FLAT" ? null : patch.rateBasisValue ?? existing.rateBasisValue,
+            distanceKm: patch.rateType === "PER_KM" ? patch.distanceKm ?? existing.distanceKm : null,
+          }
+        : {}),
+      driverPay: rateChanged ? Math.round(nextRate * 0.68) : undefined,
     },
     include: LOAD_INCLUDE,
   });
@@ -126,7 +176,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const auth = await requirePermission("loads:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const existing = await prisma.load.findUnique({ where: { id: params.id } });
+  // Same tenant/demo scope GET/PATCH apply — see the comment in PATCH above.
+  const existing = await prisma.load.findUnique({ where: { id: params.id, ...demoScope(auth.user), ...customerScope(auth.user) } });
   if (!existing) return NextResponse.json({ error: "Load not found." }, { status: 404 });
 
   // The DB cascade-deletes Document rows, but their stored files live

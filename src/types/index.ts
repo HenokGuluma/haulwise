@@ -176,6 +176,9 @@ export type Load = {
   deliveryTime: string;
   status: LoadStatus;
   rate: number;
+  rateType: "FLAT" | "PER_QUINTAL" | "PER_KM" | "PER_HOUR";
+  rateBasisValue: number | null;
+  distanceKm: number | null;
   weight: number;
   commodity: string;
   equipmentTypeCode: EquipmentTypeCode;

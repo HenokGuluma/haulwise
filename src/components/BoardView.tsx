@@ -414,6 +414,7 @@ export function BoardView({
           mode="edit"
           load={editLoad}
           customers={customers}
+          user={user}
           onClose={() => setEditLoad(null)}
           onSaved={(l) => { patchLocal(l); setEditLoad(null); toast.success(l.loadNumber + " updated."); }}
         />
@@ -424,6 +425,7 @@ export function BoardView({
           mode="create"
           prefill={cloneSource}
           customers={customers}
+          user={user}
           onClose={() => setCloneSource(null)}
           onSaved={(l) => { setLoads((prev) => [...prev, l]); setCloneSource(null); toast.success(l.loadNumber + " created as a Draft."); }}
         />

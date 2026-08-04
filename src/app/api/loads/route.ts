@@ -7,6 +7,7 @@ import { parseListParams } from "@/lib/pagination";
 import { logActivity } from "@/lib/activity";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
+import { computeRate } from "@/lib/rate-calc";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -121,6 +122,10 @@ export async function POST(req: NextRequest) {
   }
   const data = parsed.data;
 
+  if (data.rateType !== "FLAT" && !auth.user.permissions.includes("loads:configure-rate")) {
+    return NextResponse.json({ error: "You don't have permission to change how a load's rate is calculated." }, { status: 403 });
+  }
+
   const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
   if (!customer) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
@@ -128,6 +133,18 @@ export async function POST(req: NextRequest) {
   if (!equipmentType) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
 
   const loadNumber = await nextLoadNumber();
+
+  // Authoritative here regardless of what the client sent as `rate` — see
+  // computeRate's own comment. FLAT trusts the manual entry unchanged.
+  const rate = computeRate({
+    rateType: data.rateType,
+    rateBasisValue: data.rateBasisValue,
+    flatRate: data.rate,
+    weight: data.weight,
+    distanceKm: data.distanceKm,
+    pickupTime: data.pickupTime,
+    deliveryTime: data.deliveryTime,
+  });
 
   const load = await prisma.load.create({
     data: {
@@ -138,10 +155,13 @@ export async function POST(req: NextRequest) {
       pickupTime: data.pickupTime,
       deliveryTime: data.deliveryTime,
       weight: data.weight,
-      rate: data.rate,
+      rate,
+      rateType: data.rateType,
+      rateBasisValue: data.rateType === "FLAT" ? null : data.rateBasisValue,
+      distanceKm: data.rateType === "PER_KM" ? data.distanceKm : null,
       commodity: data.commodity,
       equipmentTypeCode: data.equipmentTypeCode,
-      driverPay: Math.round(data.rate * 0.68),
+      driverPay: Math.round(rate * 0.68),
       status: "DRAFT",
     },
     include: { customer: true, driver: true, equipment: true, documents: { orderBy: { uploadedAt: "desc" } } },

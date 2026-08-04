@@ -6,6 +6,7 @@
 
 export const PERMISSION_KEYS = [
   "loads:view", "loads:create", "loads:edit", "loads:assign", "loads:delete", "loads:comment",
+  "loads:configure-rate",
   "payments:view", "payments:manage",
   "customers:view", "customers:create", "customers:edit", "customers:delete",
   "documents:view", "documents:upload", "documents:delete",
@@ -25,6 +26,7 @@ export const PERMISSION_CATALOG: { category: string; items: { key: PermissionKey
     { key: "loads:assign", label: "Assign driver & equipment" },
     { key: "loads:delete", label: "Delete loads" },
     { key: "loads:comment", label: "Comment on loads" },
+    { key: "loads:configure-rate", label: "Choose how a load's rate is calculated (per Quintal, per km, etc.)" },
   ]},
   { category: "Payments", items: [
     { key: "payments:view", label: "View payment ledger" },

@@ -9,6 +9,7 @@ import { AssignModal } from "@/components/modals/AssignModal";
 import { LoadFormModal } from "@/components/modals/LoadFormModal";
 import { fmtMoney, fmtDate, statusLabel } from "@/lib/format";
 import { api, fetchTablePage } from "@/lib/api-client";
+import { onDataChange } from "@/lib/data-events";
 import type { Load, Customer, Driver, Equipment, SessionUser, LoadStatus } from "@/types";
 
 const STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
@@ -77,6 +78,11 @@ export function LoadsView({
   function refresh() {
     setReloadKey((k) => k + 1);
   }
+
+  // Catches mutations from outside this page's own tree — specifically
+  // the topbar's global "New Load" button, which has no reloadKey of
+  // ours to bump directly (see src/lib/data-events.ts).
+  useEffect(() => onDataChange("loads", refresh), []);
 
   return (
     <div>
@@ -195,6 +201,7 @@ export function LoadsView({
           mode="edit"
           load={editLoad}
           customers={customers}
+          user={user}
           onClose={() => setEditLoad(null)}
           onSaved={(l) => { setEditLoad(null); refresh(); }}
         />
@@ -205,6 +212,7 @@ export function LoadsView({
           mode="create"
           prefill={cloneSource}
           customers={customers}
+          user={user}
           onClose={() => setCloneSource(null)}
           onSaved={(l) => { setCloneSource(null); refresh(); }}
         />

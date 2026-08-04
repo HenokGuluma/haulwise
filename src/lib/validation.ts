@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { EQUIPMENT_TYPE_ICONS, EQUIPMENT_TYPE_TONES } from "@/lib/equipment-types";
 import { PERMISSION_KEYS } from "@/lib/permissions";
+import { RATE_TYPES } from "@/lib/rate-calc";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -23,6 +24,13 @@ export const loadCreateSchema = z
     rate: z.coerce.number().positive("Rate must be greater than 0."),
     commodity: z.string().trim().min(1, "Commodity is required."),
     equipmentTypeCode,
+    // rate itself stays required above (used as-is for FLAT, and as a
+    // harmless fallback the server ignores for every other type) — these
+    // three are optional so existing callers that never set a rate type
+    // keep working unchanged.
+    rateType: z.enum(RATE_TYPES).default("FLAT"),
+    rateBasisValue: z.coerce.number().positive().optional().nullable(),
+    distanceKm: z.coerce.number().positive().optional().nullable(),
   })
   .refine((d) => d.deliveryTime > d.pickupTime, {
     message: "Delivery must be after pickup.",
@@ -31,6 +39,14 @@ export const loadCreateSchema = z
   .refine((d) => d.origin.toLowerCase() !== d.destination.toLowerCase(), {
     message: "Destination must differ from origin.",
     path: ["destination"],
+  })
+  .refine((d) => d.rateType === "FLAT" || (d.rateBasisValue ?? 0) > 0, {
+    message: "Enter a rate per unit.",
+    path: ["rateBasisValue"],
+  })
+  .refine((d) => d.rateType !== "PER_KM" || (d.distanceKm ?? 0) > 0, {
+    message: "Enter the distance in kilometers.",
+    path: ["distanceKm"],
   });
 
 export const loadUpdateSchema = z
@@ -46,6 +62,9 @@ export const loadUpdateSchema = z
     equipmentTypeCode: equipmentTypeCode.optional(),
     status: z.enum(["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"]).optional(),
     payoutStatus: z.enum(["NOT_BILLED", "PENDING", "PAID"]).optional(),
+    rateType: z.enum(RATE_TYPES).optional(),
+    rateBasisValue: z.coerce.number().positive().optional().nullable(),
+    distanceKm: z.coerce.number().positive().optional().nullable(),
   })
   .partial();
 

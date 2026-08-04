@@ -6,7 +6,9 @@ import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
-import type { Customer, Load, EquipmentTypeCode } from "@/types";
+import { RATE_TYPES, RATE_TYPE_META, computeRate, type RateType } from "@/lib/rate-calc";
+import { notifyDataChange } from "@/lib/data-events";
+import type { Customer, Load, EquipmentTypeCode, SessionUser } from "@/types";
 
 const NEW_CUSTOMER_VALUE = "__new__";
 // Data-entry safety net, not routing logic — flags fat-finger entry errors
@@ -29,6 +31,9 @@ type FormState = {
   rate: string;
   commodity: string;
   equipmentTypeCode: EquipmentTypeCode;
+  rateType: RateType;
+  rateBasisValue: string;
+  distanceKm: string;
 };
 
 function toInputDateTime(iso: string): string {
@@ -42,6 +47,7 @@ export function LoadFormModal({
   load,
   prefill,
   customers,
+  user,
   onClose,
   onSaved,
 }: {
@@ -51,12 +57,14 @@ export function LoadFormModal({
   prefill?: Load;
   /** Omit when the caller doesn't already have the full customer list (e.g. the topbar's "New Load" button) — fetched lazily on mount instead. Pass it when the caller already fetched it anyway (board/loads filters) to avoid a redundant request. */
   customers?: Customer[];
+  user: SessionUser;
   onClose: () => void;
   onSaved: (load: Load) => void;
 }) {
   const fetchedCustomers = useCustomers(!customers);
   const effectiveCustomers = customers ?? fetchedCustomers;
   const seed = load ?? prefill;
+  const canConfigureRate = user.permissions.includes("loads:configure-rate");
   const [form, setForm] = useState<FormState>(() => ({
     customerId: (seed ? seed.customerId : effectiveCustomers[0]?.id) ?? "",
     origin: seed?.origin ?? "",
@@ -67,6 +75,9 @@ export function LoadFormModal({
     rate: seed ? String(seed.rate) : "",
     commodity: seed?.commodity ?? "",
     equipmentTypeCode: seed?.equipmentTypeCode ?? "",
+    rateType: seed?.rateType ?? "FLAT",
+    rateBasisValue: seed?.rateBasisValue != null ? String(seed.rateBasisValue) : "",
+    distanceKm: seed?.distanceKm != null ? String(seed.distanceKm) : "",
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -88,7 +99,7 @@ export function LoadFormModal({
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
-    if (key === "rate" || key === "weight") setOversizedAck(false);
+    if (["rate", "weight", "rateType", "rateBasisValue", "distanceKm"].includes(key)) setOversizedAck(false);
   }
 
   // Default to the first available type once the list loads (new loads only).
@@ -97,6 +108,28 @@ export function LoadFormModal({
       set("equipmentTypeCode", equipmentTypes[0].code);
     }
   }, [equipmentTypes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keeps the displayed total in sync with its basis for non-FLAT types —
+  // the same computeRate the server uses authoritatively, so this preview
+  // never disagrees with what actually gets saved. Left untouched for
+  // FLAT, where `rate` is the direct manual entry.
+  useEffect(() => {
+    if (form.rateType === "FLAT") return;
+    if (!form.pickupTime || !form.deliveryTime) return;
+    const pickup = new Date(form.pickupTime);
+    const delivery = new Date(form.deliveryTime);
+    if (Number.isNaN(pickup.getTime()) || Number.isNaN(delivery.getTime())) return;
+    const computed = computeRate({
+      rateType: form.rateType,
+      rateBasisValue: form.rateBasisValue ? Number(form.rateBasisValue) : null,
+      flatRate: 0,
+      weight: Number(form.weight) || 0,
+      distanceKm: form.distanceKm ? Number(form.distanceKm) : null,
+      pickupTime: pickup,
+      deliveryTime: delivery,
+    });
+    setForm((f) => (f.rate === String(computed) ? f : { ...f, rate: String(computed) }));
+  }, [form.rateType, form.rateBasisValue, form.weight, form.distanceKm, form.pickupTime, form.deliveryTime]);
 
   const isOversized = Number(form.rate) > RATE_WARN_THRESHOLD && Number(form.weight) > WEIGHT_WARN_THRESHOLD;
   const transitHours = form.pickupTime && form.deliveryTime
@@ -121,7 +154,13 @@ export function LoadFormModal({
     if (form.pickupTime && form.deliveryTime && new Date(form.deliveryTime) <= new Date(form.pickupTime)) {
       e.deliveryTime = "Delivery must be after pickup.";
     }
-    if (!form.rate || Number(form.rate) <= 0) e.rate = "Enter a rate greater than 0.";
+    if (form.rateType === "FLAT" && (!form.rate || Number(form.rate) <= 0)) e.rate = "Enter a rate greater than 0.";
+    if (canConfigureRate && form.rateType !== "FLAT" && (!form.rateBasisValue || Number(form.rateBasisValue) <= 0)) {
+      e.rateBasisValue = "Enter a rate per unit.";
+    }
+    if (canConfigureRate && form.rateType === "PER_KM" && (!form.distanceKm || Number(form.distanceKm) <= 0)) {
+      e.distanceKm = "Enter the distance in kilometers.";
+    }
     if (!form.weight || Number(form.weight) <= 0) e.weight = "Enter a weight greater than 0.";
     if (!form.commodity.trim()) e.commodity = "Commodity is required.";
     if (!form.equipmentTypeCode) e.equipmentTypeCode = "Select an equipment type.";
@@ -145,14 +184,27 @@ export function LoadFormModal({
       rate: Number(form.rate),
       commodity: form.commodity.trim(),
       equipmentTypeCode: form.equipmentTypeCode,
+      // Only sent at all when this user can actually configure it — an
+      // edit payload that never mentions these fields can't trip the
+      // server's loads:configure-rate check, so a Dispatcher editing an
+      // unrelated field on someone else's PER_QUINTAL load still works.
+      ...(canConfigureRate
+        ? {
+            rateType: form.rateType,
+            rateBasisValue: form.rateType === "FLAT" ? undefined : Number(form.rateBasisValue),
+            distanceKm: form.rateType === "PER_KM" ? Number(form.distanceKm) : undefined,
+          }
+        : {}),
     };
 
     try {
       if (mode === "edit" && load) {
         const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, payload);
+        notifyDataChange("loads");
         onSaved(res.load);
       } else {
         const res = await api.post<{ load: Load }>("/api/loads", payload);
+        notifyDataChange("loads");
         onSaved(res.load);
       }
     } catch (err) {
@@ -215,10 +267,59 @@ export function LoadFormModal({
           <Field label="Weight (Quintals)" error={errors.weight}>
             <input type="number" min="0" className={"input" + (errors.weight ? " err" : "")} value={form.weight} onChange={(e) => set("weight", e.target.value)} />
           </Field>
-          <Field label="Rate (ETB)" error={errors.rate}>
-            <input type="number" min="0" className={"input" + (errors.rate ? " err" : "")} value={form.rate} onChange={(e) => set("rate", e.target.value)} />
-          </Field>
+          {canConfigureRate ? (
+            <Field label="Rate basis">
+              <select className="input" value={form.rateType} onChange={(e) => set("rateType", e.target.value as RateType)}>
+                {RATE_TYPES.map((rt) => (
+                  <option key={rt} value={rt}>{RATE_TYPE_META[rt].label}</option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <Field label="Rate (ETB)" error={errors.rate}>
+              <input
+                type="number"
+                min="0"
+                className={"input" + (errors.rate ? " err" : "")}
+                value={form.rate}
+                disabled={form.rateType !== "FLAT"}
+                title={form.rateType !== "FLAT" ? `Calculated as ${RATE_TYPE_META[form.rateType].label} — only a Manager can change how this is set.` : undefined}
+                onChange={(e) => set("rate", e.target.value)}
+              />
+            </Field>
+          )}
         </div>
+
+        {canConfigureRate && (
+          <div className="field-row">
+            {form.rateType === "FLAT" ? (
+              <Field label="Rate (ETB)" error={errors.rate}>
+                <input type="number" min="0" className={"input" + (errors.rate ? " err" : "")} value={form.rate} onChange={(e) => set("rate", e.target.value)} />
+              </Field>
+            ) : (
+              <Field label={`Rate per unit (${RATE_TYPE_META[form.rateType].unit})`} error={errors.rateBasisValue}>
+                <input type="number" min="0" className={"input" + (errors.rateBasisValue ? " err" : "")} value={form.rateBasisValue} onChange={(e) => set("rateBasisValue", e.target.value)} />
+              </Field>
+            )}
+            {form.rateType === "PER_KM" ? (
+              <Field label="Distance (km)" error={errors.distanceKm}>
+                <input type="number" min="0" className={"input" + (errors.distanceKm ? " err" : "")} value={form.distanceKm} onChange={(e) => set("distanceKm", e.target.value)} />
+              </Field>
+            ) : form.rateType !== "FLAT" ? (
+              <Field label="Total rate (ETB)">
+                <input className="input" value={form.rate ? Number(form.rate).toLocaleString() : "0"} disabled readOnly />
+              </Field>
+            ) : null}
+          </div>
+        )}
+
+        {canConfigureRate && form.rateType === "PER_KM" && (
+          <div className="field-row">
+            <Field label="Total rate (ETB)">
+              <input className="input" value={form.rate ? Number(form.rate).toLocaleString() : "0"} disabled readOnly />
+            </Field>
+          </div>
+        )}
 
         <div className="field-row">
           <Field label="Commodity" error={errors.commodity}>

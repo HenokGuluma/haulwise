@@ -9,6 +9,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
 
   const doc = await prisma.customerDocument.findUnique({ where: { id: params.docId } });
   if (!doc || doc.customerId !== params.id) return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  // Mirrors the same check on loads' document route — nothing prevents an
+  // admin from granting documents:view to a customer-scoped role, and
+  // without this a customer account could then fetch another customer's
+  // document by id.
+  if (auth.user.isCustomerScoped && doc.customerId !== auth.user.customerId) {
+    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  }
 
   const file = await getStorageDriver().get(doc.storageKey);
   if (!file) return NextResponse.json({ error: "File is missing from storage." }, { status: 404 });
@@ -28,6 +35,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   const doc = await prisma.customerDocument.findUnique({ where: { id: params.docId } });
   if (!doc || doc.customerId !== params.id) return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  if (auth.user.isCustomerScoped && doc.customerId !== auth.user.customerId) {
+    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  }
 
   await getStorageDriver().delete(doc.storageKey);
   await prisma.customerDocument.delete({ where: { id: doc.id } });

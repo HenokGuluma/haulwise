@@ -18,6 +18,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const auth = await requirePermission("roster:manage");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+  // Same demo-visibility scope as GET — previously missing here, and the
+  // blanket .catch(() => null) below on the update itself masked *any*
+  // failure (a real DB error, not just "not found") behind the same
+  // generic 404, which this existence pre-check now replaces.
+  const existing = await prisma.equipment.findUnique({ where: { id: params.id, ...demoScope(auth.user) } });
+  if (!existing) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
+
   const body = await req.json().catch(() => null);
   const parsed = equipmentUpdateSchema.safeParse(body);
   if (!parsed.success) {
@@ -29,17 +36,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!type) return NextResponse.json({ error: "Unknown equipment type." }, { status: 400 });
   }
 
-  const equipment = await prisma.equipment
-    .update({ where: { id: params.id }, data: parsed.data })
-    .catch(() => null);
-  if (!equipment) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
-
+  const equipment = await prisma.equipment.update({ where: { id: params.id }, data: parsed.data });
   return NextResponse.json({ equipment });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requirePermission("roster:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  // Same demo-visibility scope as GET/PATCH — see the comment in PATCH above.
+  const existing = await prisma.equipment.findUnique({ where: { id: params.id, ...demoScope(auth.user) } });
+  if (!existing) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
 
   const activeLoad = await prisma.load.findFirst({
     where: { equipmentId: params.id, status: { in: ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT"] } },
@@ -51,6 +58,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     );
   }
 
-  await prisma.equipment.delete({ where: { id: params.id } }).catch(() => null);
+  await prisma.equipment.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }

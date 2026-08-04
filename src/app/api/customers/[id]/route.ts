@@ -36,7 +36,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const auth = await requirePermission("customers:edit");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const existing = await prisma.customer.findUnique({ where: { id: params.id } });
+  // Same demo-visibility scope as GET — without it, someone with
+  // showMockData off could still patch a demo customer they can't see.
+  const existing = await prisma.customer.findUnique({ where: { id: params.id, ...demoScope(auth.user) } });
   if (!existing) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
   const body = await req.json().catch(() => null);
@@ -53,7 +55,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const auth = await requirePermission("customers:delete");
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const existing = await prisma.customer.findUnique({ where: { id: params.id } });
+  // Same demo-visibility scope as GET/PATCH — see the comment in PATCH above.
+  const existing = await prisma.customer.findUnique({ where: { id: params.id, ...demoScope(auth.user) } });
   if (!existing) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
   const activeCount = await prisma.load.count({ where: { customerId: params.id, status: { in: [...ACTIVE_STATUSES] } } });

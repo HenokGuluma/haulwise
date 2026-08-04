@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon, Pill, StatusPill, Button, IconButton, ConfirmDialog, useToast } from "@/components/ui";
@@ -10,6 +10,7 @@ import { CustomerContactFormModal } from "@/components/modals/CustomerContactFor
 import { LoadDetailDrawer } from "@/components/modals/LoadDetailDrawer";
 import { fmtMoney, fmtDate, fmtBytes, fmtRelative, statusLabel } from "@/lib/format";
 import { api, fetchTablePage, uploadFile, ApiRequestError } from "@/lib/api-client";
+import { onDataChange } from "@/lib/data-events";
 import type { CustomerWithDetail, CustomerContact, CustomerDocument, SessionUser, Load, CustomerStatus } from "@/types";
 
 const STATUS_LABELS: Record<CustomerStatus, string> = { ACTIVE: "Active", PROSPECT: "Prospect", INACTIVE: "Inactive" };
@@ -196,6 +197,10 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
   const router = useRouter();
   const toast = useToast();
   const canDelete = user.permissions.includes("customers:delete");
+
+  // Catches a load created for this customer via the topbar's global "New
+  // Load" button, which has no reloadKey of ours to bump directly.
+  useEffect(() => onDataChange("loads", () => setLoadsReload((k) => k + 1)), []);
 
   async function refreshCustomer() {
     const res = await api.get<{ customer: CustomerWithDetail }>(`/api/customers/${customer.id}`);
