@@ -92,7 +92,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
               <Text>Freight — {load.commodity} ({fmtWeight(load.weight)}, {load.equipmentTypeCode})</Text>
               {rateBasisText && <Text style={styles.basisNote}>{rateBasisText}</Text>}
             </View>
-            <Text style={styles.tdRoute}>{load.origin} → {load.destination}</Text>
+            {/* The base-14 Helvetica PDF font only covers WinAnsiEncoding
+                (roughly Latin-1) — a → arrow isn't in that set and
+                silently renders as the wrong glyph, unlike the em-dash/
+                middle-dot used elsewhere here, which are. "to" avoids the
+                risk entirely rather than embedding a Unicode font just
+                for one character. */}
+            <Text style={styles.tdRoute}>{load.origin} to {load.destination}</Text>
             <Text style={styles.tdAmt}>{fmtMoney(load.rate)}</Text>
           </View>
         </View>
