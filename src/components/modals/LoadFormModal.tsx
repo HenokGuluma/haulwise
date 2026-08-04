@@ -6,6 +6,7 @@ import { CustomerFormModal } from "@/components/modals/CustomerFormModal";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { useCustomers } from "@/lib/useCustomers";
 import { api, ApiRequestError } from "@/lib/api-client";
+import { fmtMoney } from "@/lib/format";
 import { RATE_TYPES, RATE_TYPE_META, computeRate, type RateType } from "@/lib/rate-calc";
 import { DRIVER_PAY_TYPES, DEFAULT_DRIVER_PAY_VALUE, computeDriverPay, type DriverPayType } from "@/lib/driver-pay-calc";
 import { notifyDataChange } from "@/lib/data-events";
@@ -38,6 +39,17 @@ type FormState = {
   driverPayType: DriverPayType;
   driverPayValue: string;
 };
+
+/** A computed, non-editable total (Total rate, Driver pay total) — the
+ * system derives these from the figures entered above by multiplying
+ * them out, so they read as a plain result, not another field to fill in. */
+function ComputedFigure({ value }: { value: number }) {
+  return (
+    <div className="mono" style={{ padding: "9px 0", fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+      {fmtMoney(value)}
+    </div>
+  );
+}
 
 function toInputDateTime(iso: string): string {
   const d = new Date(iso);
@@ -333,8 +345,8 @@ export function LoadFormModal({
                 <input type="number" min="0" className={"input" + (errors.distanceKm ? " err" : "")} value={form.distanceKm} onChange={(e) => set("distanceKm", e.target.value)} />
               </Field>
             ) : form.rateType !== "FLAT" ? (
-              <Field label="Total rate (ETB)">
-                <input className="input" value={form.rate ? Number(form.rate).toLocaleString() : "0"} disabled readOnly />
+              <Field label="Total rate">
+                <ComputedFigure value={Number(form.rate) || 0} />
               </Field>
             ) : null}
           </div>
@@ -342,8 +354,8 @@ export function LoadFormModal({
 
         {canConfigureRate && form.rateType === "PER_KM" && (
           <div className="field-row">
-            <Field label="Total rate (ETB)">
-              <input className="input" value={form.rate ? Number(form.rate).toLocaleString() : "0"} disabled readOnly />
+            <Field label="Total rate">
+              <ComputedFigure value={Number(form.rate) || 0} />
             </Field>
           </div>
         )}
@@ -371,8 +383,8 @@ export function LoadFormModal({
         )}
         {canConfigureRate && (
           <div className="field-row">
-            <Field label="Driver pay total (ETB)">
-              <input className="input" value={driverPayPreview.toLocaleString()} disabled readOnly />
+            <Field label="Driver pay total">
+              <ComputedFigure value={driverPayPreview} />
             </Field>
           </div>
         )}
