@@ -411,7 +411,26 @@ export function LoadFormModal({
         {canConfigureRate && (
           <div className="field-row">
             <Field label="Driver pay basis">
-              <select className="input" value={form.driverPayType} onChange={(e) => set("driverPayType", e.target.value as DriverPayType)}>
+              <select
+                className="input"
+                value={form.driverPayType}
+                onChange={(e) => {
+                  const nextType = e.target.value as DriverPayType;
+                  setForm((f) => ({
+                    ...f,
+                    driverPayType: nextType,
+                    // Own Rate has no sensible value to inherit from
+                    // Percentage/Fixed, so pre-fill a starting point —
+                    // the same default split (70%) applied to the
+                    // customer's own per-unit rate instead of the total,
+                    // e.g. a 20 ETB/Quintal customer rate suggests 14.
+                    // Still fully editable from there.
+                    ...(nextType === "PER_UNIT"
+                      ? { driverPayValue: String(Math.round((DEFAULT_DRIVER_PAY_VALUE / 100) * (Number(f.rateBasisValue) || 0))) }
+                      : {}),
+                  }));
+                }}
+              >
                 {DRIVER_PAY_TYPES.filter((t) => t !== "PER_UNIT" || form.rateType !== "FLAT").map((t) => (
                   <option key={t} value={t}>{DRIVER_PAY_TYPE_LABELS[t]}</option>
                 ))}

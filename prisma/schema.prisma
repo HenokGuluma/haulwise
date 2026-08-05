@@ -337,7 +337,7 @@ model Load {
 
   driverPay      Int
   driverPayType  DriverPayType @default(PERCENTAGE)
-  driverPayValue Int           @default(68)
+  driverPayValue Int           @default(70)
   payoutStatus   PayoutStatus  @default(NOT_BILLED)
   isDemo         Boolean       @default(false)
 

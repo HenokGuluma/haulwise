@@ -1,7 +1,7 @@
 // How a load's driverPay is derived from its rate.
 //
-// - PERCENTAGE (default, 68%) matches the original hardcoded behavior —
-//   driverPayValue is a 0-100 number, driverPay = rate × value / 100.
+// - PERCENTAGE (default, 70%) — driverPayValue is a 0-100 number,
+//   driverPay = rate × value / 100.
 // - PER_UNIT gives the driver their own per-unit rate on the *same*
 //   quantity the load's own rate basis uses (Quintals/km/transit-hours —
 //   see rate-calc.ts's rateBasisQuantity) — e.g. the customer might be
@@ -19,7 +19,7 @@ export const DRIVER_PAY_TYPES = ["PERCENTAGE", "PER_UNIT", "FIXED"] as const;
 export type DriverPayType = (typeof DRIVER_PAY_TYPES)[number];
 
 export const DEFAULT_DRIVER_PAY_TYPE: DriverPayType = "PERCENTAGE";
-export const DEFAULT_DRIVER_PAY_VALUE = 68;
+export const DEFAULT_DRIVER_PAY_VALUE = 70;
 
 export const DRIVER_PAY_TYPE_LABELS: Record<DriverPayType, string> = {
   PERCENTAGE: "% of rate",
