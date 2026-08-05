@@ -11,6 +11,7 @@ import { LoadFormModal } from "@/components/modals/LoadFormModal";
 import { fmtMoney } from "@/lib/format";
 import { api, ApiRequestError } from "@/lib/api-client";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
+import { notifyDataChange } from "@/lib/data-events";
 import type { Load, Driver, Equipment, Customer, SessionUser, LoadStatus } from "@/types";
 
 const STATUSES: LoadStatus[] = ["DRAFT", "ASSIGNED", "DISPATCHED", "IN_TRANSIT", "DELIVERED", "BILLED"];
@@ -172,6 +173,10 @@ export function BoardView({
     try {
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { status });
       patchLocal(res.load);
+      // A status change can cross the delivered/billed line the sidebar's
+      // Dispatch Board badge filters on, even though the total load count
+      // itself hasn't changed.
+      notifyDataChange("loads");
       toast.success(`${load.loadNumber} moved to ${STATUS_LABELS[status]}.`);
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't update status.");

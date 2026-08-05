@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { fullName } from "@/lib/format";
+import { api } from "@/lib/api-client";
+import { onDataChange } from "@/lib/data-events";
 import type { SessionUser } from "@/types";
 
 type NavItem = { href: string; label: string; icon: string; requiredPermission?: string; showIf?: (user: SessionUser) => boolean };
@@ -44,6 +47,24 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
 
+  // The server-computed `counts` prop is only fresh at the last full
+  // navigation/router.refresh() — a layout doesn't re-run on client-side
+  // navigation between sibling pages, so a load/driver/equipment created
+  // or deleted from deep inside some other page's own component tree
+  // (not every mutation path calls router.refresh()) would otherwise
+  // leave these badges stale until the next one. Re-pulls just the counts
+  // (a few COUNT queries, never row data) whenever one of those entities
+  // actually changes, instead of polling or over-fetching everything.
+  const [liveCounts, setLiveCounts] = useState(counts);
+  useEffect(() => setLiveCounts(counts), [counts]);
+  useEffect(() => {
+    function refetch() {
+      api.get<Partial<Record<string, number>>>("/api/nav-counts").then(setLiveCounts).catch(() => {});
+    }
+    const unsubs = [onDataChange("loads", refetch), onDataChange("drivers", refetch), onDataChange("equipment", refetch)];
+    return () => unsubs.forEach((u) => u());
+  }, []);
+
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -71,7 +92,7 @@ export function Sidebar({
       <div className="nav-group">
         {NAV_ITEMS.filter((item) => (item.showIf ? item.showIf(user) : !item.requiredPermission || user.permissions.includes(item.requiredPermission))).map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-          const count = counts[item.href];
+          const count = liveCounts[item.href];
           return (
             <Link key={item.href} href={item.href} className={"nav-item" + (active ? " active" : "")} onClick={onCloseMobile}>
               <Icon name={item.icon} />

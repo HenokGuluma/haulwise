@@ -13,6 +13,7 @@ import { daysUntil } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
 import { useEquipmentTypes } from "@/lib/useEquipmentTypes";
 import { equipmentToneColors } from "@/lib/equipment-types";
+import { notifyDataChange } from "@/lib/data-events";
 import type { Driver, Equipment, SessionUser, DriverStatus, EquipmentStatus, EquipmentTypeListRow } from "@/types";
 
 function initials(a: string, b: string) {
@@ -41,11 +42,17 @@ const EQUIPMENT_STATUSES: EquipmentStatus[] = ["AVAILABLE", "IN_USE", "MAINTENAN
 export function RosterView({
   user,
   activeLoadCounts,
+  initialCounts,
 }: {
   user: SessionUser;
   initialDrivers?: Driver[];
   initialEquipment?: Equipment[];
   activeLoadCounts: { byDriver: Record<string, number>; byEquipment: Record<string, number> };
+  /** Server-computed plain counts (no row data) so the tab labels are
+   * accurate from first paint — otherwise a tab reads 0 until its own
+   * table has fetched at least once, since that's the only other place
+   * these counts come from (DataTable's onTotalChange). */
+  initialCounts: { drivers: number; equipment: number; types: number };
 }) {
   const [tab, setTab] = useState<"drivers" | "equipment" | "types">("drivers");
   const [driverForm, setDriverForm] = useState<{ open: boolean; driver?: Driver }>({ open: false });
@@ -54,9 +61,9 @@ export function RosterView({
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const [detailDriver, setDetailDriver] = useState<Driver | null>(null);
   const [detailEquipment, setDetailEquipment] = useState<Equipment | null>(null);
-  const [driverCount, setDriverCount] = useState(0);
-  const [equipmentCount, setEquipmentCount] = useState(0);
-  const [typeCount, setTypeCount] = useState(0);
+  const [driverCount, setDriverCount] = useState(initialCounts.drivers);
+  const [equipmentCount, setEquipmentCount] = useState(initialCounts.equipment);
+  const [typeCount, setTypeCount] = useState(initialCounts.types);
   const [driverReload, setDriverReload] = useState(0);
   const [equipmentReload, setEquipmentReload] = useState(0);
   const [typeReload, setTypeReload] = useState(0);
@@ -104,6 +111,7 @@ export function RosterView({
       await api.del(`/api/drivers/${id}`);
       toast.success("Driver removed from roster.");
       setDriverReload((k) => k + 1);
+      notifyDataChange("drivers");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete driver.");
@@ -115,6 +123,7 @@ export function RosterView({
       await api.del(`/api/equipment/${id}`);
       toast.success("Equipment removed from fleet.");
       setEquipmentReload((k) => k + 1);
+      notifyDataChange("equipment");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't delete equipment.");
@@ -389,6 +398,7 @@ export function RosterView({
             toast.success(driverForm.driver ? "Driver updated." : "Driver added to roster.");
             setDriverForm({ open: false });
             setDriverReload((k) => k + 1);
+            if (!driverForm.driver) notifyDataChange("drivers");
           }}
         />
       )}
@@ -401,6 +411,7 @@ export function RosterView({
             toast.success(equipmentForm.equipment ? "Equipment updated." : "Equipment added to fleet.");
             setEquipmentForm({ open: false });
             setEquipmentReload((k) => k + 1);
+            if (!equipmentForm.equipment) notifyDataChange("equipment");
           }}
         />
       )}

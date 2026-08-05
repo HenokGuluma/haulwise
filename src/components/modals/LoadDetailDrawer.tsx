@@ -318,6 +318,10 @@ export function LoadDetailDrawer({
     try {
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { status: nextStatus });
       onUpdated(res.load);
+      // Crossing into/out of delivered/billed changes what the sidebar's
+      // Dispatch Board badge counts, even though the total load count
+      // itself hasn't changed.
+      notifyDataChange("loads");
       toast.success(load.loadNumber + " moved to " + statusLabel(nextStatus) + ".");
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't update status.");
@@ -332,6 +336,7 @@ export function LoadDetailDrawer({
     try {
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { status: prevStatus });
       onUpdated(res.load);
+      notifyDataChange("loads");
       toast.info(load.loadNumber + " moved back to " + statusLabel(prevStatus) + ".");
     } catch (err) {
       toast.error(err instanceof ApiRequestError ? err.message : "Couldn't update status.");
