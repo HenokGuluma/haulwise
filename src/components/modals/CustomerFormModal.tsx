@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
 import { api, ApiRequestError } from "@/lib/api-client";
 import type { Customer, CustomerStatus } from "@/types";
@@ -93,11 +92,6 @@ export function CustomerFormModal({
             <input className="input" value={form.paymentTerms} onChange={(e) => set("paymentTerms", e.target.value)} />
           </Field>
         </div>
-        {isEdit && customer && (
-          <Link href={`/customers/${customer.id}`} style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>
-            Open full customer profile (contacts, documents, load history) →
-          </Link>
-        )}
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
