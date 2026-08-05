@@ -9,6 +9,7 @@ import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { fmtMoney, fitFontSize, daysUntil, statusLabel } from "@/lib/format";
 import { useAnalytics } from "@/lib/useAnalytics";
 import { api, ApiRequestError } from "@/lib/api-client";
+import { DASHBOARD_PERIODS, DASHBOARD_PERIOD_LABELS, type DashboardPeriod } from "@/lib/dashboard-period";
 import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
 import { StatusBreakdownChart } from "@/components/charts/StatusBreakdownChart";
 import { TopCustomersChart } from "@/components/charts/TopCustomersChart";
@@ -85,13 +86,15 @@ export function KPI({
 export type DashboardStats = {
   activeCount: number;
   inTransitCount: number;
-  deliveredThisWeekCount: number;
-  /** Gross customer billing for the week (sum of rate) — what "Revenue" used to mean before the net split below. */
-  grossVolumeThisWeek: number;
+  /** Which period the fields below (deliveredCount/grossVolume/revenue/periodFromIso/periodToIso) are scoped to. */
+  period: DashboardPeriod;
+  deliveredCount: number;
+  /** Gross customer billing for the period (sum of rate) — what "Revenue" used to mean before the net split below. */
+  grossVolume: number;
   /** Each delivered load's rate minus its driverPay, summed — the company's actual take after the driver-pay split. */
-  revenueThisWeek: number;
-  weekAgoIso: string;
-  nowIso: string;
+  revenue: number;
+  periodFromIso: string;
+  periodToIso: string;
   unassigned: { id: string; loadNumber: string }[];
   pickupsToday: { id: string; loadNumber: string; origin: string; status: LoadStatus }[];
   deliveriesToday: { id: string; loadNumber: string; destination: string; status: LoadStatus }[];
@@ -110,6 +113,44 @@ export function DashboardView({
 }) {
   const [stats, setStats] = useState(initialStats);
   useEffect(() => setStats(initialStats), [initialStats]);
+  const toast = useToast();
+
+  // Delivered/Revenue period selector — separate from `stats` above since
+  // switching it only ever needs to refetch the one cheap aggregate below,
+  // never the unassigned/pickups/deliveries panels (those aren't
+  // period-scoped). Server-rendered initialStats already covers "week" for
+  // free, so only month/year trigger a client fetch, and switching back to
+  // week reuses initialStats again instead of refetching it.
+  const [period, setPeriod] = useState<DashboardPeriod>(initialStats.period);
+  const [periodStats, setPeriodStats] = useState(initialStats);
+  const [periodLoading, setPeriodLoading] = useState(false);
+  useEffect(() => {
+    if (period === initialStats.period) {
+      setPeriodStats(initialStats);
+      return;
+    }
+    let cancelled = false;
+    setPeriodLoading(true);
+    api
+      .get<{ deliveredCount: number; grossVolume: number; revenue?: number; fromIso: string; toIso: string }>(
+        `/api/dashboard/kpis?period=${period}`
+      )
+      .then((res) => {
+        if (cancelled) return;
+        setPeriodStats((prev) => ({
+          ...prev,
+          period,
+          deliveredCount: res.deliveredCount,
+          grossVolume: res.grossVolume,
+          revenue: res.revenue ?? prev.revenue,
+          periodFromIso: res.fromIso,
+          periodToIso: res.toIso,
+        }));
+      })
+      .catch((err) => toast.error(err instanceof ApiRequestError ? err.message : "Couldn't load that period."))
+      .finally(() => { if (!cancelled) setPeriodLoading(false); });
+    return () => { cancelled = true; };
+  }, [period, initialStats, toast]);
 
   // The "Needs attention" / "Today" lists only carry the few fields needed
   // to render a row — opening one lazy-fetches the full Load (documents,
@@ -118,7 +159,6 @@ export function DashboardView({
   const [detailLoad, setDetailLoad] = useState<Load | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const router = useRouter();
-  const toast = useToast();
   // Defaults to "all time" — matches this route's pre-filter behavior, so
   // nothing changes for anyone who never touches the picker.
   const [range, setRange] = useState<DateRange>({ from: null, to: null });
@@ -137,11 +177,13 @@ export function DashboardView({
   }
 
   // Each KPI card links to Loads pre-filtered to exactly the set it's
-  // counting — the "This Week" cards pass the same weekAgo/now bounds the
-  // server used to compute them, so the destination table matches exactly.
+  // counting — the Delivered/Revenue cards pass whatever period bounds
+  // produced the currently-shown numbers, so the destination table always
+  // matches exactly, regardless of which period is selected.
   const activeLoadsHref = "/loads?status=DRAFT,ASSIGNED,DISPATCHED,IN_TRANSIT";
   const inTransitHref = "/loads?status=IN_TRANSIT";
-  const deliveredThisWeekHref = `/loads?status=DELIVERED,BILLED&deliveredFrom=${encodeURIComponent(stats.weekAgoIso)}&deliveredTo=${encodeURIComponent(stats.nowIso)}`;
+  const deliveredHref = `/loads?status=DELIVERED,BILLED&deliveredFrom=${encodeURIComponent(periodStats.periodFromIso)}&deliveredTo=${encodeURIComponent(periodStats.periodToIso)}`;
+  const periodLabel = DASHBOARD_PERIOD_LABELS[period];
 
   const expiringDrivers = drivers.map((d) => ({ d, days: daysUntil(d.licenseExpiration) })).filter((x) => x.days <= 21).sort((a, b) => a.days - b.days);
   const maintenanceEquip = equipment.map((e) => ({ e, days: daysUntil(e.nextMaintenance) })).filter((x) => x.days <= 14).sort((a, b) => a.days - b.days);
@@ -162,19 +204,36 @@ export function DashboardView({
 
   return (
     <div>
-      <div className="kpi-grid">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Delivered &amp; Revenue:</span>
+        <div className="board-view-toggle" role="tablist" aria-label="Delivered and Revenue period">
+          {DASHBOARD_PERIODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              role="tab"
+              aria-selected={period === p}
+              className={"board-view-toggle-btn" + (period === p ? " active" : "")}
+              onClick={() => setPeriod(p)}
+            >
+              {DASHBOARD_PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="kpi-grid" style={{ opacity: periodLoading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
         <KPI label="Active Loads" value={stats.activeCount} icon="package" iconTone="accent" href={activeLoadsHref} />
         <KPI label="In Transit" value={stats.inTransitCount} icon="truck" iconTone="success" href={inTransitHref} />
-        <KPI label="Delivered This Week" value={stats.deliveredThisWeekCount} icon="checkCircle" iconTone="route" href={deliveredThisWeekHref} />
+        <KPI label={"Delivered " + periodLabel} value={periodStats.deliveredCount} icon="checkCircle" iconTone="route" href={deliveredHref} />
         <KPI
-          label="Revenue This Week"
-          value={fmtMoney(stats.revenueThisWeek)}
+          label={"Revenue " + periodLabel}
+          value={fmtMoney(periodStats.revenue)}
           icon="money"
           iconTone="amber"
           highlight
-          href={deliveredThisWeekHref}
+          href={deliveredHref}
           deltaIcon="layers"
-          deltaText={"Gross Volume: " + fmtMoney(stats.grossVolumeThisWeek)}
+          deltaText={"Gross Volume: " + fmtMoney(periodStats.grossVolume)}
         />
       </div>
 

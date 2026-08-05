@@ -6,6 +6,7 @@ import { DashboardView } from "@/components/DashboardView";
 import { CustomerDashboardView } from "@/components/CustomerDashboardView";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
+import { dashboardPeriodRange } from "@/lib/dashboard-period";
 import type { Driver, Equipment } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -16,8 +17,7 @@ export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const now = new Date();
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const { from: weekAgo, to: now } = dashboardPeriodRange("week");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today.getTime() + 86_400_000);
@@ -128,11 +128,12 @@ export default async function DashboardPage() {
       stats={{
         activeCount,
         inTransitCount,
-        deliveredThisWeekCount: deliveredThisWeekAgg._count,
-        grossVolumeThisWeek: deliveredThisWeekAgg._sum.rate ?? 0,
-        revenueThisWeek: (deliveredThisWeekAgg._sum.rate ?? 0) - (deliveredThisWeekAgg._sum.driverPay ?? 0),
-        weekAgoIso: weekAgo.toISOString(),
-        nowIso: now.toISOString(),
+        period: "week",
+        deliveredCount: deliveredThisWeekAgg._count,
+        grossVolume: deliveredThisWeekAgg._sum.rate ?? 0,
+        revenue: (deliveredThisWeekAgg._sum.rate ?? 0) - (deliveredThisWeekAgg._sum.driverPay ?? 0),
+        periodFromIso: weekAgo.toISOString(),
+        periodToIso: now.toISOString(),
         unassigned,
         pickupsToday,
         deliveriesToday,
