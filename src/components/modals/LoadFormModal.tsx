@@ -102,6 +102,14 @@ export function LoadFormModal({
   const [localCustomers, setLocalCustomers] = useState(effectiveCustomers);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [oversizedAck, setOversizedAck] = useState(false);
+  // True while driverPayValue is still "whatever the 70% default
+  // computes to" rather than something the user deliberately typed —
+  // lets the effect below keep it in sync with the rate basis/type it's
+  // built from. Starts true for a brand-new load (nothing to preserve
+  // yet) and false when editing or cloning an existing one (its saved
+  // value was a deliberate choice, not silently recomputed just because
+  // some other field on the load gets edited).
+  const [driverPayIsDefault, setDriverPayIsDefault] = useState(!seed);
   const equipmentTypes = useEquipmentTypes();
 
   // Mirrors the equipmentTypeCode default-fill below: when customers arrive
@@ -167,6 +175,27 @@ export function LoadFormModal({
           pickupTime: pickup ?? new Date(0),
           deliveryTime: delivery ?? new Date(0),
         });
+
+  // Keeps driverPayValue at "70% of whatever it's calculated against"
+  // whenever that basis changes — the flat 70 itself for Percentage (no
+  // customer number involved), 70% of the customer's own per-unit rate
+  // for Own Rate, or 70% of the computed total for Fixed — so switching
+  // Driver pay basis, or later editing any of the rate figures above,
+  // keeps suggesting the current equivalent. driverPayIsDefault flips to
+  // false the moment the user types into the value field directly (see
+  // its onChange below), so a deliberate override is never silently
+  // overwritten by a later rate edit.
+  useEffect(() => {
+    if (!canConfigureRate || !driverPayIsDefault) return;
+    const next =
+      form.driverPayType === "PERCENTAGE"
+        ? DEFAULT_DRIVER_PAY_VALUE
+        : form.driverPayType === "PER_UNIT"
+        ? Math.round((DEFAULT_DRIVER_PAY_VALUE / 100) * (Number(form.rateBasisValue) || 0))
+        : Math.round((DEFAULT_DRIVER_PAY_VALUE / 100) * effectiveRate);
+    const nextStr = String(next);
+    setForm((f) => (f.driverPayValue === nextStr ? f : { ...f, driverPayValue: nextStr }));
+  }, [canConfigureRate, driverPayIsDefault, form.driverPayType, form.rateBasisValue, effectiveRate]);
 
   // Live preview only — the server clamps and computes this authoritatively
   // on save, same as rate above, so this can never disagree with what's
@@ -343,17 +372,18 @@ export function LoadFormModal({
                 value={form.rateType}
                 onChange={(e) => {
                   const nextRateType = e.target.value as RateType;
+                  // Own-rate driver pay only makes sense with a quantity
+                  // to correlate against — falls back to the default
+                  // percentage if the rate basis switches to Flat out
+                  // from under it (the sync effect above then recomputes
+                  // driverPayValue for that new type automatically).
+                  const conflictsWithOwnRate = nextRateType === "FLAT" && form.driverPayType === "PER_UNIT";
                   setForm((f) => ({
                     ...f,
                     rateType: nextRateType,
-                    // Own-rate driver pay only makes sense with a
-                    // quantity to correlate against — falls back to the
-                    // default percentage if the rate basis switches to
-                    // Flat out from under it.
-                    ...(nextRateType === "FLAT" && f.driverPayType === "PER_UNIT"
-                      ? { driverPayType: "PERCENTAGE" as DriverPayType, driverPayValue: String(DEFAULT_DRIVER_PAY_VALUE) }
-                      : {}),
+                    ...(conflictsWithOwnRate ? { driverPayType: "PERCENTAGE" as DriverPayType } : {}),
                   }));
+                  if (conflictsWithOwnRate) setDriverPayIsDefault(true);
                   setOversizedAck(false);
                 }}
               >
@@ -415,20 +445,14 @@ export function LoadFormModal({
                 className="input"
                 value={form.driverPayType}
                 onChange={(e) => {
-                  const nextType = e.target.value as DriverPayType;
-                  setForm((f) => ({
-                    ...f,
-                    driverPayType: nextType,
-                    // Own Rate has no sensible value to inherit from
-                    // Percentage/Fixed, so pre-fill a starting point —
-                    // the same default split (70%) applied to the
-                    // customer's own per-unit rate instead of the total,
-                    // e.g. a 20 ETB/Quintal customer rate suggests 14.
-                    // Still fully editable from there.
-                    ...(nextType === "PER_UNIT"
-                      ? { driverPayValue: String(Math.round((DEFAULT_DRIVER_PAY_VALUE / 100) * (Number(f.rateBasisValue) || 0))) }
-                      : {}),
-                  }));
+                  // Switching basis always re-seeds a fresh 70% default
+                  // for whichever type was just picked (the sync effect
+                  // above computes the actual number) — a prior manual
+                  // override doesn't carry across a basis switch, since
+                  // e.g. a hand-typed percentage has no sensible meaning
+                  // once you've switched to Own Rate.
+                  set("driverPayType", e.target.value as DriverPayType);
+                  setDriverPayIsDefault(true);
                 }}
               >
                 {DRIVER_PAY_TYPES.filter((t) => t !== "PER_UNIT" || form.rateType !== "FLAT").map((t) => (
@@ -450,7 +474,10 @@ export function LoadFormModal({
                 max={form.driverPayType === "PERCENTAGE" ? 100 : undefined}
                 className={"input" + (errors.driverPayValue ? " err" : "")}
                 value={form.driverPayValue}
-                onChange={(e) => set("driverPayValue", e.target.value)}
+                onChange={(e) => {
+                  set("driverPayValue", e.target.value);
+                  setDriverPayIsDefault(false);
+                }}
               />
             </Field>
           </div>
