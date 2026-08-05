@@ -1,0 +1,256 @@
+Product Requirement Document: Freight Dispatching Platform
+
+1. Executive Summary
+
+1.1 Product Vision
+
+To build a smarter, automated freight marketplace that combines DAT’s scale and network depth with next-generation automation, enabling carriers and brokers to move freight with less manual work, fewer phone calls, and faster results . The platform will serve as the industry’s digital command center—connecting shippers, brokers, and carriers through intelligent freight matching, real-time visibility, and end-to-end workflow automation.
+
+1.2 Target Users
+
+User Role Primary Needs Key Pain Points
+Carriers (Owner-Operators & Fleets) Find profitable loads, reduce deadhead miles, minimize administrative work Time wasted on phone calls, manual load searching, delayed payments, paperwork overhead
+Freight Brokers Find reliable capacity quickly, vet carriers, automate booking and tracking Manual load posting, carrier vetting, tracking calls, payment delays
+Shippers Move freight reliably and cost-effectively Capacity shortages, lack of visibility, rate volatility
+
+1.3 Success Metrics
+
+· Marketplace liquidity: Grow to 722,500+ daily listings within 18 months 
+· Automation rate: 40%+ of loads booked digitally without manual intervention
+· User retention: <5% monthly churn for paid subscribers
+· Time savings: Reduce load-finding time by 50% for carriers
+· Transaction speed: Reduce booking-to-delivery cycle by 30%
+
+---
+
+2. Competitive Landscape & Differentiation
+
+2.1 Key Competitors
+
+Platform Strengths Gaps
+DAT Market leader with 291M+ annual listings, credit scores, market data  Manual-heavy workflows, limited automation
+Truckstop Strong carrier vetting, $42/user/month entry point  Smaller network, less load volume
+Uber Freight Strong app experience, instant booking  Limited network depth
+Convoy Platform (now DAT) End-to-end automation, instant booking, GPS tracking, QuickPay  Being integrated into DAT ecosystem
+
+2.2 Core Differentiators
+
+· Hybrid marketplace: Leverage DAT’s network scale with Convoy’s automation—use AI for transactional freight, human expertise for specialized loads 
+· True end-to-end automation: Automated vetting, booking, tracking, detention, and payment—not just load posting
+· AI-native architecture: Machine learning at the core, not an afterthought 
+· Unified mobile experience: Single app combining load search, trip planning, fuel prices, parking, and communications 
+
+---
+
+3. Functional Requirements
+
+3.1 Core Marketplace: Load & Truck Posting
+
+3.1.1 Load Board
+
+Requirement Priority Description
+Advanced search & filtering P0 Filter by equipment type (dry van, reefer, flatbed, power-only, box truck), weight, dimensions, pickup/delivery windows, route, rate 
+Instant refresh P0 Real-time updates as new loads and trucks are posted 
+Saved searches & alerts P1 Users save filter combinations; push/email notifications for matching loads
+Load detail view P0 Shipper/broker info, rate, special requirements (forklift, hazmat, temperature), access restrictions
+
+3.1.2 Truck Posting & Capacity Discovery
+
+Requirement Priority Description
+Equipment type classification P0 Straight Box Truck (SB), Power Only (PO), dry van, reefer, flatbed, etc. 
+Equipment attributes P0 Cargo capacity, weight rating, refrigeration capability, dimensions 
+Location-based discovery P0 Brokers find nearby trucks; carriers broadcast availability
+Truck availability status P0 Real-time empty/loaded status with expected availability
+
+3.1.3 Matching & Discovery
+
+Requirement Priority Description
+Intelligent load matching P0 ML-powered matching of loads to the right driver based on equipment, location, HOS, route preferences 
+Automated filtering P0 Auto-filter loads that don’t match carrier’s equipment/operating authority 
+LaneMakers functionality P1 Identify trucks on problematic lanes; help brokers cover difficult routes 
+
+---
+
+3.2 End-to-End Automation
+
+3.2.1 Carrier Vetting & Onboarding
+
+Requirement Priority Description
+Digital carrier onboarding P0 24-hour application review; insurance verification 
+Automated carrier vetting P0 Verify operating authority, insurance, safety scores before booking
+Trust scoring P0 Company scores, credit history, up to 13 months payment history 
+Fraud detection P1 Automated detection of double-brokering, suspicious activity
+
+3.2.2 Digital Booking
+
+Requirement Priority Description
+Instant booking P0 One-click load booking; rate confirmation; automated contract generation
+Rate confirmation P0 Real-time rate acceptance; rate visibility in search
+Vetting, booking, tracking, payments P0 Automate every step; brokerage pays only when delivered 
+
+3.2.3 Tracking & Visibility
+
+Requirement Priority Description
+GPS fleet tracking P0 Real-time location tracking; 30-second latency requirement 
+Automated ETA updates P0 Live ETAs to dispatchers, brokers, shippers 
+Proactive alerts P1 Delays, route changes, compliance issues flagged automatically 
+Customer tracking portal P1 White-labeled portal for shippers to track loads
+
+---
+
+3.3 Intelligent Dispatching & Operations
+
+3.3.1 Smart Driver Assignment
+
+Requirement Priority Description
+Intelligent load-driver matching P0 Match loads to drivers based on location, trailer type, HOS, skills 
+Load assignment workflows P0 Assign loads to specific drivers/equipment via dashboard and mobile app
+Capacity utilization analysis P1 Track utilization; flag underperforming assets
+
+3.3.2 Real-Time Dispatching Dashboard
+
+Requirement Priority Description
+Visual dispatch board P0 See all loads, trucks, drivers; drag-and-drop assignment
+Real-time status updates P0 Load status: posted → assigned → en-route → delivered → invoiced 
+Vehicle state visualization P0 For brokers: which trucks are assigned to which loads; status/inbound/outbound 
+
+3.3.3 Route Optimization & Trip Planning
+
+Requirement Priority Description
+Dynamic route optimization P1 AI-powered routing considering traffic, fuel consumption, HOS, delivery windows 
+Interactive trip map P1 Truck stops, parking, weigh stations, rest stops, fuel prices 
+Trip cost estimator P1 Forecast fuel cost, tolls, mileage
+
+---
+
+3.4 Mobile Application
+
+3.4.1 Carrier Mobile App (Driver-Facing)
+
+Requirement Priority Description
+Load search & booking P0 Full load board access from mobile device 
+Instant booking P0 One-tap load booking
+GPS fleet tracking P0 Automatic location sharing; no manual check-ins
+Digital documentation P0 eBOL, photo capture, e-signature, inspection upload 
+BOL submissions P0 Streamlined BOL capture and submission
+Automatic detention P1 Detect delays automatically; trigger detention pay
+QuickPay P1 Faster payment processing
+Two-way driver communication P0 In-app messaging with dispatch, brokers; route updates 
+
+3.4.2 Broker Mobile App
+
+Requirement Priority Description
+Load posting P0 Post and manage loads from mobile
+Carrier discovery P0 Find nearby trucks; contact carriers
+Load tracking P0 Real-time visibility into active loads
+Push notifications P0 Alerts for load matches, status changes
+
+---
+
+3.5 Analytics & Market Intelligence
+
+Requirement Priority Description
+Truckload rates & market data P0 Current freight rates by lane; market conditions 
+TriHaul tool P1 Identify higher-paying routes based on market data 
+Broker credit scores & reviews P0 Credit history, days-to-pay, user reviews 
+Carrier performance metrics P1 On-time delivery rates, compliance scores
+Lane profitability analytics P1 Identify most/least profitable lanes and routes
+Performance dashboards P1 Fleet efficiency, driver utilization, revenue per mile 
+
+---
+
+3.6 Digital Documentation & Payments
+
+Requirement Priority Description
+Electronic Bills of Lading (eBOL) P0 Digital BOL generation and e-signature 
+Digital inspection reports P1 Digital vehicle inspection; photo capture; compliance
+Automated invoicing P1 Auto-generate invoices upon delivery; timestamped proof
+QuickPay integration P1 Faster payment; reduce 30-60 day cycles
+Connected payments P0 Payment triggered automatically on delivery confirmation 
+
+---
+
+3.7 Compliance & Safety
+
+Requirement Priority Description
+ELD/telematics integration P0 Connect with Samsara, Geotab, CalAmp; ELD data ingestion 
+Hours-of-Service (HOS) monitoring P0 Track HOS; prevent violations; alerts before limits reached
+Insurance verification P0 Automated verification before booking
+Safety/compliance dashboard P1 CSA scores, inspection records, violation history 
+Automated compliance alerts P1 Flag expired insurance, authority issues before booking
+
+---
+
+4. Non-Functional Requirements
+
+4.1 Performance & Scalability
+
+· Load volume: Support 722,500+ daily listings 
+· Latency: Load board refresh <500ms; tracking updates every 30 seconds 
+· Concurrent users: Scale to thousands of simultaneous users
+· Peak load: Handle surge traffic without degradation
+
+4.2 Architecture
+
+· Cloud-native: AWS/Azure/GCP multi-region deployment
+· API-first: Robust REST/GraphQL APIs for all functions 
+· Mobile: Native iOS and Android apps; offline mode with sync 
+· Real-time: WebSockets for live tracking and notifications
+
+4.3 Security
+
+· SOC 2 Type II compliance (target)
+· GDPR/CCPA compliance for user data
+· MFA for user authentication
+· Role-based access control (Admin, Broker, Carrier, Shipper)
+
+4.4 Integrations
+
+· Telematics/ELD: Samsara, Geotab, CalAmp 
+· ERP/WMS: NetSuite, SAP, Oracle integrations via API 
+· Payment: SuperPay, QuickPay integration 
+· Factoring: Integration with factoring companies
+
+---
+
+5. User Experience Principles
+
+1. Mobile-first: All core functions usable on mobile; single app consolidates 15+ tools 
+2. Proactive intelligence: Surface insights and recommendations before users ask 
+3. Reduce friction: Automate every step—posting, vetting, booking, tracking, payment 
+4. Trust & transparency: Surface broker scores, credit histories, carrier performance 
+5. Context-aware: Show relevant information based on user role, location, equipment
+
+---
+
+6. Go-To-Market Strategy
+
+6.1 Monetization Model
+
+User Type Pricing Model Starting Price
+Carriers Monthly subscription From $54/month 
+Brokers Monthly subscription From $159/month 
+Shipper Central Enterprise plan Custom pricing
+Pay-as-you-go (automation) Per-delivery fee Only pay when load delivered 
+
+6.2 Phased Rollout
+
+Phase Focus Timeline
+Phase 1: Core MVP Load board, basic matching, mobile app for carriers 6-9 months
+Phase 2: Automation Digital booking, automated tracking, QuickPay 9-12 months
+Phase 3: AI & Intelligence Predictive matching, advanced route optimization 12-18 months
+Phase 4: Enterprise Shippers, fleet management, advanced analytics 18-24 months
+
+---
+
+7. Success Criteria (18-Month Horizon)
+
+· Market share: Capture 25%+ of freight marketplace transactions
+· User growth: 100,000+ carrier accounts; 5,000+ broker accounts
+· Automation: 40%+ loads booked via automated workflows (vetting + booking + tracking)
+· Revenue: $20M+ annual recurring revenue
+· NPS: 50+ (industry benchmark: 30-40 for freight platforms)
+
+---
+
+Document Version: 1.0 | Last Updated: July 2026 | Status: Draft for Review
