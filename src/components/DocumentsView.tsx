@@ -57,10 +57,10 @@ function AgingView() {
   );
 }
 
-function DocChip({ label, present }: { label: string; present: boolean }) {
+function DocChip({ label }: { label: string }) {
   return (
-    <span className={"doc-chip" + (present ? " filled" : "")}>
-      <Icon name={present ? "checkCircle" : "fileText"} />
+    <span className="doc-chip filled">
+      <Icon name="checkCircle" />
       {label}
     </span>
   );
@@ -75,6 +75,12 @@ const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: "BOL", label: "BOL" },
   { value: "POD", label: "POD" },
   { value: "RATE_CONFIRMATION", label: "Rate Confirmation" },
+];
+// Ledger uses a shorter label for Rate Confirmation to keep the chip row compact.
+const LEDGER_DOC_TYPES: { value: DocumentType; label: string }[] = [
+  { value: "BOL", label: "BOL" },
+  { value: "POD", label: "POD" },
+  { value: "RATE_CONFIRMATION", label: "Rate Conf" },
 ];
 
 type DocumentLibraryRow = {
@@ -227,14 +233,16 @@ export function DocumentsView({
           {
             key: "documents",
             label: "Documents",
-            render: (l) => (
-              <div style={{ display: "flex", gap: 6 }}>
-                <DocChip label="BOL" present={hasDoc(l, "BOL")} />
-                <DocChip label="POD" present={hasDoc(l, "POD")} />
-                <DocChip label="Rate Conf" present={hasDoc(l, "RATE_CONFIRMATION")} />
-              </div>
-            ),
-            exportValue: (l) => ["BOL", "POD", "RATE_CONFIRMATION"].filter((t) => hasDoc(l, t as DocumentType)).join("; "),
+            render: (l) => {
+              const present = LEDGER_DOC_TYPES.filter((t) => hasDoc(l, t.value));
+              if (present.length === 0) return <span style={{ color: "var(--muted)", fontSize: 12.5 }}>No documents</span>;
+              return (
+                <div style={{ display: "flex", gap: 6 }}>
+                  {present.map((t) => <DocChip key={t.value} label={t.label} />)}
+                </div>
+              );
+            },
+            exportValue: (l) => LEDGER_DOC_TYPES.filter((t) => hasDoc(l, t.value)).map((t) => t.label).join("; "),
           },
           { key: "rate", label: "Rate", sortable: true, align: "right", render: (l) => <span className="mono">{fmtMoney(l.rate)}</span>, exportValue: (l) => l.rate },
           { key: "driverPay", label: "Driver Pay", sortable: true, align: "right", render: (l) => <span className="mono">{fmtMoney(l.driverPay)}</span>, exportValue: (l) => l.driverPay },
