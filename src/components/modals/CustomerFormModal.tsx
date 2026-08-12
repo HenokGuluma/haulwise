@@ -36,7 +36,8 @@ export function CustomerFormModal({
     if (!form.companyName.trim()) e.companyName = "Required.";
     if (!form.contactName.trim()) e.contactName = "Required.";
     if (!form.phone.trim()) e.phone = "Required.";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email.";
+    // Email is optional — only validate the format when something's entered.
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -45,7 +46,7 @@ export function CustomerFormModal({
     if (!validate()) return;
     setSubmitting(true);
     setServerError(null);
-    const payload = { ...form, paymentTerms: form.paymentTerms.trim() || null };
+    const payload = { ...form, email: form.email.trim() || null, paymentTerms: form.paymentTerms.trim() || null };
     try {
       if (isEdit && customer) {
         const res = await api.patch<{ customer: Customer }>(`/api/customers/${customer.id}`, payload);
@@ -77,7 +78,7 @@ export function CustomerFormModal({
             <input className={"input" + (errors.phone ? " err" : "")} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
           </Field>
         </div>
-        <Field label="Email" error={errors.email}>
+        <Field label="Email" hint="Optional" error={errors.email}>
           <input type="email" className={"input" + (errors.email ? " err" : "")} value={form.email} onChange={(e) => set("email", e.target.value)} />
         </Field>
         <div className="field-row">

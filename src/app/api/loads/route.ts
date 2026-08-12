@@ -8,7 +8,7 @@ import { logActivity } from "@/lib/activity";
 import { demoScope } from "@/lib/demo-scope";
 import { customerScope } from "@/lib/customer-scope";
 import { computeRate, rateBasisQuantity } from "@/lib/rate-calc";
-import { computeDriverPay, DEFAULT_DRIVER_PAY_TYPE, DEFAULT_DRIVER_PAY_VALUE } from "@/lib/driver-pay-calc";
+import { computeDriverPay } from "@/lib/driver-pay-calc";
 
 // Sortable columns exposed to the DataTable. Native Postgres enum columns
 // (status) sort by their declared order — DRAFT..BILLED — which is the
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       : undefined,
   };
 
-  const orderBy = sortBy && SORT_MAP[sortBy] ? withDir(SORT_MAP[sortBy], sortDir) : { pickupTime: "desc" as const };
+  const orderBy = sortBy && SORT_MAP[sortBy] ? withDir(SORT_MAP[sortBy], sortDir) : { loadNumber: "desc" as const };
 
   const [rows, total] = await Promise.all([
     prisma.load.findMany({
@@ -123,14 +123,8 @@ export async function POST(req: NextRequest) {
   }
   const data = parsed.data;
 
-  const canConfigureRate = auth.user.permissions.includes("loads:configure-rate");
-  if (data.rateType !== "FLAT" && !canConfigureRate) {
-    return NextResponse.json({ error: "You don't have permission to change how a load's rate is calculated." }, { status: 403 });
-  }
-  if ((data.driverPayType !== DEFAULT_DRIVER_PAY_TYPE || data.driverPayValue !== DEFAULT_DRIVER_PAY_VALUE) && !canConfigureRate) {
-    return NextResponse.json({ error: "You don't have permission to change how driver pay is calculated." }, { status: 403 });
-  }
-
+  // Rate basis and driver-pay basis are part of the fundamental load-creation
+  // flow now — anyone with loads:create can set them, no separate gate.
   const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
   if (!customer) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 

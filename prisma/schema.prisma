@@ -92,7 +92,8 @@ model Customer {
   companyName  String
   contactName  String
   phone        String
-  email        String
+  // Optional — customers can be created without an email on file.
+  email        String?
   status       CustomerStatus @default(ACTIVE)
   paymentTerms String?
   notes        String?
@@ -166,6 +167,11 @@ model Driver {
   medicalCertExpiration  DateTime?
   endorsements           String[]     @default([])
   status                 DriverStatus @default(AVAILABLE)
+  // The driver's default/linked equipment. Assigning this driver to a load
+  // pulls this equipment onto the load automatically (see the assign route);
+  // to put different equipment on that load, change the link here first.
+  equipmentId            String?
+  equipment              Equipment?   @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   isDemo                 Boolean      @default(false)
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
@@ -173,6 +179,7 @@ model Driver {
   documents              DriverDocument[]
 
   @@index([isDemo])
+  @@index([equipmentId])
   @@map("drivers")
 }
 
@@ -233,14 +240,17 @@ model Equipment {
   typeCode            String
   equipmentType       EquipmentType     @relation(fields: [typeCode], references: [code], onUpdate: Cascade)
   status              EquipmentStatus   @default(AVAILABLE)
-  nextMaintenance     DateTime
+  // Optional — a "next maintenance due" date isn't required to register a unit.
+  nextMaintenance     DateTime?
   // Nullable — no data on file for equipment added before this field existed.
   licensePlate           String?
+  // Surfaced in the UI as "Insurance Expiration".
   registrationExpiration DateTime?
   isDemo              Boolean           @default(false)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   loads               Load[]
+  drivers             Driver[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
 
   @@index([typeCode])

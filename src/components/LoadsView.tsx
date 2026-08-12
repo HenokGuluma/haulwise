@@ -97,7 +97,7 @@ export function LoadsView({
         emptyTitle="No loads match"
         emptyHint="Try a different search or filter, or create a new load."
         csvFilename="edget-loads.csv"
-        initialSort={{ by: "pickupTime", dir: "desc" }}
+        initialSort={{ by: "loadNumber", dir: "desc" }}
         initialFilters={initialFilters}
         columns={[
           {

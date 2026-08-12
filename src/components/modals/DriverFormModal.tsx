@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Field, ModalBox, PanelHead, Button } from "@/components/ui";
+import { Field, ModalBox, PanelHead, Button, Banner } from "@/components/ui";
 import { api, ApiRequestError } from "@/lib/api-client";
+import { useEquipment } from "@/lib/useEquipment";
 import type { Driver, DriverStatus } from "@/types";
 
 export function DriverFormModal({
@@ -15,6 +16,7 @@ export function DriverFormModal({
   onSaved: (driver: Driver) => void;
 }) {
   const isEdit = !!driver;
+  const equipmentList = useEquipment();
   const [form, setForm] = useState({
     firstName: driver?.firstName ?? "",
     lastName: driver?.lastName ?? "",
@@ -23,6 +25,7 @@ export function DriverFormModal({
     licenseExpiration: driver ? driver.licenseExpiration.slice(0, 10) : "",
     medicalCertExpiration: driver?.medicalCertExpiration ? driver.medicalCertExpiration.slice(0, 10) : "",
     status: (driver?.status ?? "AVAILABLE") as DriverStatus,
+    equipmentId: driver?.equipmentId ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -101,6 +104,19 @@ export function DriverFormModal({
             <option value="OFF_DUTY">Off Duty</option>
           </select>
         </Field>
+        <Field label="Assigned equipment" hint="Optional — pulled onto any load this driver is assigned to">
+          <select className="input" value={form.equipmentId} onChange={(e) => set("equipmentId", e.target.value)}>
+            <option value="">No equipment linked</option>
+            {equipmentList.map((eq) => (
+              <option key={eq.id} value={eq.id}>{eq.unitNumber} ({eq.typeCode})</option>
+            ))}
+          </select>
+        </Field>
+        {!form.equipmentId && (
+          <Banner tone="warning">
+            No equipment linked. You can still save, but you&apos;ll need to link equipment before this driver can be assigned to a load.
+          </Banner>
+        )}
       </div>
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>

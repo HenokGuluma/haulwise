@@ -5,6 +5,8 @@ import { Drawer, PanelHead, Button, Field, StatusPill, useToast } from "@/compon
 import { DataTable, type FetchPageParams } from "@/components/DataTable";
 import { fmtMoney, fmtDate, daysUntil, statusLabel } from "@/lib/format";
 import { api, fetchTablePage, ApiRequestError } from "@/lib/api-client";
+import { useDrivers } from "@/lib/useDrivers";
+import { notifyDataChange } from "@/lib/data-events";
 import type { Equipment, EquipmentMaintenanceRecord, Load } from "@/types";
 
 function today(): string {
@@ -50,21 +52,77 @@ export function EquipmentDetailDrawer({ equipment, onClose }: { equipment: Equip
     [equipment.id]
   );
 
+  // Manage the driver↔equipment link from the equipment side (the other side
+  // of DriverFormModal's "Assigned equipment" picker). Linking a driver here
+  // sets that driver's equipmentId to this unit.
+  const { drivers, reload: reloadDrivers } = useDrivers();
+  const [linking, setLinking] = useState("");
+  const linkedDrivers = drivers.filter((d) => d.equipmentId === equipment.id);
+  const unlinkedDrivers = drivers.filter((d) => d.equipmentId !== equipment.id);
+
+  async function linkDriver(driverId: string) {
+    if (!driverId) return;
+    try {
+      await api.patch(`/api/drivers/${driverId}`, { equipmentId: equipment.id });
+      toast.success("Driver linked to this unit.");
+      setLinking("");
+      reloadDrivers();
+      notifyDataChange("drivers");
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't link driver.");
+    }
+  }
+
+  async function unlinkDriver(driverId: string) {
+    try {
+      await api.patch(`/api/drivers/${driverId}`, { equipmentId: "" });
+      toast.info("Driver unlinked from this unit.");
+      reloadDrivers();
+      notifyDataChange("drivers");
+    } catch (err) {
+      toast.error(err instanceof ApiRequestError ? err.message : "Couldn't unlink driver.");
+    }
+  }
+
   const regDays = equipment.registrationExpiration ? daysUntil(equipment.registrationExpiration) : null;
 
   return (
     <Drawer onClose={onClose} width={480}>
-      <PanelHead title={equipment.unitNumber} sub={`${equipment.typeCode} · Next service ${fmtDate(equipment.nextMaintenance)}`} onClose={onClose} />
+      <PanelHead title={equipment.unitNumber} sub={`${equipment.typeCode} · ${equipment.nextMaintenance ? "Next service " + fmtDate(equipment.nextMaintenance) : "No service scheduled"}`} onClose={onClose} />
       <div className="panel-body">
-        <div className="section-title">Registration</div>
+        <div className="section-title">Insurance</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13, marginBottom: 16 }}>
           <div><div style={{ color: "var(--muted)", fontSize: 11.5 }}>License plate</div>{equipment.licensePlate ? <span className="mono">{equipment.licensePlate}</span> : "—"}</div>
           <div>
-            <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Registration expires</div>
+            <div style={{ color: "var(--muted)", fontSize: 11.5 }}>Insurance expires</div>
             {equipment.registrationExpiration ? (
               <span style={{ color: regDays !== null && regDays < 30 ? "var(--danger)" : undefined }}>{fmtDate(equipment.registrationExpiration)}</span>
             ) : "—"}
           </div>
+        </div>
+
+        <div className="section-title">Linked drivers</div>
+        <div className="card" style={{ padding: 12, marginBottom: 16 }}>
+          {linkedDrivers.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>No drivers linked to this unit yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+              {linkedDrivers.map((d) => (
+                <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+                  <span>{d.firstName} {d.lastName} <span className="mono" style={{ color: "var(--muted)", fontSize: 11.5 }}>· {d.phone}</span></span>
+                  <Button size="sm" variant="ghost" onClick={() => unlinkDriver(d.id)}>Unlink</Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Field label="Link a driver" hint="Assigning that driver to a load will pull this unit onto the load">
+            <select className="input" value={linking} onChange={(e) => linkDriver(e.target.value)}>
+              <option value="">Select a driver…</option>
+              {unlinkedDrivers.map((d) => (
+                <option key={d.id} value={d.id}>{d.firstName} {d.lastName}{d.equipmentId ? " (currently on another unit)" : ""}</option>
+              ))}
+            </select>
+          </Field>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>

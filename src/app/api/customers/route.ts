@@ -77,6 +77,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
 
-  const customer = await prisma.customer.create({ data: parsed.data });
+  // Company names must be unique (case-insensitive) among real customers —
+  // duplicates aren't allowed. Demo/seed rows are excluded so a demo name
+  // never blocks a genuine new customer.
+  const dup = await prisma.customer.findFirst({
+    where: { companyName: { equals: parsed.data.companyName, mode: "insensitive" }, isDemo: false },
+    select: { id: true },
+  });
+  if (dup) {
+    return NextResponse.json({ error: "A customer with this company name already exists." }, { status: 409 });
+  }
+
+  const customer = await prisma.customer.create({ data: { ...parsed.data, email: parsed.data.email || null } });
   return NextResponse.json({ customer }, { status: 201 });
 }

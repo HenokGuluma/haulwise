@@ -17,14 +17,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
-  const { driverId, equipmentId } = parsed.data;
+  const { driverId } = parsed.data;
 
-  const [driver, equipment] = await Promise.all([
-    prisma.driver.findUnique({ where: { id: driverId } }),
-    prisma.equipment.findUnique({ where: { id: equipmentId } }),
-  ]);
+  const driver = await prisma.driver.findUnique({ where: { id: driverId } });
   if (!driver) return NextResponse.json({ error: "Driver not found." }, { status: 404 });
-  if (!equipment) return NextResponse.json({ error: "Equipment not found." }, { status: 404 });
+
+  // Equipment is pulled from the driver's linked equipment — the load never
+  // gets equipment chosen independently of the driver. To put different
+  // equipment on a load, the driver's linked equipment is changed first.
+  if (!driver.equipmentId) {
+    return NextResponse.json(
+      { error: "This driver has no linked equipment. Link equipment to the driver first (Roster → edit driver)." },
+      { status: 409 }
+    );
+  }
+  const equipmentId = driver.equipmentId;
+  const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
+  if (!equipment) return NextResponse.json({ error: "The driver's linked equipment no longer exists." }, { status: 409 });
 
   // This is the server-side source of truth for double-booking prevention —
   // the dispatch board's client-side check calls this same endpoint, so a

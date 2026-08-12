@@ -284,8 +284,12 @@ export function RosterView({
               key: "nextMaintenance",
               label: "Maintenance",
               sortable: true,
-              render: (e) => { const days = daysUntil(e.nextMaintenance); return <Pill tone={serviceTone(days)}><Icon name="wrench" size={11} /> {serviceLabel(days, "maintenance")}</Pill>; },
-              exportValue: (e) => new Date(e.nextMaintenance).toISOString().slice(0, 10),
+              render: (e) => {
+                if (!e.nextMaintenance) return <Pill tone="muted"><Icon name="wrench" size={11} /> Not scheduled</Pill>;
+                const days = daysUntil(e.nextMaintenance);
+                return <Pill tone={serviceTone(days)}><Icon name="wrench" size={11} /> {serviceLabel(days, "maintenance")}</Pill>;
+              },
+              exportValue: (e) => (e.nextMaintenance ? new Date(e.nextMaintenance).toISOString().slice(0, 10) : ""),
             },
             {
               key: "activeLoads",

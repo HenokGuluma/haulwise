@@ -77,7 +77,10 @@ export function fmtRelative(d: Date | string): string {
   return years + (years === 1 ? " year ago" : " years ago");
 }
 
-export function daysUntil(d: Date | string): number {
+// Returns Infinity for a missing date so "due within N days" style filters
+// (days <= N) naturally treat "no date on file" as "not due".
+export function daysUntil(d: Date | string | null | undefined): number {
+  if (!d) return Infinity;
   const date = typeof d === "string" ? new Date(d) : d;
   const ms = date.getTime() - Date.now();
   return Math.ceil(ms / (1000 * 60 * 60 * 24));

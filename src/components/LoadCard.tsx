@@ -48,8 +48,12 @@ export function LoadCard({
 }) {
   const [quickOpen, setQuickOpen] = useState(false);
   const [qDriver, setQDriver] = useState("");
-  const [qEquipment, setQEquipment] = useState("");
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+
+  // Equipment follows the driver: a driver's linked equipment is pulled onto
+  // the load automatically, so quick-assign only needs a driver picked.
+  const selectedDriver = drivers.find((d) => d.id === qDriver);
+  const linkedEquipment = selectedDriver?.equipmentId ? equipment.find((e) => e.id === selectedDriver.equipmentId) ?? null : null;
 
   // Admin-managed types load async — fall back to a generic box badge until
   // they arrive, or if a load references a type code that's since been removed.
@@ -123,16 +127,17 @@ export function LoadCard({
               <option value="">Driver…</option>
               {drivers.map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
             </select>
-            <select className="input" value={qEquipment} onChange={(e) => setQEquipment(e.target.value)}>
-              <option value="">Equipment…</option>
-              {equipment.map((e) => <option key={e.id} value={e.id}>{e.unitNumber}</option>)}
-            </select>
+            {qDriver && (
+              linkedEquipment
+                ? <span className="mono" style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>{linkedEquipment.unitNumber}</span>
+                : <span style={{ fontSize: 11, color: "var(--danger)", whiteSpace: "nowrap" }}>No equipment linked</span>
+            )}
             <button
               className="icon-btn"
-              disabled={!qDriver || !qEquipment}
-              onClick={() => { onQuickAssign(qDriver, qEquipment); setQuickOpen(false); setQDriver(""); setQEquipment(""); }}
-              title="Confirm"
+              disabled={!qDriver || !linkedEquipment}
+              title={qDriver && !linkedEquipment ? "This driver has no linked equipment — link one first (Roster → edit driver)" : "Confirm"}
               aria-label="Confirm quick assign"
+              onClick={() => { if (!linkedEquipment) return; onQuickAssign(qDriver, linkedEquipment.id); setQuickOpen(false); setQDriver(""); }}
             >
               <Icon name="checkCircle" size={13} />
             </button>

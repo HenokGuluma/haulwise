@@ -86,7 +86,10 @@ export const loadUpdateSchema = z
 
 export const assignSchema = z.object({
   driverId: z.string().min(1, "Select a driver."),
-  equipmentId: z.string().min(1, "Select equipment."),
+  // Optional/ignored — equipment is derived from the driver's linked
+  // equipment server-side, not chosen per-assignment. Kept in the schema so
+  // older clients that still send it don't fail validation.
+  equipmentId: z.string().optional(),
 });
 
 export const driverCreateSchema = z.object({
@@ -98,6 +101,11 @@ export const driverCreateSchema = z.object({
   medicalCertExpiration: z.coerce.date().optional().nullable(),
   endorsements: z.array(z.string().trim().min(1)).optional(),
   status: z.enum(["AVAILABLE", "ON_DUTY", "OFF_DUTY"]).default("AVAILABLE"),
+  // The driver's default equipment — optional (creation is allowed without
+  // it, with a warning), but once set, assigning this driver to a load
+  // pulls this equipment onto the load automatically. "" is treated as
+  // "no equipment" so a cleared selection round-trips cleanly.
+  equipmentId: z.string().min(1).optional().nullable().or(z.literal("")),
 });
 
 export const driverUpdateSchema = driverCreateSchema.partial();
@@ -113,8 +121,10 @@ export const equipmentCreateSchema = z.object({
   unitNumber: z.string().trim().min(1),
   typeCode: equipmentTypeCode,
   status: z.enum(["AVAILABLE", "IN_USE", "MAINTENANCE"]).default("AVAILABLE"),
-  nextMaintenance: z.coerce.date(),
+  nextMaintenance: z.coerce.date().optional().nullable(),
   licensePlate: z.string().trim().max(20).optional().nullable(),
+  // Stored as registrationExpiration in the DB; surfaced as "Insurance
+  // Expiration" in the UI.
   registrationExpiration: z.coerce.date().optional().nullable(),
 });
 
@@ -140,7 +150,9 @@ export const customerCreateSchema = z.object({
   companyName: z.string().trim().min(1, "Company name is required."),
   contactName: z.string().trim().min(1, "Contact name is required."),
   phone: z.string().trim().min(1, "Phone is required."),
-  email: z.string().trim().email("Enter a valid email."),
+  // Optional — a customer can be created without an email. A provided value
+  // still has to be a valid address; "" and null both mean "no email".
+  email: z.string().trim().email("Enter a valid email.").optional().nullable().or(z.literal("")),
   status: customerStatus.default("ACTIVE"),
   paymentTerms: z.string().trim().max(100).optional().nullable(),
   notes: z.string().trim().max(4000).optional().nullable(),

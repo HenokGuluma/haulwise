@@ -79,7 +79,11 @@ export function LoadFormModal({
   const fetchedCustomers = useCustomers(!customers);
   const effectiveCustomers = customers ?? fetchedCustomers;
   const seed = load ?? prefill;
-  const canConfigureRate = user.permissions.includes("loads:configure-rate");
+  // Configuring the rate basis and driver-pay basis is a fundamental part of
+  // creating/editing a load, available to any role that can do so — not a
+  // separate Manager-only capability. Anyone who can open this modal already
+  // holds loads:create or loads:edit, so this is effectively always on.
+  const canConfigureRate = user.permissions.includes("loads:create") || user.permissions.includes("loads:edit");
   const [form, setForm] = useState<FormState>(() => ({
     customerId: (seed ? seed.customerId : effectiveCustomers[0]?.id) ?? "",
     origin: seed?.origin ?? "",

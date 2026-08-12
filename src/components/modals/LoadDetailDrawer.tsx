@@ -314,6 +314,20 @@ export function LoadDetailDrawer({
       onAssign(load);
       return;
     }
+    if (nextStatus === "BILLED") {
+      const missing = [
+        load.documents.some((d) => d.type === "BOL") ? null : "BOL",
+        load.documents.some((d) => d.type === "POD") ? null : "POD",
+      ].filter(Boolean);
+      if (missing.length > 0) {
+        toast.error(`Upload the ${missing.join(" and ")} document${missing.length > 1 ? "s" : ""} before billing this load.`);
+        return;
+      }
+      if (amountPaid < load.driverPay) {
+        toast.error("Log the driver payment in full before billing this load.");
+        return;
+      }
+    }
     setBusy(true);
     try {
       const res = await api.patch<{ load: Load }>(`/api/loads/${load.id}`, { status: nextStatus });
@@ -464,7 +478,7 @@ export function LoadDetailDrawer({
           <>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
               <div className="section-title" style={{ marginBottom: 0 }}>Billing</div>
-              {user.permissions.includes("payments:manage") && remaining > 0 && (
+              {user.permissions.includes("payments:manage") && remaining > 0 && load.driverId && (
                 <button type="button" className="doc-slot-history-toggle" style={{ marginLeft: "auto" }} onClick={() => setPaymentModalOpen(true)}>Log payment</button>
               )}
             </div>

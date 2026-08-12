@@ -43,7 +43,7 @@ export type Customer = {
   companyName: string;
   contactName: string;
   phone: string;
-  email: string;
+  email: string | null;
   status: CustomerStatus;
   paymentTerms: string | null;
   notes: string | null;
@@ -71,6 +71,7 @@ export type Driver = {
   medicalCertExpiration: string | null;
   endorsements: string[];
   status: DriverStatus;
+  equipmentId: string | null;
 };
 
 export type EquipmentType = {
@@ -93,7 +94,7 @@ export type Equipment = {
   unitNumber: string;
   typeCode: EquipmentTypeCode;
   status: EquipmentStatus;
-  nextMaintenance: string;
+  nextMaintenance: string | null;
   licensePlate: string | null;
   registrationExpiration: string | null;
 };

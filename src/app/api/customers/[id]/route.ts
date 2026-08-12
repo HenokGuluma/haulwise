@@ -47,7 +47,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
 
-  const customer = await prisma.customer.update({ where: { id: params.id }, data: parsed.data });
+  // Same case-insensitive company-name uniqueness as create, excluding this
+  // customer itself so saving an unchanged name is fine.
+  if (parsed.data.companyName) {
+    const dup = await prisma.customer.findFirst({
+      where: { companyName: { equals: parsed.data.companyName, mode: "insensitive" }, isDemo: false, id: { not: params.id } },
+      select: { id: true },
+    });
+    if (dup) {
+      return NextResponse.json({ error: "A customer with this company name already exists." }, { status: 409 });
+    }
+  }
+
+  const data = { ...parsed.data, ...(parsed.data.email !== undefined ? { email: parsed.data.email || null } : {}) };
+  const customer = await prisma.customer.update({ where: { id: params.id }, data });
   return NextResponse.json({ customer });
 }
 

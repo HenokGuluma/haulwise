@@ -3,6 +3,7 @@ import { Prisma, DriverStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { driverCreateSchema } from "@/lib/validation";
+import { driverUniquenessError } from "@/lib/driver-uniqueness";
 import { parseListParams } from "@/lib/pagination";
 import { demoScope } from "@/lib/demo-scope";
 
@@ -57,7 +58,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
+  const data = parsed.data;
 
-  const driver = await prisma.driver.create({ data: parsed.data });
+  const conflict = await driverUniquenessError(data.firstName, data.lastName, data.phone);
+  if (conflict) return NextResponse.json({ error: conflict }, { status: 409 });
+
+  const equipmentId = data.equipmentId || null;
+  if (equipmentId) {
+    const eq = await prisma.equipment.findUnique({ where: { id: equipmentId }, select: { id: true } });
+    if (!eq) return NextResponse.json({ error: "Selected equipment no longer exists." }, { status: 400 });
+  }
+
+  const driver = await prisma.driver.create({ data: { ...data, equipmentId } });
   return NextResponse.json({ driver }, { status: 201 });
 }

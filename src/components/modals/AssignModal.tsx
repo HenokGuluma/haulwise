@@ -30,7 +30,6 @@ export function AssignModal({
   drivers,
   equipment,
   initialDriverId,
-  initialEquipmentId,
   onClose,
   onSaved,
 }: {
@@ -39,26 +38,30 @@ export function AssignModal({
   drivers: Driver[];
   equipment: Equipment[];
   initialDriverId?: string;
+  /** Accepted for call-site compatibility but ignored — equipment is derived from the driver's link. */
   initialEquipmentId?: string;
   onClose: () => void;
   onSaved: (load: Load) => void;
 }) {
   const [driverId, setDriverId] = useState(initialDriverId ?? load.driverId ?? "");
-  const [equipmentId, setEquipmentId] = useState(initialEquipmentId ?? load.equipmentId ?? "");
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const conflicts = useMemo(() => previewConflicts(loads, load, driverId, equipmentId), [loads, load, driverId, equipmentId]);
+  // Equipment is no longer chosen here — it's pulled from the selected
+  // driver's linked equipment. To put different equipment on the load, the
+  // driver's linked equipment is changed first (Roster → edit driver).
+  const selectedDriver = drivers.find((d) => d.id === driverId) ?? null;
+  const linkedEquipment = selectedDriver?.equipmentId ? equipment.find((e) => e.id === selectedDriver.equipmentId) ?? null : null;
+  const equipmentId = linkedEquipment?.id ?? "";
 
-  const suggested = equipment.filter((e) => e.typeCode === load.equipmentTypeCode);
-  const other = equipment.filter((e) => e.typeCode !== load.equipmentTypeCode);
+  const conflicts = useMemo(() => previewConflicts(loads, load, driverId, equipmentId), [loads, load, driverId, equipmentId]);
 
   async function handleSave() {
     if (!driverId || !equipmentId) return;
     setSaving(true);
     setServerError(null);
     try {
-      const res = await api.post<{ load: Load }>(`/api/loads/${load.id}/assign`, { driverId, equipmentId });
+      const res = await api.post<{ load: Load }>(`/api/loads/${load.id}/assign`, { driverId });
       onSaved(res.load);
     } catch (err) {
       setServerError(err instanceof ApiRequestError ? err.message : "Something went wrong.");
@@ -79,29 +82,33 @@ export function AssignModal({
             ))}
           </select>
         </Field>
-        <Field label="Equipment" hint={`Load requires ${load.equipmentTypeCode}-type equipment (suggested below).`}>
-          <select className="input" value={equipmentId} onChange={(e) => setEquipmentId(e.target.value)}>
-            <option value="">Select equipment…</option>
-            <optgroup label="Recommended match">
-              {suggested.map((e) => (
-                <option key={e.id} value={e.id}>{e.unitNumber} — {e.status.replace("_", " ")}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Other equipment">
-              {other.map((e) => (
-                <option key={e.id} value={e.id}>{e.unitNumber} — {e.status.replace("_", " ")}</option>
-              ))}
-            </optgroup>
-          </select>
+        <Field label="Equipment" hint="Pulled from the driver's linked equipment. To change it, edit the driver in Roster.">
+          <div className="input" style={{ display: "flex", alignItems: "center", background: "var(--surface-hover)", color: linkedEquipment ? "var(--ink)" : "var(--muted)" }}>
+            {linkedEquipment
+              ? `${linkedEquipment.unitNumber} (${linkedEquipment.typeCode})`
+              : driverId
+              ? "No equipment linked to this driver"
+              : "Select a driver first"}
+          </div>
         </Field>
 
         {serverError && <Banner tone="danger">{serverError}</Banner>}
 
+        {!serverError && driverId && !linkedEquipment && (
+          <Banner tone="danger">
+            This driver has no linked equipment. Link equipment to the driver first (Roster → edit driver), then assign.
+          </Banner>
+        )}
+        {!serverError && linkedEquipment && linkedEquipment.typeCode !== load.equipmentTypeCode && (
+          <Banner tone="warning">
+            The driver&apos;s equipment ({linkedEquipment.typeCode}) doesn&apos;t match this load&apos;s required type ({load.equipmentTypeCode}).
+          </Banner>
+        )}
         {!serverError && conflicts.length > 0 && (
           <Banner tone="danger">
             <strong>Double-booking conflict.</strong> This driver or equipment is already committed to{" "}
             {conflicts.map((c) => c.loadNumber).join(", ")} during an overlapping time window. Choose a different
-            driver/equipment, or adjust the conflicting load&apos;s schedule first.
+            driver, or adjust the conflicting load&apos;s schedule first.
           </Banner>
         )}
         {!serverError && conflicts.length === 0 && driverId && equipmentId && (

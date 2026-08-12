@@ -30,6 +30,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const load = await prisma.load.findUnique({ where: { id: params.id } });
   if (!load) return NextResponse.json({ error: "Load not found." }, { status: 404 });
 
+  // Payments can only be logged once a driver is assigned — there's no payout
+  // to record against an unassigned load.
+  if (!load.driverId) {
+    return NextResponse.json({ error: "Assign a driver before logging a payment." }, { status: 409 });
+  }
+
   const parsed = paymentSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });

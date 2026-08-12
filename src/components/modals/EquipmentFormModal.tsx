@@ -21,7 +21,7 @@ export function EquipmentFormModal({
     unitNumber: equipment?.unitNumber ?? "",
     typeCode: (equipment?.typeCode ?? "") as EquipmentTypeCode,
     status: (equipment?.status ?? "AVAILABLE") as EquipmentStatus,
-    nextMaintenance: equipment ? equipment.nextMaintenance.slice(0, 10) : "",
+    nextMaintenance: equipment?.nextMaintenance ? equipment.nextMaintenance.slice(0, 10) : "",
     licensePlate: equipment?.licensePlate ?? "",
     registrationExpiration: equipment?.registrationExpiration ? equipment.registrationExpiration.slice(0, 10) : "",
   });
@@ -44,7 +44,6 @@ export function EquipmentFormModal({
     const e: Record<string, string> = {};
     if (!form.unitNumber.trim()) e.unitNumber = "Required.";
     if (!form.typeCode) e.typeCode = "Select an equipment type.";
-    if (!form.nextMaintenance) e.nextMaintenance = "Required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -55,7 +54,7 @@ export function EquipmentFormModal({
     setServerError(null);
     const payload = {
       ...form,
-      nextMaintenance: new Date(form.nextMaintenance).toISOString(),
+      nextMaintenance: form.nextMaintenance ? new Date(form.nextMaintenance).toISOString() : null,
       licensePlate: form.licensePlate.trim() || null,
       registrationExpiration: form.registrationExpiration ? new Date(form.registrationExpiration).toISOString() : null,
     };
@@ -99,14 +98,14 @@ export function EquipmentFormModal({
             </select>
           </Field>
         </div>
-        <Field label="Next maintenance due" error={errors.nextMaintenance}>
-          <input type="date" className={"input" + (errors.nextMaintenance ? " err" : "")} value={form.nextMaintenance} onChange={(e) => set("nextMaintenance", e.target.value)} />
+        <Field label="Next maintenance due" hint="Optional">
+          <input type="date" className="input" value={form.nextMaintenance} onChange={(e) => set("nextMaintenance", e.target.value)} />
         </Field>
         <div className="field-row">
           <Field label="License plate">
             <input className="input" placeholder="e.g. AA-12345" value={form.licensePlate} onChange={(e) => set("licensePlate", e.target.value)} />
           </Field>
-          <Field label="Registration expiration">
+          <Field label="Insurance expiration">
             <input type="date" className="input" value={form.registrationExpiration} onChange={(e) => set("registrationExpiration", e.target.value)} />
           </Field>
         </div>

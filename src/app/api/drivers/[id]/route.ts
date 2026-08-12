@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { driverUpdateSchema } from "@/lib/validation";
+import { driverUniquenessError } from "@/lib/driver-uniqueness";
 import { getStorageDriver } from "@/lib/storage";
 import { demoScope } from "@/lib/demo-scope";
 
@@ -31,8 +32,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
+  const patch = parsed.data;
 
-  const driver = await prisma.driver.update({ where: { id: params.id }, data: parsed.data });
+  // Re-check name/phone uniqueness whenever any of those fields is changing,
+  // merging the patch over the current values so an edit that only touches
+  // one of them is still validated against the whole identity.
+  if (patch.firstName !== undefined || patch.lastName !== undefined || patch.phone !== undefined) {
+    const conflict = await driverUniquenessError(
+      patch.firstName ?? existing.firstName,
+      patch.lastName ?? existing.lastName,
+      patch.phone ?? existing.phone,
+      params.id
+    );
+    if (conflict) return NextResponse.json({ error: conflict }, { status: 409 });
+  }
+
+  if (patch.equipmentId) {
+    const eq = await prisma.equipment.findUnique({ where: { id: patch.equipmentId }, select: { id: true } });
+    if (!eq) return NextResponse.json({ error: "Selected equipment no longer exists." }, { status: 400 });
+  }
+
+  const data = { ...patch, ...(patch.equipmentId !== undefined ? { equipmentId: patch.equipmentId || null } : {}) };
+  const driver = await prisma.driver.update({ where: { id: params.id }, data });
   return NextResponse.json({ driver });
 }
 

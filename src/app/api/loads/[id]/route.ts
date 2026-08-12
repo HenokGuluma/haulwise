@@ -42,7 +42,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const perms = auth.user.permissions;
   const canEditLoad = perms.includes("loads:edit");
   const canManagePayments = perms.includes("payments:manage");
-  const canConfigureRate = perms.includes("loads:configure-rate");
   if (!canEditLoad && !canManagePayments) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
@@ -64,15 +63,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (patch.payoutStatus !== undefined && !canManagePayments) {
     return NextResponse.json({ error: "You don't have permission to perform this action." }, { status: 403 });
   }
-  const changesRateBasis =
-    patch.rateType !== undefined ||
-    patch.rateBasisValue !== undefined ||
-    patch.distanceKm !== undefined ||
-    patch.driverPayType !== undefined ||
-    patch.driverPayValue !== undefined;
-  if (changesRateBasis && !canConfigureRate) {
-    return NextResponse.json({ error: "You don't have permission to change how this load's rate or driver pay is calculated." }, { status: 403 });
-  }
+  // Rate/driver-pay basis is a fundamental part of editing a load now — no
+  // separate configure-rate gate; the general loads:edit / payments:manage
+  // checks below already govern who can touch a load at all.
   const otherFields = Object.keys(patch).filter(
     (k) => !["payoutStatus", "rate", "rateType", "rateBasisValue", "distanceKm", "driverPayType", "driverPayValue"].includes(k)
   );
@@ -94,6 +87,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       { error: `Assign a driver and equipment before moving to ${nextStatus}.` },
       { status: 409 }
     );
+  }
+
+  // Billing a load requires its paperwork (BOL + POD) on file and the driver
+  // payout fully logged first — checked only when actually transitioning
+  // *into* Billed, so patching other fields on an already-billed load is fine.
+  if (nextStatus === "BILLED" && existing.status !== "BILLED") {
+    const docs = await prisma.document.findMany({ where: { loadId: existing.id }, select: { type: true } });
+    const missing = [
+      docs.some((d) => d.type === "BOL") ? null : "BOL",
+      docs.some((d) => d.type === "POD") ? null : "POD",
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: `Upload the ${missing.join(" and ")} document${missing.length > 1 ? "s" : ""} before billing this load.` },
+        { status: 409 }
+      );
+    }
+    const agg = await prisma.payment.aggregate({ where: { loadId: existing.id }, _sum: { amount: true } });
+    if ((agg._sum.amount ?? 0) < existing.driverPay) {
+      return NextResponse.json(
+        { error: "Log the driver payment in full before billing this load." },
+        { status: 409 }
+      );
+    }
   }
 
   // If the load already has a driver/equipment and its schedule is changing,
