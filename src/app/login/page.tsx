@@ -19,7 +19,7 @@ export default function LoginPage() {
         <div className="auth-hero-glow" />
         <div className="auth-hero-content">
           <div className="auth-brand">
-            <BrandMark size={46} fColor="#EAF0FB" />
+            <span className="auth-brand-badge"><BrandMark size={56} /></span>
             <div className="auth-wordmark">
               <div className="auth-wordmark-name">
                 <span className="wm-cober">COBER</span> <span className="wm-freight">FREIGHT</span>
@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="auth-form-panel">
         <div className="auth-form-card">
           <div className="auth-form-brand">
-            <BrandMark size={34} />
+            <span className="auth-form-brand-badge"><BrandMark size={38} /></span>
             <span className="auth-form-brand-name">
               <span className="wm-cober">Cober</span> Freight
             </span>

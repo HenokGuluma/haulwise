@@ -75,7 +75,7 @@ export function Sidebar({
   return (
     <div className={"sidebar" + (mobileOpen ? " open" : "")}>
       <div className="brand">
-        <BrandMark size={32} fColor="#EAF0FB" />
+        <BrandMark size={40} fColor="#EAF0FB" />
         <div>
           <div className="brand-name"><span className="brand-name-accent">Cober</span> Freight</div>
           <div className="brand-sub">Dispatch</div>

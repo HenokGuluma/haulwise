@@ -234,13 +234,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   height: 100vh;
 }
 
+/* White brand header — the logo art carries its own white background, so the
+   header is pure white to blend it in seamlessly, then a hairline separates it
+   from the dark navy nav below. Text switches to dark ink for contrast. */
 .brand {
-  display: flex; align-items: center; gap: 10px;
-  padding: 20px 18px 16px 18px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 14px 16px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E4E7ED;
 }
-.brand-name { font-family: var(--font-brand); font-weight: 700; color: var(--navy-ink-strong); font-size: 15.5px; letter-spacing: 0.005em; }
-.brand-name-accent { color: var(--sky-strong); }
-.brand-sub { font-size: 10.5px; color: var(--navy-ink-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+.brand-name { font-family: var(--font-brand); font-weight: 700; color: #16264A; font-size: 16px; letter-spacing: 0.005em; }
+.brand-name-accent { color: var(--sky); }
+.brand-sub { font-size: 10.5px; color: #6B7280; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
 
 .nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
@@ -880,7 +885,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .auth-hero-content { position: relative; z-index: 1; max-width: 460px; }
 
-.auth-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 52px; }
+.auth-brand { display: flex; align-items: center; gap: 15px; margin-bottom: 52px; }
+/* The logo art has its own white background, so it gets a white rounded badge
+   to sit cleanly on the dark hero rather than showing a bare white square. */
+.auth-brand-badge {
+  display: inline-flex; padding: 7px; border-radius: 15px; background: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28); flex-shrink: 0;
+}
 .auth-wordmark { display: flex; flex-direction: column; gap: 3px; }
 .auth-wordmark-name { font-family: var(--font-brand); font-weight: 700; font-size: 27px; line-height: 1; letter-spacing: 0.005em; }
 .wm-cober { color: var(--sky-strong); }
@@ -888,7 +899,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); }
 
 /* Compact brand shown in the form panel only when the hero is hidden (mobile). */
-.auth-form-brand { display: none; align-items: center; gap: 10px; margin-bottom: 26px; }
+.auth-form-brand { display: none; align-items: center; gap: 11px; margin-bottom: 26px; }
+.auth-form-brand-badge { display: inline-flex; padding: 5px; border-radius: 11px; background: #FFFFFF; border: 1px solid var(--line); flex-shrink: 0; }
 .auth-form-brand-name { font-family: var(--font-brand); font-weight: 700; font-size: 21px; letter-spacing: 0.005em; color: var(--ink); }
 .auth-form-brand-name .wm-cober { color: var(--sky); }
 
@@ -938,7 +950,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink-soft); cursor: pointer; flex-shrink: 0; margin-right: 4px;
 }
-.sidebar-close { display: none; margin-left: auto; background: none; border: none; color: var(--navy-ink-muted); cursor: pointer; padding: 4px; }
+.sidebar-close { display: none; margin-left: auto; background: none; border: none; color: #6B7280; cursor: pointer; padding: 4px; }
 .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 85; animation: fadeIn 0.15s ease; }
 
 @media (max-width: 900px) {
