@@ -46,7 +46,7 @@ export function CustomersView({ user }: { user: SessionUser }) {
         emptyIcon="briefcase"
         emptyTitle="No customers yet"
         emptyHint="Add your first customer to start creating loads for them."
-        csvFilename="edget-customers.csv"
+        csvFilename="cober-customers.csv"
         initialSort={{ by: "companyName", dir: "asc" }}
         columns={[
           { key: "companyName", label: "Company", sortable: true, render: (c) => <span style={{ fontWeight: 600 }}>{c.companyName}</span> },

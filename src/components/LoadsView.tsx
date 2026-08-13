@@ -96,7 +96,7 @@ export function LoadsView({
         emptyIcon="list"
         emptyTitle="No loads match"
         emptyHint="Try a different search or filter, or create a new load."
-        csvFilename="edget-loads.csv"
+        csvFilename="cober-loads.csv"
         initialSort={{ by: "loadNumber", dir: "desc" }}
         initialFilters={initialFilters}
         columns={[

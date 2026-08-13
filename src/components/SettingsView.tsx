@@ -107,7 +107,7 @@ export function SettingsView({ user }: { user: SessionUser }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>Show demo data</div>
               <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>
-                Edget can be pre-populated with a large set of realistic sample customers, drivers,
+                Cober Freight can be pre-populated with a large set of realistic sample customers, drivers,
                 equipment, and loads spanning three years of operations — useful for exploring every
                 feature (including the dashboard charts) without real data. When this is off, demo
                 rows are hidden everywhere: the dispatch board, loads, customers, roster, documents,

@@ -54,7 +54,7 @@ export function RolesView() {
         searchPlaceholder="Search roles…"
         emptyIcon="shield"
         emptyTitle="No roles match"
-        csvFilename="edget-roles.csv"
+        csvFilename="cober-roles.csv"
         initialSort={{ by: "name", dir: "asc" }}
         columns={[
           { key: "name", label: "Name", render: (r) => <span style={{ fontWeight: 600 }}>{r.name}</span> },

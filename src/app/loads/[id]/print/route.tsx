@@ -63,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const doc = (
     <Document title={`${load.loadNumber} — Dispatch Paper`}>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>Edget — Dispatch Paper</Text>
+        <Text style={styles.h1}>Cober Freight — Dispatch Paper</Text>
         <Text style={styles.sub}>
           {load.loadNumber} · {statusLabel(load.status)} · Generated {fmtDateTime(new Date().toISOString())}
         </Text>

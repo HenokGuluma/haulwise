@@ -65,7 +65,7 @@ async function main() {
       isCustomerScoped: false,
       permissions: [
         "loads:view", "loads:create", "loads:edit", "loads:assign", "loads:comment",
-        "payments:view",
+        "payments:view", "payments:manage",
         "customers:view", "customers:create", "customers:edit",
         "documents:view", "documents:upload",
         "roster:view", "roster:manage",

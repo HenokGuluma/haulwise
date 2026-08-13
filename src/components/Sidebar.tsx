@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui";
+import { BrandMark } from "@/components/BrandMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { fullName } from "@/lib/format";
 import { api } from "@/lib/api-client";
@@ -74,14 +75,9 @@ export function Sidebar({
   return (
     <div className={"sidebar" + (mobileOpen ? " open" : "")}>
       <div className="brand">
-        <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
-          <rect width="100" height="100" rx="22" style={{ fill: "var(--amber)" }} />
-          <path d="M20 62h8V40h20l10 12v10h8" style={{ stroke: "var(--navy)" }} strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="36" cy="66" r="6" style={{ fill: "var(--navy)" }} />
-          <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
-        </svg>
+        <BrandMark size={32} fColor="#EAF0FB" />
         <div>
-          <div className="brand-name">Edget</div>
+          <div className="brand-name"><span className="brand-name-accent">Cober</span> Freight</div>
           <div className="brand-sub">Dispatch</div>
         </div>
         <button className="sidebar-close" onClick={onCloseMobile} aria-label="Close menu" title="Close menu">

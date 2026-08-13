@@ -172,7 +172,7 @@ export function RosterView({
           searchPlaceholder="Search drivers…"
           emptyIcon="users"
           emptyTitle="No drivers match"
-          csvFilename="edget-drivers.csv"
+          csvFilename="cober-drivers.csv"
           initialSort={{ by: "name", dir: "asc" }}
           columns={[
             {
@@ -245,7 +245,7 @@ export function RosterView({
           searchPlaceholder="Search equipment…"
           emptyIcon="truck"
           emptyTitle="No equipment matches"
-          csvFilename="edget-equipment.csv"
+          csvFilename="cober-equipment.csv"
           initialSort={{ by: "unitNumber", dir: "asc" }}
           columns={[
             {
@@ -332,7 +332,7 @@ export function RosterView({
           searchPlaceholder="Search types…"
           emptyIcon="layers"
           emptyTitle="No equipment types match"
-          csvFilename="edget-equipment-types.csv"
+          csvFilename="cober-equipment-types.csv"
           columns={[
             {
               key: "code",

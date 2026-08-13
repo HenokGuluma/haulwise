@@ -60,7 +60,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       <Page size="A4" style={styles.page}>
         <View style={styles.head}>
           <View>
-            <Text style={styles.brand}>Edget</Text>
+            <Text style={styles.brand}>Cober Freight</Text>
             <Text style={styles.brandSub}>Freight Dispatch</Text>
           </View>
           <View style={styles.meta}>
@@ -108,7 +108,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         </View>
 
         <Text style={styles.footer}>
-          Remit payment referencing invoice #{load.loadNumber}. Questions? Contact your Edget dispatcher.
+          Remit payment referencing invoice #{load.loadNumber}. Questions? Contact your Cober Freight dispatcher.
         </Text>
       </Page>
     </Document>

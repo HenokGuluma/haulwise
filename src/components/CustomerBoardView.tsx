@@ -42,7 +42,7 @@ const CONNECTORS: { key: string; gridColumn: number; gridRow: number; dir: "h" |
 ];
 
 type BoardViewMode = "compact" | "detailed";
-const VIEW_MODE_KEY = "edget-customer-board-view-mode";
+const VIEW_MODE_KEY = "cober-customer-board-view-mode";
 function loadViewMode(): BoardViewMode {
   if (typeof window === "undefined") return "compact";
   return localStorage.getItem(VIEW_MODE_KEY) === "detailed" ? "detailed" : "compact";

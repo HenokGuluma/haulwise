@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { Icon } from "@/components/ui";
+import { BrandMark } from "@/components/BrandMark";
 
 export const metadata: Metadata = { title: "Sign In" };
 
@@ -18,13 +19,13 @@ export default function LoginPage() {
         <div className="auth-hero-glow" />
         <div className="auth-hero-content">
           <div className="auth-brand">
-            <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
-              <rect width="100" height="100" rx="22" style={{ fill: "var(--amber)" }} />
-              <path d="M20 62h8V40h20l10 12v10h8" style={{ stroke: "var(--navy)" }} strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="36" cy="66" r="6" style={{ fill: "var(--navy)" }} />
-              <circle cx="62" cy="66" r="6" style={{ fill: "var(--navy)" }} />
-            </svg>
-            <span className="auth-brand-name">Edget Dispatch</span>
+            <BrandMark size={46} fColor="#EAF0FB" />
+            <div className="auth-wordmark">
+              <div className="auth-wordmark-name">
+                <span className="wm-cober">COBER</span> <span className="wm-freight">FREIGHT</span>
+              </div>
+              <div className="auth-wordmark-tag">Dispatch · Deliver · Depend</div>
+            </div>
           </div>
 
           <h1 className="hero-title auth-hero-title">
@@ -59,6 +60,12 @@ export default function LoginPage() {
 
       <div className="auth-form-panel">
         <div className="auth-form-card">
+          <div className="auth-form-brand">
+            <BrandMark size={34} />
+            <span className="auth-form-brand-name">
+              <span className="wm-cober">Cober</span> Freight
+            </span>
+          </div>
           <div className="auth-form-header">
             <div className="auth-form-title">Welcome back</div>
             <div className="auth-form-sub">Sign in to your dispatch workspace.</div>

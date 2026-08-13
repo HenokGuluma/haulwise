@@ -1,5 +1,5 @@
 // Users may have no last name (e.g. a single-word account holder) — trims
-// the trailing space rather than showing "Edget " with dangling whitespace.
+// the trailing space rather than showing "Jordan " with dangling whitespace.
 export function fullName(firstName: string, lastName: string): string {
   return lastName ? `${firstName} ${lastName}` : firstName;
 }

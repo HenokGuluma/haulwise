@@ -22,7 +22,7 @@ const VIEW_META: Record<string, { title: string; sub: string }> = {
 function resolveViewMeta(pathname: string): { title: string; sub: string } {
   if (VIEW_META[pathname]) return VIEW_META[pathname];
   if (pathname.startsWith("/customers/")) return { title: "Customer Details", sub: "Account overview and load history" };
-  return { title: "Edget", sub: "" };
+  return { title: "Cober Freight", sub: "" };
 }
 
 export function Topbar({

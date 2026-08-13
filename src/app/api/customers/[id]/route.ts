@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // customer itself so saving an unchanged name is fine.
   if (parsed.data.companyName) {
     const dup = await prisma.customer.findFirst({
-      where: { companyName: { equals: parsed.data.companyName, mode: "insensitive" }, isDemo: false, id: { not: params.id } },
+      where: { companyName: { equals: parsed.data.companyName, mode: "insensitive" }, id: { not: params.id } },
       select: { id: true },
     });
     if (dup) {

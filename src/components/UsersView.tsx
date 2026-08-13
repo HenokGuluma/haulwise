@@ -43,7 +43,7 @@ export function UsersView({ user }: { user: SessionUser }) {
         searchPlaceholder="Search users…"
         emptyIcon="shield"
         emptyTitle="No users match"
-        csvFilename="edget-users.csv"
+        csvFilename="cober-users.csv"
         initialSort={{ by: "firstName", dir: "asc" }}
         columns={[
           {

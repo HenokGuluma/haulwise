@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="edget-ledger${suffix}.csv"`,
+      "Content-Disposition": `attachment; filename="cober-ledger${suffix}.csv"`,
     },
   });
 }

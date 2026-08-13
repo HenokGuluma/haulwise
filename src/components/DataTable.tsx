@@ -134,6 +134,10 @@ export function DataTable<T>({
   }, [pageSize, sortBy, sortDir, search, filters, reloadKey]);
 
   const load = useCallback(() => {
+    // reloadKey is referenced so a bump busts this memo and forces a refetch
+    // even when no other param changed — e.g. a new row created while on
+    // page 1, where the page-reset effect above is a no-op.
+    void reloadKey;
     const id = ++requestId.current;
     setLoading(true);
     setError(null);
@@ -150,7 +154,7 @@ export function DataTable<T>({
         setError(err instanceof Error ? err.message : "Couldn't load data.");
         setLoading(false);
       });
-  }, [fetchPage, page, pageSize, sortBy, sortDir, search, filters]);
+  }, [fetchPage, page, pageSize, sortBy, sortDir, search, filters, reloadKey]);
 
   useEffect(() => {
     load();
