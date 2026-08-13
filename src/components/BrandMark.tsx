@@ -2,15 +2,16 @@
 // Cober Freight logo: a light-blue "C" and navy "F" monogram with a navy
 // semi-truck on an orange road — an SVG interpretation of the brand artwork.
 //
-// The real brand artwork (public/logo.jpg — a square mark on a white
-// background). Because it carries its own white background, it's placed on
-// white surfaces in the UI (the sidebar's brand header, a badge on the login
-// hero) so it blends seamlessly. Set to null to fall back to the SVG mark.
-const LOGO_IMAGE_SRC: string | null = "/logo.jpg";
+// The real brand mark, dark-surface-optimized: public/logo-light.png is the
+// artwork with its white background made transparent and its navy recolored to
+// off-white (see scripts/make-brand-assets.py), so it drops straight onto the
+// dark chrome (sidebar, login hero) with no white plate behind it. Set to null
+// to fall back to the inline SVG mark.
+const LOGO_IMAGE_SRC: string | null = "/logo-light.png";
 
 export function BrandMark({ size = 32, fColor = "#16264A" }: { size?: number; fColor?: string }) {
   if (LOGO_IMAGE_SRC) {
-    return <img src={LOGO_IMAGE_SRC} width={size} height={size} alt="Cober Freight" style={{ objectFit: "contain", display: "block", borderRadius: 6 }} />;
+    return <img src={LOGO_IMAGE_SRC} width={size} height={size} alt="Cober Freight" style={{ objectFit: "contain", display: "block" }} />;
   }
   return (
     <svg width={size} height={size} viewBox="0 0 110 100" fill="none" aria-hidden="true">

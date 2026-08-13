@@ -233,18 +233,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   height: 100vh;
 }
 
-/* White brand header — the logo art carries its own white background, so the
-   header is pure white to blend it in seamlessly, then a hairline separates it
-   from the dark navy nav below. Text switches to dark ink for contrast. */
+/* The logo art is transparent + dark-optimized, so it sits straight on the
+   navy sidebar with no plate behind it. */
 .brand {
   display: flex; align-items: center; gap: 11px;
-  padding: 14px 16px;
-  background: #FFFFFF;
-  border-bottom: 1px solid #E4E7ED;
+  padding: 18px 16px 14px 16px;
 }
-.brand-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.brand-wordmark { height: 17px; width: auto; display: block; }
-.brand-sub { font-size: 10.5px; color: #6B7280; letter-spacing: 0.08em; text-transform: uppercase; }
+.brand-wordmark { height: 22px; width: auto; display: block; }
 
 .nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
@@ -884,21 +879,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .auth-hero-content { position: relative; z-index: 1; max-width: 460px; }
 
-.auth-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 52px; }
-/* Both the mark and the wordmark carry their own white background, so the full
-   logo lockup sits on one white rounded card — clean on the dark hero. */
-.auth-lockup {
-  display: inline-flex; align-items: center; gap: 13px;
-  padding: 10px 18px 10px 10px; border-radius: 16px; background: #FFFFFF;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
-}
-.auth-lockup-wordmark { height: 30px; width: auto; display: block; }
+/* The mark + wordmark are transparent, dark-optimized art — they sit straight
+   on the dark hero, no plate. */
+.auth-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-bottom: 52px; }
+.auth-brand-row { display: flex; align-items: center; gap: 16px; }
+.auth-wordmark-img { height: 40px; width: auto; display: block; }
 .auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); padding-left: 2px; }
 
-/* Compact brand shown in the form panel only when the hero is hidden (mobile). */
-.auth-form-brand { display: none; margin-bottom: 26px; }
-.auth-lockup-sm { padding: 6px 13px 6px 6px; border-radius: 12px; box-shadow: none; border: 1px solid var(--line); gap: 9px; }
-.auth-lockup-sm .auth-lockup-wordmark { height: 21px; }
+/* Compact brand shown in the form panel only when the hero is hidden (mobile).
+   Sits on a small navy chip so the dark-optimized art reads regardless of the
+   form panel's (theme-reactive) background. */
+.auth-form-brand {
+  display: none; align-items: center; gap: 11px; margin-bottom: 26px;
+  background: var(--navy); padding: 10px 16px; border-radius: 14px; width: fit-content;
+}
+.auth-wordmark-img-sm { height: 22px; }
 
 .auth-hero-title { font-size: 33px; color: #fff; line-height: 1.18; margin: 0 0 16px 0; }
 .auth-hero-sub { font-size: 14.5px; color: var(--navy-ink); line-height: 1.65; margin-bottom: 40px; max-width: 400px; }
@@ -946,7 +941,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink-soft); cursor: pointer; flex-shrink: 0; margin-right: 4px;
 }
-.sidebar-close { display: none; margin-left: auto; background: none; border: none; color: #6B7280; cursor: pointer; padding: 4px; }
+.sidebar-close { display: none; margin-left: auto; background: none; border: none; color: var(--navy-ink-muted); cursor: pointer; padding: 4px; }
 .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 85; animation: fadeIn 0.15s ease; }
 
 @media (max-width: 900px) {

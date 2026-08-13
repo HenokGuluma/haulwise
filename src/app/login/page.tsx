@@ -19,10 +19,10 @@ export default function LoginPage() {
         <div className="auth-hero-glow" />
         <div className="auth-hero-content">
           <div className="auth-brand">
-            <div className="auth-lockup">
-              <BrandMark size={52} />
+            <div className="auth-brand-row">
+              <BrandMark size={70} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="auth-lockup-wordmark" src="/cober-text.jpg" alt="Cober Freight" />
+              <img className="auth-wordmark-img" src="/cober-text-light.png" alt="Cober Freight" />
             </div>
             <div className="auth-wordmark-tag">Dispatch · Deliver · Depend</div>
           </div>
@@ -60,11 +60,9 @@ export default function LoginPage() {
       <div className="auth-form-panel">
         <div className="auth-form-card">
           <div className="auth-form-brand">
-            <div className="auth-lockup auth-lockup-sm">
-              <BrandMark size={36} />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="auth-lockup-wordmark" src="/cober-text.jpg" alt="Cober Freight" />
-            </div>
+            <BrandMark size={38} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="auth-wordmark-img auth-wordmark-img-sm" src="/cober-text-light.png" alt="Cober Freight" />
           </div>
           <div className="auth-form-header">
             <div className="auth-form-title">Welcome back</div>
