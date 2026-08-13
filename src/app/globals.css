@@ -237,11 +237,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    navy sidebar with no plate behind it. The wordmark flex-fills the remaining
    width so it's as large as the (narrow) sidebar allows. */
 .brand {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 6px;
   padding: 18px 14px 14px 14px;
 }
 .brand > :first-child { flex-shrink: 0; }
-.brand-wordmark { flex: 1 1 auto; min-width: 0; width: 100%; height: auto; display: block; }
+/* Slight negative margin pulls the wordmark in closer to the mark (the PNG
+   carries a little internal left padding), centering the lockup better. */
+.brand-wordmark { flex: 1 1 auto; min-width: 0; width: 100%; height: auto; display: block; margin-left: -6px; }
 
 .nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
