@@ -184,7 +184,6 @@ button, a, .nav-item, .icon-btn, .btn, .tab, .dash-row, .banner-clickable {
 h1, h2, h3, h4, h5, h6,
 .topbar-title,
 .kpi-value,
-.brand-name,
 .panel-title,
 .board-col-title,
 .hero-title {
@@ -243,9 +242,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   background: #FFFFFF;
   border-bottom: 1px solid #E4E7ED;
 }
-.brand-name { font-family: var(--font-brand); font-weight: 700; color: #16264A; font-size: 16px; letter-spacing: 0.005em; }
-.brand-name-accent { color: var(--sky); }
-.brand-sub { font-size: 10.5px; color: #6B7280; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+.brand-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.brand-wordmark { height: 17px; width: auto; display: block; }
+.brand-sub { font-size: 10.5px; color: #6B7280; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
@@ -885,24 +884,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .auth-hero-content { position: relative; z-index: 1; max-width: 460px; }
 
-.auth-brand { display: flex; align-items: center; gap: 15px; margin-bottom: 52px; }
-/* The logo art has its own white background, so it gets a white rounded badge
-   to sit cleanly on the dark hero rather than showing a bare white square. */
-.auth-brand-badge {
-  display: inline-flex; padding: 7px; border-radius: 15px; background: #FFFFFF;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.28); flex-shrink: 0;
+.auth-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 52px; }
+/* Both the mark and the wordmark carry their own white background, so the full
+   logo lockup sits on one white rounded card — clean on the dark hero. */
+.auth-lockup {
+  display: inline-flex; align-items: center; gap: 13px;
+  padding: 10px 18px 10px 10px; border-radius: 16px; background: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
 }
-.auth-wordmark { display: flex; flex-direction: column; gap: 3px; }
-.auth-wordmark-name { font-family: var(--font-brand); font-weight: 700; font-size: 27px; line-height: 1; letter-spacing: 0.005em; }
-.wm-cober { color: var(--sky-strong); }
-.wm-freight { color: #fff; }
-.auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); }
+.auth-lockup-wordmark { height: 30px; width: auto; display: block; }
+.auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); padding-left: 2px; }
 
 /* Compact brand shown in the form panel only when the hero is hidden (mobile). */
-.auth-form-brand { display: none; align-items: center; gap: 11px; margin-bottom: 26px; }
-.auth-form-brand-badge { display: inline-flex; padding: 5px; border-radius: 11px; background: #FFFFFF; border: 1px solid var(--line); flex-shrink: 0; }
-.auth-form-brand-name { font-family: var(--font-brand); font-weight: 700; font-size: 21px; letter-spacing: 0.005em; color: var(--ink); }
-.auth-form-brand-name .wm-cober { color: var(--sky); }
+.auth-form-brand { display: none; margin-bottom: 26px; }
+.auth-lockup-sm { padding: 6px 13px 6px 6px; border-radius: 12px; box-shadow: none; border: 1px solid var(--line); gap: 9px; }
+.auth-lockup-sm .auth-lockup-wordmark { height: 21px; }
 
 .auth-hero-title { font-size: 33px; color: #fff; line-height: 1.18; margin: 0 0 16px 0; }
 .auth-hero-sub { font-size: 14.5px; color: var(--navy-ink); line-height: 1.65; margin-bottom: 40px; max-width: 400px; }

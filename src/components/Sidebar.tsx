@@ -75,9 +75,10 @@ export function Sidebar({
   return (
     <div className={"sidebar" + (mobileOpen ? " open" : "")}>
       <div className="brand">
-        <BrandMark size={40} fColor="#EAF0FB" />
-        <div>
-          <div className="brand-name"><span className="brand-name-accent">Cober</span> Freight</div>
+        <BrandMark size={40} />
+        <div className="brand-text">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-wordmark" src="/cober-text.jpg" alt="Cober Freight" />
           <div className="brand-sub">Dispatch</div>
         </div>
         <button className="sidebar-close" onClick={onCloseMobile} aria-label="Close menu" title="Close menu">
