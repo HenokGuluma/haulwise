@@ -234,12 +234,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* The logo art is transparent + dark-optimized, so it sits straight on the
-   navy sidebar with no plate behind it. */
+   navy sidebar with no plate behind it. The wordmark flex-fills the remaining
+   width so it's as large as the (narrow) sidebar allows. */
 .brand {
-  display: flex; align-items: center; gap: 11px;
-  padding: 18px 16px 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 14px 14px 14px;
 }
-.brand-wordmark { height: 22px; width: auto; display: block; }
+.brand > :first-child { flex-shrink: 0; }
+.brand-wordmark { flex: 1 1 auto; min-width: 0; width: 100%; height: auto; display: block; }
 
 .nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
