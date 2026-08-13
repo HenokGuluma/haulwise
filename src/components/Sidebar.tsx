@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/roster", label: "Drivers & Equipment", icon: "users", requiredPermission: "roster:view" },
   { href: "/documents", label: "Documents & Billing", icon: "fileText", requiredPermission: "documents:view" },
   { href: "/roles", label: "Roles", icon: "shield", requiredPermission: "roles:manage" },
-  { href: "/users", label: "Users", icon: "shield", requiredPermission: "users:view" },
+  { href: "/users", label: "Users", icon: "userCog", requiredPermission: "users:view" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 

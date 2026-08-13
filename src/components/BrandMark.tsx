@@ -1,15 +1,37 @@
-// Cober Freight "CF" monogram — a light-blue "C" ring interlocked with a
-// navy "F", sitting on an orange road swoosh. On dark surfaces (the sidebar)
-// pass a light `fColor` so the F stays visible.
+/* eslint-disable @next/next/no-img-element */
+// Cober Freight logo: a light-blue "C" and navy "F" monogram with a navy
+// semi-truck on an orange road — an SVG interpretation of the brand artwork.
+//
+// To use the exact raster logo instead: drop the file at public/logo.png and
+// set LOGO_IMAGE_SRC below to "/logo.png". Everything that renders <BrandMark>
+// (sidebar, login) then shows the real artwork with no other change needed.
+const LOGO_IMAGE_SRC: string | null = null;
+
 export function BrandMark({ size = 32, fColor = "#16264A" }: { size?: number; fColor?: string }) {
+  if (LOGO_IMAGE_SRC) {
+    return <img src={LOGO_IMAGE_SRC} width={size} height={size} alt="Cober Freight" style={{ objectFit: "contain", display: "block" }} />;
+  }
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 110 100" fill="none" aria-hidden="true">
       {/* C — light blue, open to the right */}
-      <path d="M65 24 A30 30 0 1 0 65 76" fill="none" stroke="#4B9FE8" strokeWidth="15" strokeLinecap="round" />
-      {/* road swoosh — orange */}
-      <path d="M20 84 Q49 69 86 82" fill="none" stroke="#E8781E" strokeWidth="7" strokeLinecap="round" />
+      <path d="M59.5 20 A33 33 0 1 0 59.5 76" fill="none" stroke="#4B9FE8" strokeWidth="15" strokeLinecap="round" />
       {/* F — navy (or light on dark surfaces) */}
-      <path d="M59 26 H88 M59 26 V80 M59 50 H82" fill="none" stroke={fColor} strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M66 20 H94 M66 20 V80 M66 49 H88" fill="none" stroke={fColor} strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+      {/* road swoosh — orange */}
+      <path d="M14 86 Q46 73 98 84" fill="none" stroke="#E8781E" strokeWidth="8" strokeLinecap="round" />
+      {/* motion lines */}
+      <g stroke="#EAF3FC" strokeWidth="4.5" strokeLinecap="round">
+        <line x1="8" y1="56" x2="24" y2="56" />
+        <line x1="4" y1="65" x2="22" y2="65" />
+      </g>
+      {/* truck: trailer + cab + wheels */}
+      <rect x="20" y="46" width="30" height="24" rx="2.5" fill={fColor} />
+      <path d="M50 54 H60 L64 61 V70 H50 Z" fill={fColor} />
+      <g fill={fColor}>
+        <circle cx="29" cy="72" r="6" />
+        <circle cx="43" cy="72" r="6" />
+        <circle cx="58" cy="72" r="6" />
+      </g>
     </svg>
   );
 }

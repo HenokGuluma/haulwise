@@ -8,7 +8,7 @@ import {
   Sun, Moon, Briefcase, Box, Snowflake, Layers, Zap, Copy, ChevronLeft,
   ChevronRight, ChevronUp, ChevronDown, MapPin, GripVertical, Warehouse,
   Route, Banknote, Sparkles, Settings, Database, TrendingUp, PieChart,
-  BarChart3, Shield, Phone, Mail, type LucideIcon,
+  BarChart3, Shield, Phone, Mail, UserCog, type LucideIcon,
 } from "lucide-react";
 import { statusClass } from "@/lib/format";
 
@@ -67,6 +67,7 @@ const ICONS: Record<string, LucideIcon> = {
   shield: Shield,
   phone: Phone,
   mail: Mail,
+  userCog: UserCog,
 };
 
 export function Icon({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
