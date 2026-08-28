@@ -29,9 +29,18 @@ export async function POST(req: NextRequest) {
       showMockData: user.showMockData,
     },
   });
+  // The Secure flag must match how this request actually arrived, not just
+  // NODE_ENV — a self-hosted deploy behind a reverse proxy may serve plain
+  // HTTP (e.g. no TLS yet), and browsers silently discard a Secure cookie
+  // over HTTP, which looks like "login succeeds but never sticks". Trust the
+  // proxy's X-Forwarded-Proto when present (Nginx sets this); fall back to
+  // NODE_ENV for platforms that terminate TLS transparently without it
+  // (Vercel does set the header too, so this only matters as a safety net).
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const isHttps = forwardedProto ? forwardedProto === "https" : process.env.NODE_ENV === "production";
   res.cookies.set(SESSION_COOKIE, session.id, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     sameSite: "lax",
     path: "/",
     expires: session.expiresAt,
