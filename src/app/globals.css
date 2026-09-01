@@ -888,7 +888,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 /* The mark + wordmark are transparent, dark-optimized art — they sit straight
    on the dark hero, no plate. */
 .auth-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-bottom: 52px; }
-.auth-brand-row { display: flex; align-items: center; gap: 16px; }
+.auth-brand-row { display: flex; align-items: center; gap: 16px; text-decoration: none; width: fit-content; transition: opacity 0.15s ease; }
+.auth-brand-row:hover { opacity: 0.85; }
 .auth-wordmark-img { height: 40px; width: auto; display: block; }
 .auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); padding-left: 2px; }
 
@@ -898,7 +899,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .auth-form-brand {
   display: none; align-items: center; gap: 11px; margin-bottom: 26px;
   background: var(--navy); padding: 10px 16px; border-radius: 14px; width: fit-content;
+  text-decoration: none; transition: opacity 0.15s ease;
 }
+.auth-form-brand:hover { opacity: 0.85; }
 .auth-wordmark-img-sm { height: 22px; }
 
 .auth-hero-title { font-size: 33px; color: #fff; line-height: 1.18; margin: 0 0 16px 0; }

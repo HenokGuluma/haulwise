@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/ui";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -14,11 +15,11 @@ export function AuthHero() {
       <div className="auth-hero-glow" />
       <div className="auth-hero-content">
         <div className="auth-brand">
-          <div className="auth-brand-row">
+          <Link href="/" className="auth-brand-row" title="Back to home">
             <BrandMark size={70} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="auth-wordmark-img" src="/cober-text-light.png" alt="Cober Freight" />
-          </div>
+          </Link>
           <div className="auth-wordmark-tag">Dispatch · Deliver · Depend</div>
         </div>
 
@@ -57,10 +58,10 @@ export function AuthHero() {
 /** Shared small brand lockup shown atop the form panel on mobile (hero is hidden there). */
 export function AuthFormBrand() {
   return (
-    <div className="auth-form-brand">
+    <Link href="/" className="auth-form-brand" title="Back to home">
       <BrandMark size={38} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="auth-wordmark-img auth-wordmark-img-sm" src="/cober-text-light.png" alt="Cober Freight" />
-    </div>
+    </Link>
   );
 }
