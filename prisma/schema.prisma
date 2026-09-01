@@ -60,10 +60,30 @@ model User {
   driverDocuments   DriverDocument[]
   loadActivities    LoadActivity[]
   loadComments      LoadComment[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([customerId])
   @@index([roleId])
   @@map("users")
+}
+
+// A single-use, short-lived token emailed to a user for the "forgot
+// password" flow. Only tokenHash (never the raw token) is stored, same
+// spirit as passwordHash on User — a DB read alone can't be used to reset
+// an account. Consuming a valid token also invalidates the user's existing
+// Sessions (see /api/auth/reset-password), so a stolen active session can't
+// survive a password reset either.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Session {

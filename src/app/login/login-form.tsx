@@ -63,7 +63,10 @@ export function LoginForm() {
         />
       </div>
       <div className="field">
-        <label>Password</label>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+          <label>Password</label>
+          <a href="/forgot-password" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--accent)" }}>Forgot password?</a>
+        </div>
         <input
           className="input"
           type="password"

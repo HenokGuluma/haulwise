@@ -9,6 +9,15 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
 // Equipment types are admin-managed (see /api/equipment-types) rather than a
 // fixed set, so this just needs to be a non-empty code — existence against
 // the database is checked in the route handler, same as customerId.
