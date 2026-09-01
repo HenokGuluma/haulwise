@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { AuthHero, AuthFormBrand } from "@/components/AuthHero";
+import { AuthHero, AuthFormBrand, BackHomeLink } from "@/components/AuthHero";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export const metadata: Metadata = { title: "Set New Password" };
@@ -11,6 +11,7 @@ export default function ResetPasswordPage() {
       <AuthHero />
 
       <div className="auth-form-panel">
+        <BackHomeLink />
         <div className="auth-form-card">
           <AuthFormBrand />
           <div className="auth-form-header">

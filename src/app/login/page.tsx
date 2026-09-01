@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
-import { AuthHero, AuthFormBrand } from "@/components/AuthHero";
+import { AuthHero, AuthFormBrand, BackHomeLink } from "@/components/AuthHero";
 
 export const metadata: Metadata = { title: "Sign In" };
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
       <AuthHero />
 
       <div className="auth-form-panel">
+        <BackHomeLink />
         <div className="auth-form-card">
           <AuthFormBrand />
           <div className="auth-form-header">

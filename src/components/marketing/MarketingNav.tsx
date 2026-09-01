@@ -7,7 +7,6 @@ const LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/guide", label: "Guide" },
-  { href: "/contact", label: "Contact" },
 ];
 
 export function MarketingNav({ loggedIn }: { loggedIn: boolean }) {

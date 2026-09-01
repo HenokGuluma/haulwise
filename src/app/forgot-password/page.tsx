@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuthHero, AuthFormBrand } from "@/components/AuthHero";
+import { AuthHero, AuthFormBrand, BackHomeLink } from "@/components/AuthHero";
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 export const metadata: Metadata = { title: "Reset Password" };
@@ -10,6 +10,7 @@ export default function ForgotPasswordPage() {
       <AuthHero />
 
       <div className="auth-form-panel">
+        <BackHomeLink />
         <div className="auth-form-card">
           <AuthFormBrand />
           <div className="auth-form-header">

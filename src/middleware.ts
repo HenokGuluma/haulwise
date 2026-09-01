@@ -11,7 +11,7 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
 // visitors can browse these too (e.g. re-reading the guide), so unlike
 // /login they're excluded from both redirect directions below, not just
 // the "no session" one.
-const PUBLIC_ROUTES = new Set(["/", "/about", "/guide", "/contact", "/forgot-password", "/reset-password"]);
+const PUBLIC_ROUTES = new Set(["/", "/about", "/guide", "/forgot-password", "/reset-password"]);
 
 export function middleware(req: NextRequest) {
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);

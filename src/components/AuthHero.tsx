@@ -55,6 +55,16 @@ export function AuthHero() {
   );
 }
 
+/** Small, explicit "back to home" link for the form panel — the logo itself
+ * already links home, but that's easy to miss, so this spells it out. */
+export function BackHomeLink() {
+  return (
+    <Link href="/" className="auth-back-home">
+      <Icon name="arrowLeft" size={13} /> Back to home
+    </Link>
+  );
+}
+
 /** Shared small brand lockup shown atop the form panel on mobile (hero is hidden there). */
 export function AuthFormBrand() {
   return (

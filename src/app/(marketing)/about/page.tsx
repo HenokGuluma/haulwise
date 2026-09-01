@@ -40,9 +40,9 @@ export default function AboutPage() {
       </div>
 
       <div className="mkt-cta-band" style={{ margin: 0 }}>
-        <h2>Have a load to move?</h2>
-        <p>Get in touch and we&apos;ll take it from there.</p>
-        <Link href="/contact" className="btn btn-primary">Contact us</Link>
+        <h2>Ready to dispatch?</h2>
+        <p>Sign in with your Cober Freight account to get to work.</p>
+        <Link href="/login" className="btn btn-primary">Login to the platform</Link>
       </div>
     </section>
   );

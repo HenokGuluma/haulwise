@@ -13,7 +13,6 @@ export function MarketingFooter() {
         <div className="mkt-footer-links">
           <Link href="/about">About</Link>
           <Link href="/guide">Guide</Link>
-          <Link href="/contact">Contact</Link>
           <Link href="/login">Login</Link>
         </div>
         <div className="mkt-footer-copy">© {new Date().getFullYear()} Cober Freight. All rights reserved.</div>

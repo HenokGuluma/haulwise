@@ -34,7 +34,7 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="banner banner-success">
-        If an account exists for <strong>{email}</strong>, we&apos;ve sent a link to reset the password. It expires in 1 hour.
+        Check <strong>{email}</strong> for a password reset link — if an account exists for that address, it should arrive shortly. The link expires in 1 hour.
       </div>
     );
   }

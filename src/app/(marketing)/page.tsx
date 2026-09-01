@@ -15,8 +15,8 @@ export default function HomePage() {
     <>
       <section className="mkt-hero">
         <div className="mkt-hero-glow" />
-        <span className="mkt-eyebrow"><Icon name="truck" size={12} /> Cober Freight Dispatch</span>
-        <h1>Freight dispatch, running like clockwork.</h1>
+        <h1>Cober Freight Dispatch</h1>
+        <div className="mkt-hero-tagline">Freight dispatch, running like clockwork.</div>
         <p className="mkt-hero-sub">
           The operational hub behind Cober Freight — loads, roster, documents, and billing, built for how
           freight teams actually work day to day.

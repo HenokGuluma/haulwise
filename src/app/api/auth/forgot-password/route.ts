@@ -10,7 +10,7 @@ const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 // Always returns the same generic response whether or not the email
 // belongs to an account — a distinguishable response here would let an
 // attacker enumerate which addresses have accounts.
-const GENERIC_MESSAGE = "If an account exists for that email, we've sent a link to reset the password.";
+const GENERIC_MESSAGE = "If an account exists for that email, a password reset link is on its way.";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
