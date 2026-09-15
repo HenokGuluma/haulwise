@@ -1,15 +1,19 @@
-# Edget — Freight Dispatching Platform
+# Cober Freight — Freight Dispatching Platform
 
-A real, full-stack implementation of the MVP: Next.js 14 (App Router) frontend,
-REST API route handlers, PostgreSQL via Prisma, and server-side session auth —
-built so Phase 2 (the marketplace/automation features in the full PRD) can be
-layered on without a rewrite.
+A full-stack freight dispatching platform: Next.js 14 (App Router) frontend,
+REST API route handlers, PostgreSQL via Prisma, and server-side session auth.
+Every mutation goes through a real API route, is validated with Zod, is
+authorized server-side by permission, and is persisted in Postgres — the
+double-booking conflict check runs as an actual database query
+(`src/lib/conflicts.ts`) and is enforced at the API layer, so it can't be
+bypassed by any client.
 
-This is not the client-only prototype from earlier — every mutation goes
-through a real API route, is validated with Zod, is authorized server-side by
-role, and is persisted in Postgres. The double-booking conflict check runs as
-an actual database query (`src/lib/conflicts.ts`) and is enforced at the API
-layer, so it can't be bypassed by any client.
+Beyond the original dispatch MVP, this now includes dynamic roles &
+permissions, a customer-facing portal, a public marketing site, PDF
+invoicing, an analytics dashboard, and a self-hosted production deploy
+alongside the Vercel one. See [AGENTS.md](AGENTS.md) for the full
+architecture writeup (data model, conventions, deployment details) kept
+up to date for anyone (or any AI coding agent) picking this repo up.
 
 ## Stack
 
@@ -19,9 +23,13 @@ layer, so it can't be bypassed by any client.
 - **Auth:** Server-side sessions (DB-backed, httpOnly cookies) — not NextAuth, a
   small purpose-built implementation in `src/lib/auth.ts`, so there's no
   black-box dependency between you and the session logic
+- **Roles & permissions:** Admin-manageable roles with a fixed, code-owned
+  permission catalog (`src/lib/permissions.ts`) — not a hardcoded role enum
 - **Validation:** Zod schemas for every API input (`src/lib/validation.ts`)
 - **Styling:** Hand-written CSS design system (`src/app/globals.css`), no UI
   framework dependency; fonts self-hosted via `next/font`
+- **PDF:** `@react-pdf/renderer` for invoices
+- **Charts:** Recharts, for the analytics dashboard
 
 ## Getting started
 
@@ -48,15 +56,20 @@ npm run db:seed
 npm run dev
 ```
 
-Open http://localhost:3000. Log in with:
+Open http://localhost:3000. Log in with the seeded demo accounts:
 
-- **Admin:** `admin@edget.local` / `admin123`
+- **Manager:** `admin@edget.local` / `admin123`
 - **Dispatcher:** `dispatcher@edget.local` / `dispatch123`
+
+(These addresses use the project's pre-rebrand internal name, `edget` — see
+[AGENTS.md](AGENTS.md) for context. Real deployments create their own
+users/roles via the Users/Roles admin pages.)
 
 ### Other useful commands
 
 ```bash
 npm run typecheck    # tsc --noEmit
+npm run lint          # next lint
 npm run db:studio    # Prisma Studio — browse/edit the database visually
 npm run build         # production build
 npm run start         # run the production build
@@ -84,30 +97,40 @@ src/
   middleware.ts         Route protection (fast cookie check; real auth check is server-side)
 
   lib/
-    auth.ts              Sessions, password verification, role checks
+    auth.ts              Sessions, password verification, permission checks
+    permissions.ts        Fixed catalog of grantable permissions (roles are dynamic, DB-backed)
     conflicts.ts          Double-booking conflict detection (server-side, DB-backed)
+    rate-calc.ts           Load rate computation (flat / per-quintal / per-km / per-hour)
+    driver-pay-calc.ts     Driver pay computation (percentage / per-unit / fixed)
+    customer-scope.ts       Customer-portal data scoping
+    storage.ts              File storage driver (local / Vercel Blob / S3-stub)
+    mailer.ts                Outbound email driver (Resend API / SMTP / console)
     validation.ts         Zod schemas for all API inputs
     prisma.ts              Prisma client singleton
-    format.ts, dat.ts      Shared formatting + DAT equipment-code helpers
     api-client.ts           Client-side fetch wrapper used by all Client Components
 
   app/
-    login/                 Login page + form
+    (marketing)/           Public landing site, /about, /guide
+    login/, forgot-password/, reset-password/    Auth pages
     (app)/                 Authenticated route group
       layout.tsx             Auth check, fetches sidebar counts, renders the shell
-      dashboard/ board/ loads/ roster/ documents/     One page per view (Server Components)
+      dashboard/ board/ loads/ roster/ documents/ customers/ roles/ users/ settings/
     api/
-      auth/                  login, logout
-      loads/                  list, create, get/update/delete, assign, documents
-      drivers/, equipment/, customers/, billing/       CRUD + CSV export
+      auth/                  login, logout, forgot-password, reset-password
+      loads/                  list, create, get/update/delete, assign, documents, payments, comments
+      drivers/, equipment/, equipment-types/, customers/, billing/, roles/, users/    CRUD + CSV export
 
   components/
     ui.tsx                 Shared UI kit (buttons, modals, toasts, form fields)
-    Sidebar.tsx, Topbar.tsx, RouteLine.tsx, LoadCard.tsx
-    BoardView.tsx, LoadsView.tsx, DashboardView.tsx, RosterView.tsx, DocumentsView.tsx
-    modals/                 LoadFormModal, AssignModal, LoadDetailDrawer, Driver/EquipmentFormModal
+    Sidebar.tsx, Topbar.tsx, CommandPalette.tsx, RouteLine.tsx, LoadCard.tsx
+    BoardView.tsx, LoadsView.tsx, DashboardView.tsx, RosterView.tsx, DocumentsView.tsx,
+    CustomersView.tsx, RolesView.tsx, UsersView.tsx, SettingsView.tsx
+    charts/                 Recharts wrappers for the analytics dashboard
+    modals/                 Per-entity form modals and detail drawers
 
   types/index.ts          Shared TS types (mirror the Prisma models, dates as ISO strings)
+
+deploy/                  Self-hosted VPS deploy (Docker Compose + Nginx) — see deploy/README.md
 ```
 
 **Pattern used throughout:** each page is a Server Component that fetches its
@@ -116,38 +139,31 @@ passes it as props to a Client Component, which owns local state for
 instant UI updates and calls the REST API for every mutation. The API routes
 are the actual authorization and validation boundary — the UI's role-based
 disabling of buttons is a convenience, not the security mechanism; every
-Admin-only route re-checks the role server-side.
+route re-checks the caller's permission server-side.
+
+## Deployment
+
+Two supported targets:
+
+- **Vercel** — uses the `vercel-blob` storage driver for uploaded documents.
+- **Self-hosted VPS** (Docker Compose + Nginx) — see
+  [deploy/README.md](deploy/README.md) for the full runbook, including
+  backups and migrating existing data from Neon.
 
 ## Phase 2 / DAT integration readiness
 
-Per the spec, this schema and API are structured so a live DAT Load Board
-connection is a plug-in, not a migration:
+This schema and API are structured so a live DAT Load Board connection is a
+plug-in, not a migration:
 
 - `EquipmentTypeCode` uses DAT's standard codes (V, R, F, PO)
 - `ExternalPosting` and `Integration` models exist and are ready, unused by
   the UI today — see `prisma/schema.prisma`
 - Internal `LoadStatus` is independent of any external board's status names
 
-## An honest note on verification
+## More context
 
-This code was written and reviewed carefully, but the sandbox this was built
-in has no network access — `npm install` couldn't be run, so the app has not
-actually been booted end-to-end against a live Next.js dev server or a real
-Postgres instance. What *was* done to catch errors before handing this over:
-
-- Every `.ts`/`.tsx` file was syntax-checked individually with esbuild
-- Every `@/...` and relative import was checked to resolve to a real file,
-  and every named import was checked against that file's actual exports
-- Every CSS class referenced in components (including the enum-derived ones,
-  like status pill colors) was checked against `globals.css`
-- Every hardcoded status/enum string literal in the code was checked against
-  the actual Prisma enum values in `schema.prisma`
-- Every Prisma field name used in application code was checked against the
-  schema
-
-That process did catch and fix real bugs (a stale-closure bug in the drag-and-drop
-handler, and a CSS class case mismatch on status pills) — but it's static
-analysis, not a substitute for actually running `npm install && npm run dev`
-against a real database. Please run the steps above and file/fix anything
-that surfaces; I'd rather you know that up front than present this as more
-proven than it is.
+[AGENTS.md](AGENTS.md) has the full architecture writeup — data model
+rationale, the pluggable storage/email drivers, both deployment targets in
+detail, and conventions to follow when extending this codebase. Keep it
+updated alongside significant changes; it's meant to carry context across
+tools and sessions, not just this one.
