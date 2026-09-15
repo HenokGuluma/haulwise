@@ -32,6 +32,15 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       STORAGE_DRIVER: local
       NODE_ENV: production
+      # Optional — src/lib/mailer.ts falls back to logging instead of
+      # sending when neither is set, so these are safe to leave blank.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     volumes:
       # Uploaded documents (BOL/POD/etc.) persist here across restarts.
       - uploads:/app/uploads

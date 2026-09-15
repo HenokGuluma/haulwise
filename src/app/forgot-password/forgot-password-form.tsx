@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@/components/ui";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -33,8 +34,14 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="banner banner-success">
-        Check <strong>{email}</strong> for a password reset link — if an account exists for that address, it should arrive shortly. The link expires in 1 hour.
+      <div className="banner banner-success" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 13.5 }}>
+          <Icon name="mail" size={15} />
+          Check your inbox
+        </div>
+        <div style={{ lineHeight: 1.5 }}>
+          If an account exists for <strong>{email}</strong>, we&apos;ve emailed a link to reset your password. It expires in 1 hour.
+        </div>
       </div>
     );
   }

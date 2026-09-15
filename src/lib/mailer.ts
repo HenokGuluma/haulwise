@@ -1,12 +1,14 @@
 // Outbound email, behind the same kind of driver abstraction as
-// src/lib/storage.ts. Selected via SMTP_HOST — set it (plus SMTP_PORT/
-// SMTP_USER/SMTP_PASS/SMTP_FROM) to send real email through any SMTP
-// provider (a Gmail app password, Ethio Telecom's own email hosting, a
-// transactional provider's SMTP relay — all speak the same protocol, so
-// no code change is needed to switch providers). Without it, mail is
-// logged to the server console instead of sent — safe default for local
-// dev, and lets the reset flow be exercised end-to-end before real SMTP
-// credentials are wired up.
+// src/lib/storage.ts. Three drivers, picked by which env vars are set:
+//   - RESEND_API_KEY: sends via Resend's HTTP API (preferred when using
+//     Resend — its SMTP relay has been unreliable for a verified domain
+//     while the HTTP API sends the same message without issue).
+//   - SMTP_HOST (+ SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM): any other
+//     SMTP provider (a Gmail app password, Ethio Telecom's own email
+//     hosting, etc).
+//   - Neither: mail is logged to the server console instead of sent —
+//     safe default for local dev, and lets the reset flow be exercised
+//     end-to-end before real credentials are wired up.
 import nodemailer from "nodemailer";
 
 export interface MailMessage {
@@ -47,11 +49,38 @@ class SmtpMailer implements MailDriver {
   }
 }
 
+class ResendApiMailer implements MailDriver {
+  async send(message: MailMessage): Promise<void> {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.SMTP_FROM,
+        to: [message.to],
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Resend API send failed (${res.status}): ${body}`);
+    }
+  }
+}
+
 let driver: MailDriver | null = null;
 
 export function getMailer(): MailDriver {
   if (!driver) {
-    driver = process.env.SMTP_HOST ? new SmtpMailer() : new ConsoleMailer();
+    driver = process.env.RESEND_API_KEY
+      ? new ResendApiMailer()
+      : process.env.SMTP_HOST
+        ? new SmtpMailer()
+        : new ConsoleMailer();
   }
   return driver;
 }
