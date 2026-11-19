@@ -36,6 +36,7 @@ export function LoadsView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCustomer = user.isCustomerScoped;
+  const canEdit = user.permissions.includes("loads:edit");
 
   // Deep-link support: /loads?open=<id> (from the command palette, or a
   // future external link) opens that load's detail drawer directly.
@@ -163,8 +164,13 @@ export function LoadsView({
                   label: "",
                   align: "right" as const,
                   render: (l: Load) => (
-                    <span onClick={(e) => e.stopPropagation()}>
-                      <IconButton icon="copy" title="Clone load" onClick={() => setCloneSource(l)} />
+                    // Edit sits first and Clone is labeled as a copy: when
+                    // Clone was the only row action, it was routinely used
+                    // as "edit", silently creating a duplicate load (new
+                    // number, no documents) instead of updating this one.
+                    <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", gap: 4 }}>
+                      {canEdit && <IconButton icon="edit" title="Edit load" onClick={() => setEditLoad(l)} />}
+                      <IconButton icon="copy" title="Clone as a new load" onClick={() => setCloneSource(l)} />
                     </span>
                   ),
                 },

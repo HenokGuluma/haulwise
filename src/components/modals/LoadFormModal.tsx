@@ -320,8 +320,14 @@ export function LoadFormModal({
     <>
     <ModalBox onClose={onClose} width={560}>
       <PanelHead
-        title={mode === "edit" && load ? "Edit " + load.loadNumber : "New Load"}
-        sub={mode === "create" ? "Starts in Draft — assign a driver later from the Dispatch Board." : undefined}
+        title={mode === "edit" && load ? "Edit " + load.loadNumber : prefill ? "Clone " + prefill.loadNumber : "New Load"}
+        sub={
+          mode === "edit"
+            ? undefined
+            : prefill
+            ? `Creates a separate new Draft load. ${prefill.loadNumber} itself is left unchanged — use Edit to change it.`
+            : "Starts in Draft — assign a driver later from the Dispatch Board."
+        }
         onClose={onClose}
       />
       <div className="panel-body">
@@ -521,7 +527,7 @@ export function LoadFormModal({
       <div className="panel-foot">
         <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
         <Button variant="primary" onClick={handleSubmit} loading={submitting}>
-          {submitting ? "Saving…" : isOversized && !oversizedAck ? "Review high value…" : isOversized && oversizedAck ? "Confirm & " + (mode === "edit" ? "save" : "create") : mode === "edit" ? "Save changes" : "Create load"}
+          {submitting ? "Saving…" : isOversized && !oversizedAck ? "Review high value…" : isOversized && oversizedAck ? "Confirm & " + (mode === "edit" ? "save" : "create") : mode === "edit" ? "Save changes" : prefill ? "Create copy" : "Create load"}
         </Button>
       </div>
     </ModalBox>
