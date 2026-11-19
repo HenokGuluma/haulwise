@@ -110,7 +110,7 @@ src/
     api-client.ts           Client-side fetch wrapper used by all Client Components
 
   app/
-    (marketing)/           Public landing site, /about, /guide
+    (marketing)/           Public landing page only (/); /about and /guide redirect to /
     login/, forgot-password/, reset-password/    Auth pages
     (app)/                 Authenticated route group
       layout.tsx             Auth check, fetches sidebar counts, renders the shell

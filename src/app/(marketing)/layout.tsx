@@ -6,7 +6,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   const user = await getSessionUser();
 
   return (
-    <div className="mkt-page">
+    <div className="lp-page">
       <MarketingNav loggedIn={!!user} />
       {children}
       <MarketingFooter />

@@ -105,7 +105,7 @@ src/
     use*.ts                  Client-side data-fetching hooks (useCustomers, useDrivers, useRoles, etc.)
 
   app/
-    (marketing)/            Public site: landing page, /about, /guide — no auth required
+    (marketing)/            Public landing page only (/); /about and /guide redirect to / — no auth required
     login/, forgot-password/, reset-password/    Auth pages
     (app)/                  Authenticated route group — layout.tsx does the real session check
       dashboard/, board/, loads/, roster/, documents/, customers/, roles/, users/, settings/

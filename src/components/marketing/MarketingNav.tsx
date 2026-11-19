@@ -1,39 +1,20 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
 
-const LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/guide", label: "Guide" },
-];
-
+// Logo plus a single action. The landing page is the whole public site,
+// so there is nothing else to navigate to.
 export function MarketingNav({ loggedIn }: { loggedIn: boolean }) {
-  const pathname = usePathname();
-
   return (
-    <div className="mkt-nav">
-      <Link href="/" className="mkt-nav-brand">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-light.png" alt="" width={26} height={26} style={{ objectFit: "contain" }} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cober-text-light.png" alt="Cober Freight" />
+    <header className="lp-nav">
+      <Link href="/" className="lp-logo" aria-label="Cober Freight, home">
+        <Image src="/logo-mark-light.png" alt="" width={224} height={160} priority className="lp-logo-mark" />
+        <span className="lp-logo-word" aria-hidden="true">
+          <span>Cober</span> Freight
+        </span>
       </Link>
-
-      <div className="mkt-nav-links">
-        {LINKS.map((l) => (
-          <Link key={l.href} href={l.href} className={"mkt-nav-link" + (pathname === l.href ? " active" : "")}>
-            {l.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mkt-nav-right">
-        <Link href={loggedIn ? "/dashboard" : "/login"} className="btn btn-primary btn-sm">
-          {loggedIn ? "Go to Dashboard" : "Login"}
-        </Link>
-      </div>
-    </div>
+      <Link href={loggedIn ? "/dashboard" : "/login"} className="lp-btn lp-btn-sm">
+        {loggedIn ? "Go to dashboard" : "Log in"}
+      </Link>
+    </header>
   );
 }

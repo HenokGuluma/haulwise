@@ -1,53 +1,60 @@
+import Image from "next/image";
 import Link from "next/link";
+import { getSessionUser } from "@/lib/auth";
 import { Icon } from "@/components/ui";
 
-const FEATURES = [
-  { icon: "route", title: "Dispatch Board", desc: "Drag loads through every stage of the pipeline — driver and equipment stay linked automatically once assigned." },
-  { icon: "users", title: "Fleet & Roster", desc: "Drivers, trucks, trailers, and maintenance schedules, all tracked in one place." },
-  { icon: "fileText", title: "Documents & Billing", desc: "BOLs, PODs, and rate confirmations attached right on the load — payouts tracked alongside." },
-  { icon: "trendingUp", title: "Live Reporting", desc: "Revenue, volume, and status breakdowns that update as your team works, not once a week." },
-  { icon: "shield", title: "Role-Based Access", desc: "Dispatchers, accountants, and customers each see exactly what's relevant to them — nothing more." },
-  { icon: "download", title: "Real Paperwork", desc: "Dispatch papers and invoices generate as real, ready-to-send PDFs, straight from the load." },
+const POINTS = [
+  { icon: "route", text: "Follow every load from assignment to delivery" },
+  { icon: "fileText", text: "BOLs, PODs and rate confirmations in one place" },
+  { icon: "download", text: "Download invoices as ready-to-send PDFs" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  // The layout already reads the session for the nav; reading it here too
+  // keeps this page's button in sync without prop-drilling through the layout.
+  const user = await getSessionUser();
+
   return (
-    <>
-      <section className="mkt-hero">
-        <div className="mkt-hero-glow" />
-        <h1>Cober Freight Dispatch</h1>
-        <div className="mkt-hero-tagline">Freight dispatch, running like clockwork.</div>
-        <p className="mkt-hero-sub">
-          The operational hub behind Cober Freight — loads, roster, documents, and billing, built for how
-          freight teams actually work day to day.
+    <main className="lp-hero">
+      <Image src="/landing/hero-highway.jpg" alt="" fill priority sizes="100vw" quality={60} className="lp-hero-photo" />
+      <div className="lp-hero-inner">
+        <span className="lp-eyebrow">Customer & dispatch portal</span>
+        <h1>
+          Your loads, statuses and paperwork, <span>in one place.</span>
+        </h1>
+        <p className="lp-lead">
+          Sign in to see where your cargo is, download your documents and keep track of every invoice.
         </p>
-        <div className="mkt-hero-actions">
-          <Link href="/login" className="btn btn-primary">Login to the platform</Link>
-          <Link href="/guide" className="btn btn-ghost" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.18)" }}>See how it works</Link>
-        </div>
-      </section>
 
-      <section className="mkt-section">
-        <div className="mkt-section-head">
-          <div className="mkt-section-title">Everything dispatch needs, in one place</div>
-          <div className="mkt-section-sub">A single system for the whole load lifecycle — from quote to paid invoice.</div>
+        <div className="lp-actions">
+          {user ? (
+            <Link href="/dashboard" className="lp-btn lp-btn-lg">
+              Go to dashboard <Icon name="arrowRight" size={18} />
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="lp-btn lp-btn-lg">
+                Log in <Icon name="arrowRight" size={18} />
+              </Link>
+              <Link href="/forgot-password" className="lp-link">Forgot your password?</Link>
+            </>
+          )}
         </div>
-        <div className="mkt-grid-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="mkt-card">
-              <span className="mkt-card-icon"><Icon name={f.icon} size={19} /></span>
-              <div className="mkt-card-title">{f.title}</div>
-              <div className="mkt-card-desc">{f.desc}</div>
-            </div>
+
+        <ul className="lp-points">
+          {POINTS.map((p) => (
+            <li key={p.text}>
+              <Icon name={p.icon} size={18} />
+              {p.text}
+            </li>
           ))}
-        </div>
-      </section>
+        </ul>
 
-      <div className="mkt-cta-band">
-        <h2>Ready to dispatch?</h2>
-        <p>Sign in with your Cober Freight account to get to work.</p>
-        <Link href="/login" className="btn btn-primary">Login to the platform</Link>
+        <p className="lp-note">
+          Not a customer yet? <a href="https://coberfreight.com.et/quote">Request a quote</a>. Portal access
+          comes with your first booked load.
+        </p>
       </div>
-    </>
+    </main>
   );
 }

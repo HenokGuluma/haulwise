@@ -7,11 +7,11 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
 // does the real validation: looking the session up in the database, checking
 // expiry, and loading the user's role. Treat this middleware as a UX
 // optimization, not the security boundary.
-// Public marketing/auth-adjacent pages — never require a session. Logged-in
-// visitors can browse these too (e.g. re-reading the guide), so unlike
+// Public pages — never require a session. Logged-in visitors can open these
+// too (the landing page shows them a "Go to dashboard" button), so unlike
 // /login they're excluded from both redirect directions below, not just
 // the "no session" one.
-const PUBLIC_ROUTES = new Set(["/", "/about", "/guide", "/forgot-password", "/reset-password"]);
+const PUBLIC_ROUTES = new Set(["/", "/forgot-password", "/reset-password"]);
 
 export function middleware(req: NextRequest) {
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
