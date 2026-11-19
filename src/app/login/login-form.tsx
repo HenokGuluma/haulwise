@@ -25,24 +25,35 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    // A hard disconnect rejects the fetch promise (caught below), but a slow
+    // or lossy connection can leave it pending indefinitely with no error —
+    // without this, the button would stay stuck on "Signing in…" forever.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Something went wrong.");
-        setLoading(false);
         return;
       }
       const defaultHome = data.user?.isCustomerScoped ? "/loads" : "/dashboard";
       const next = searchParams.get("next") || defaultHome;
       router.push(next);
       router.refresh();
-    } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+    } catch (err) {
+      setError(
+        err instanceof DOMException && err.name === "AbortError"
+          ? "That's taking too long. Check your connection and try again."
+          : "Couldn't reach the server. Check your connection and try again."
+      );
+    } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }

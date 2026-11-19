@@ -22,11 +22,16 @@ export function ResetPasswordForm() {
     }
     setLoading(true);
     setError(null);
+    // A stalled (not failed) request on a slow connection never rejects on
+    // its own, which would leave the button stuck disabled indefinitely.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -35,9 +40,14 @@ export function ResetPasswordForm() {
       }
       setDone(true);
       setTimeout(() => router.push("/login"), 2500);
-    } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+    } catch (err) {
+      setError(
+        err instanceof DOMException && err.name === "AbortError"
+          ? "That's taking too long. Check your connection and try again."
+          : "Couldn't reach the server. Check your connection and try again."
+      );
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }
