@@ -3,6 +3,11 @@ import type { Metadata } from "next";
 import { AuthHero, AuthFormBrand, BackHomeLink } from "@/components/AuthHero";
 import { ResetPasswordForm } from "./reset-password-form";
 
+// Rendered per request rather than prerendered: a prerendered page is sent
+// with a year-long s-maxage, and some phone browsers kept serving a stale
+// copy of these pages after a deploy. Per-request pages are sent no-store.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Set New Password" };
 
 export default function ResetPasswordPage() {
