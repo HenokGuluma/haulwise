@@ -238,7 +238,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    navy sidebar with no plate behind it. The wordmark flex-fills the remaining
    width so it's as large as the (narrow) sidebar allows. */
 .brand {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
   padding: 18px 14px 14px 14px;
 }
 .brand > :first-child { flex-shrink: 0; }
@@ -247,7 +247,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    little internal left padding), centering the lockup better. */
 .brand-wordmark { height: 30px; width: auto; max-width: 100%; display: block; margin-left: -6px; }
 
-.nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+/* The nav list is the only part of the sidebar that scrolls, so the brand
+   and the footer (theme toggle, Sign out) stay visible on short screens. */
+.nav-group { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px; border-radius: 10px;
@@ -271,7 +273,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .nav-item.active .nav-count { color: var(--accent); background: rgba(255,255,255,0.12); }
 
 .sidebar-footer {
-  margin-top: auto; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: auto; flex-shrink: 0; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08);
   display: flex; align-items: center; gap: 10px;
 }
 .role-avatar {
@@ -828,7 +830,7 @@ select.input.dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
 .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
 .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .input, select.input, textarea.input {
-  width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px;
+  width: 100%; max-width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px;
   font-size: 13px; font-family: inherit; background: var(--surface); color: var(--ink);
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
@@ -963,7 +965,7 @@ select.input.dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
   font-size: 12.5px; font-weight: 600; color: var(--muted); text-decoration: none;
 }
 .auth-back-home:hover { color: var(--ink); }
-.auth-form-card { width: 400px; max-width: 100%; }
+.auth-form-card { width: 400px; max-width: 100%; min-width: 0; }
 .auth-form-header { margin-bottom: 26px; }
 .auth-form-title { font-family: var(--font-heading); font-weight: 800; font-size: 25px; color: var(--ink); letter-spacing: -0.02em; margin: 0; }
 .auth-submit { width: 100%; justify-content: center; min-height: 42px; font-size: 14px; }
@@ -1063,12 +1065,18 @@ select.input.dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
   button, a { -webkit-tap-highlight-color: rgba(109, 94, 245, 0.12); }
 
   /* ---- Off-canvas sidebar ---- */
+  /* top/bottom: 0 rather than a height. iOS Safari's 100vh is taller than
+     the visible area (it ignores the bottom toolbar), which pushed the
+     footer — and Sign out — underneath the toolbar where it couldn't be
+     reached. Pinning both edges always matches the visible screen, even on
+     browsers without dvh. The nav list scrolls; the footer stays put. */
   .sidebar {
-    position: fixed; z-index: 90; width: 280px; max-width: 86vw;
+    position: fixed; top: 0; bottom: 0; left: 0; height: auto;
+    z-index: 90; width: 280px; max-width: 86vw;
     transform: translateX(-100%); visibility: hidden;
     transition: transform 0.22s ease, visibility 0s linear 0.22s;
     padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
-    overflow-y: auto; overscroll-behavior: contain;
+    overflow: hidden;
   }
   /* visibility (not just transform) so the closed drawer's links aren't
      reachable by keyboard / screen reader while off-screen. */
