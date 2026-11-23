@@ -43,14 +43,21 @@ export function AuthHero() {
           ))}
         </div>
 
-        <div className="auth-route-motif" aria-hidden="true">
-          <div className="auth-route-track" />
-          <span className="auth-route-node start" />
-          <span className="auth-route-node mid" />
-          <span className="auth-route-node end" />
-          <span className="auth-route-truck"><Icon name="truck" size={16} /></span>
-        </div>
+        <AuthRouteMotif />
       </div>
+    </div>
+  );
+}
+
+/** The dashed route with a drifting truck — shared by the desktop hero and the phone header. */
+function AuthRouteMotif() {
+  return (
+    <div className="auth-route-motif" aria-hidden="true">
+      <div className="auth-route-track" />
+      <span className="auth-route-node start" />
+      <span className="auth-route-node mid" />
+      <span className="auth-route-node end" />
+      <span className="auth-route-truck"><Icon name="truck" size={16} /></span>
     </div>
   );
 }
@@ -66,9 +73,9 @@ export function BackHomeLink() {
 }
 
 /**
- * Phone-width replacement for the hero (which is hidden below 860px): a navy
- * band with the brand, so the auth pages still read as Cober Freight rather
- * than a bare form. The form panel overlaps its bottom edge as a sheet.
+ * Phone-width version of the hero (which is hidden below 860px): the same
+ * logo lockup, tagline and truck motif, on the same navy/glow background
+ * (applied to the whole .auth-page there), above the form card.
  * Rendered first inside .auth-page; hidden on desktop.
  */
 export function AuthFormBrand() {
@@ -78,11 +85,12 @@ export function AuthFormBrand() {
         <Icon name="arrowLeft" size={20} />
       </Link>
       <Link href="/" className="auth-mobile-brand" aria-label="Cober Freight, home">
-        <BrandMark size={44} />
+        <BrandMark size={60} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="auth-wordmark-img auth-wordmark-img-sm" src="/cober-text-light.png" alt="" />
       </Link>
       <div className="auth-wordmark-tag">Dispatch · Deliver · Depend</div>
+      <AuthRouteMotif />
     </header>
   );
 }
