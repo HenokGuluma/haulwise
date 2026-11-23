@@ -45,9 +45,19 @@ export const metadata: Metadata = {
 // Without this, mobile browsers fall back to a ~980px virtual viewport and
 // scale the desktop layout down instead of reflowing it, which makes every
 // max-width media query in globals.css unreliable on real phones.
+// viewport-fit=cover lets the layout use the full screen on notched phones;
+// globals.css pads the topbar, sidebar, sheets and toasts with
+// env(safe-area-inset-*) so nothing sits under the notch or home indicator.
+// No maximum-scale: pinch-zoom stays available for accessibility (inputs are
+// 16px on phones, so iOS doesn't auto-zoom on focus anyway).
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAFAFC" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E0F13" },
+  ],
 };
 
 // Runs before hydration so the correct theme is applied on first paint —

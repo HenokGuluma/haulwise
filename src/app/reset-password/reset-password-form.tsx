@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PasswordInput } from "@/components/PasswordInput";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export function ResetPasswordForm() {
@@ -13,6 +14,13 @@ export function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Focus only with a mouse/trackpad; on a phone it would pop the keyboard
+  // over the page before the user has seen it (same rule as the login form).
+  useEffect(() => {
+    if (window.matchMedia("(pointer: fine)").matches) passwordRef.current?.focus();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,24 +76,24 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div className="field">
-        <label>New password</label>
-        <input
-          className="input"
-          type="password"
+        <label htmlFor="reset-password">New password</label>
+        <PasswordInput
+          id="reset-password"
+          ref={passwordRef}
           autoComplete="new-password"
+          enterKeyHint="next"
           required
           minLength={8}
-          autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
       <div className="field">
-        <label>Confirm new password</label>
-        <input
-          className="input"
-          type="password"
+        <label htmlFor="reset-confirm">Confirm new password</label>
+        <PasswordInput
+          id="reset-confirm"
           autoComplete="new-password"
+          enterKeyHint="done"
           required
           minLength={8}
           value={confirm}
@@ -93,11 +101,11 @@ export function ResetPasswordForm() {
         />
       </div>
       {error && (
-        <div className="banner banner-danger" style={{ marginBottom: 14 }}>
+        <div className="banner banner-danger" role="alert" style={{ marginBottom: 14 }}>
           {error}
         </div>
       )}
-      <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={loading}>
+      <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
         {loading ? "Saving…" : "Set new password"}
       </button>
     </form>

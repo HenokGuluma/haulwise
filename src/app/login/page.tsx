@@ -8,14 +8,14 @@ export const metadata: Metadata = { title: "Sign In" };
 export default function LoginPage() {
   return (
     <div className="auth-page">
+      <AuthFormBrand />
       <AuthHero />
 
       <div className="auth-form-panel">
         <BackHomeLink />
         <div className="auth-form-card">
-          <AuthFormBrand />
           <div className="auth-form-header">
-            <div className="auth-form-title">Welcome back</div>
+            <h1 className="auth-form-title">Welcome back</h1>
             <div className="auth-form-sub">Sign in to your dispatch workspace.</div>
           </div>
 

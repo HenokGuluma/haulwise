@@ -247,7 +247,7 @@ export function CustomerDetailView({ user, initialCustomer }: { user: SessionUse
 
   return (
     <div>
-      <Link href="/customers" style={{ fontSize: 12.5, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14, textDecoration: "none" }}>
+      <Link href="/customers" className="back-link">
         <Icon name="arrowLeft" size={12} /> Back to Customers
       </Link>
 

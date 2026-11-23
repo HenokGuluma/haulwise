@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui";
 
 export function ForgotPasswordForm() {
@@ -8,6 +8,13 @@ export function ForgotPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Focus only with a mouse/trackpad; on a phone it would pop the keyboard
+  // over the page before the user has seen it (same rule as the login form).
+  useEffect(() => {
+    if (window.matchMedia("(pointer: fine)").matches) emailRef.current?.focus();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,24 +66,29 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div className="field">
-        <label>Email</label>
+        <label htmlFor="forgot-email">Email</label>
         <input
+          id="forgot-email"
+          ref={emailRef}
           className="input"
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="send"
           required
-          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
       {error && (
-        <div className="banner banner-danger" style={{ marginBottom: 14 }}>
+        <div className="banner banner-danger" role="alert" style={{ marginBottom: 14 }}>
           {error}
         </div>
       )}
-      <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={loading}>
+      <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
         {loading ? "Sending…" : "Send reset link"}
       </button>
     </form>

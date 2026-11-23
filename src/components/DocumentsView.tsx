@@ -169,13 +169,13 @@ export function DocumentsView({
       <div className="stat-grid-3" style={{ marginBottom: 18 }}>
         <div className="kpi-card">
           <div className="kpi-label">Total Payable</div>
-          <div className="kpi-value" style={{ fontSize: fitFontSize(fmtMoney(totals.totalPay), 32) }}>{fmtMoney(totals.totalPay)}</div>
+          <div className="kpi-value" style={{ "--kpi-fit": `${fitFontSize(fmtMoney(totals.totalPay), 32)}px` } as React.CSSProperties}>{fmtMoney(totals.totalPay)}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Pending Payout</div>
           <div
             className="kpi-value"
-            style={{ fontSize: fitFontSize(fmtMoney(totals.totalPending), 32), color: totals.totalPending > 0 ? "var(--danger)" : undefined }}
+            style={{ "--kpi-fit": `${fitFontSize(fmtMoney(totals.totalPending), 32)}px`, color: totals.totalPending > 0 ? "var(--danger)" : undefined } as React.CSSProperties}
           >
             {fmtMoney(totals.totalPending)}
           </div>
@@ -193,12 +193,12 @@ export function DocumentsView({
       </div>
 
       {tab === "ledger" && (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 12, color: "var(--muted)" }}>Delivery date range:</span>
-          <input type="date" className="input" style={{ width: 150 }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          <span style={{ color: "var(--muted)" }}>–</span>
-          <input type="date" className="input" style={{ width: 150 }} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          <div style={{ marginLeft: "auto" }}>
+        <div className="ledger-range">
+          <span className="ledger-range-label">Delivery date range:</span>
+          <input type="date" className="input ledger-range-date" aria-label="Delivered from" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <span className="ledger-range-dash">–</span>
+          <input type="date" className="input ledger-range-date" aria-label="Delivered to" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <div className="ledger-range-export">
             <a href={`/api/billing${dateFrom || dateTo ? `?from=${dateFrom}&to=${dateTo}` : ""}`} download>
               <Button variant="dark" icon="download">Export {dateFrom || dateTo ? "Range" : "Full Ledger"} CSV</Button>
             </a>

@@ -8,7 +8,7 @@ import {
   Sun, Moon, Briefcase, Box, Snowflake, Layers, Zap, Copy, ChevronLeft,
   ChevronRight, ChevronUp, ChevronDown, MapPin, GripVertical, Warehouse,
   Route, Banknote, Sparkles, Settings, Database, TrendingUp, PieChart,
-  BarChart3, Shield, Phone, Mail, UserCog, type LucideIcon,
+  BarChart3, Shield, Phone, Mail, UserCog, Eye, EyeOff, Menu, type LucideIcon,
 } from "lucide-react";
 import { statusClass } from "@/lib/format";
 
@@ -68,6 +68,9 @@ const ICONS: Record<string, LucideIcon> = {
   phone: Phone,
   mail: Mail,
   userCog: UserCog,
+  eye: Eye,
+  eyeOff: EyeOff,
+  menu: Menu,
 };
 
 export function Icon({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
@@ -111,7 +114,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div key={t.id} className={"toast " + t.type}>
             <Icon name={t.type === "error" ? "alertTriangle" : t.type === "success" ? "checkCircle" : "clock"} />
             <div style={{ flex: 1 }}>{t.message}</div>
-            <button className="toast-close" onClick={() => dismiss(t.id)}>
+            <button className="toast-close" onClick={() => dismiss(t.id)} aria-label="Dismiss notification">
               <Icon name="x" size={13} />
             </button>
           </div>

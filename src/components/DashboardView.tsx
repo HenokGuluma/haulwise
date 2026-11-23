@@ -53,7 +53,7 @@ export function KPI({
       </span>
       <div className="kpi-body">
         <div className="kpi-label">{label}</div>
-        <div className="kpi-value" style={typeof value === "string" ? { fontSize: fitFontSize(value, 32) } : undefined}>{value}</div>
+        <div className="kpi-value" style={typeof value === "string" ? ({ "--kpi-fit": `${fitFontSize(value, 32)}px` } as React.CSSProperties) : undefined}>{value}</div>
         {deltaText && (
           <div
             className="kpi-delta"
@@ -204,8 +204,8 @@ export function DashboardView({
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Delivered &amp; Revenue:</span>
+      <div className="dash-period-row">
+        <span className="dash-period-label">Delivered &amp; Revenue:</span>
         <div className="board-view-toggle" role="tablist" aria-label="Delivered and Revenue period">
           {DASHBOARD_PERIODS.map((p) => (
             <button

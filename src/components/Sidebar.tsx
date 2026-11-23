@@ -101,7 +101,7 @@ export function Sidebar({
         <div className="role-avatar">{user.roleName.slice(0, 2).toUpperCase()}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="role-name">{fullName(user.firstName, user.lastName)}</div>
-          <div style={{ fontSize: 10.5, color: "var(--navy-ink-muted)" }}>{user.roleName}</div>
+          <div className="role-sub">{user.roleName}</div>
         </div>
         <ThemeToggle />
         <IconButtonInline onClick={signOut} />
@@ -116,7 +116,7 @@ function IconButtonInline({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title="Sign out"
       aria-label="Sign out"
-      style={{ background: "none", border: "none", color: "var(--navy-ink-muted)", cursor: "pointer", display: "flex", padding: 4 }}
+      className="sidebar-signout"
     >
       <Icon name="logOut" size={16} />
     </button>

@@ -125,11 +125,11 @@ export function CustomerBoardView({ user, loads }: { user: SessionUser; loads: L
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>
+      <div className="cust-board-head">
+        <p className="cust-board-intro">
           A read-only view of where each of your shipments stands right now.
         </p>
-        <div className="board-view-toggle" role="tablist" aria-label="Board view" style={{ marginLeft: "auto" }}>
+        <div className="board-view-toggle" role="tablist" aria-label="Board view">
           <button
             type="button"
             role="tab"

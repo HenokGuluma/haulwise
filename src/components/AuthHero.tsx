@@ -65,13 +65,24 @@ export function BackHomeLink() {
   );
 }
 
-/** Shared small brand lockup shown atop the form panel on mobile (hero is hidden there). */
+/**
+ * Phone-width replacement for the hero (which is hidden below 860px): a navy
+ * band with the brand, so the auth pages still read as Cober Freight rather
+ * than a bare form. The form panel overlaps its bottom edge as a sheet.
+ * Rendered first inside .auth-page; hidden on desktop.
+ */
 export function AuthFormBrand() {
   return (
-    <Link href="/" className="auth-form-brand" title="Back to home">
-      <BrandMark size={38} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="auth-wordmark-img auth-wordmark-img-sm" src="/cober-text-light.png" alt="Cober Freight" />
-    </Link>
+    <header className="auth-mobile-head">
+      <Link href="/" className="auth-mobile-back" aria-label="Back to home">
+        <Icon name="arrowLeft" size={20} />
+      </Link>
+      <Link href="/" className="auth-mobile-brand" aria-label="Cober Freight, home">
+        <BrandMark size={44} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="auth-wordmark-img auth-wordmark-img-sm" src="/cober-text-light.png" alt="" />
+      </Link>
+      <div className="auth-wordmark-tag">Dispatch · Deliver · Depend</div>
+    </header>
   );
 }

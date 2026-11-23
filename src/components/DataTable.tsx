@@ -224,6 +224,13 @@ export function DataTable<T>({
   }
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.key));
+  const sortableColumns = columns.filter((c) => c.sortable);
+  // Roles for the phone card layout (see .dt-scroll rules in globals.css):
+  // the first visible column becomes the card's title, unlabeled columns
+  // (row action buttons) pin to its top-right corner, everything else is a
+  // labeled field.
+  const cellClass = (c: DataTableColumn<T>, i: number) =>
+    i === 0 ? "dt-cell-primary" : c.label === "" ? "dt-cell-actions" : undefined;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(total, page * pageSize);
@@ -266,9 +273,30 @@ export function DataTable<T>({
           );
         })}
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+        {/* Column headers are hidden in the phone card layout, so sorting needs
+            its own control there. Same state as clicking a header. */}
+        {sortableColumns.length > 0 && (
+          <select
+            className="input dt-mobile-sort"
+            aria-label="Sort by"
+            value={sortBy ? `${sortBy}:${sortDir}` : ""}
+            onChange={(e) => {
+              const [key, dir] = e.target.value.split(":");
+              setSortBy(key || null);
+              setSortDir((dir as SortDir) || "asc");
+            }}
+          >
+            <option value="">Sort: default</option>
+            {sortableColumns.flatMap((c) => [
+              <option key={c.key + ":asc"} value={`${c.key}:asc`}>Sort: {c.label} ↑</option>,
+              <option key={c.key + ":desc"} value={`${c.key}:desc`}>Sort: {c.label} ↓</option>,
+            ])}
+          </select>
+        )}
+
+        <div className="dt-toolbar-end">
           {toolbarExtra}
-          <div className="dt-menu-anchor">
+          <div className="dt-menu-anchor dt-desktop-only">
             <button type="button" className="icon-btn" title="Row density" aria-label="Toggle row density" onClick={() => updateDensity(density === "comfortable" ? "compact" : "comfortable")}>
               <Icon name="list" size={14} />
             </button>
@@ -290,7 +318,7 @@ export function DataTable<T>({
           </div>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportCSV} disabled={exporting}>
             <Icon name="download" size={13} />
-            {exporting ? "Exporting…" : "Export CSV"}
+            <span className="btn-label-collapsible">{exporting ? "Exporting…" : "Export CSV"}</span>
           </button>
         </div>
       </div>
@@ -320,8 +348,8 @@ export function DataTable<T>({
               {loading &&
                 Array.from({ length: Math.min(pageSize, 8) }).map((_, i) => (
                   <tr key={"skeleton-" + i}>
-                    {visibleColumns.map((c) => (
-                      <td key={c.key}><div className="dt-skeleton" /></td>
+                    {visibleColumns.map((c, i) => (
+                      <td key={c.key} className={cellClass(c, i)} data-label={c.label}><div className="dt-skeleton" /></td>
                     ))}
                   </tr>
                 ))}
@@ -329,8 +357,8 @@ export function DataTable<T>({
               {!loading && !error && rows.length > 0 &&
                 rows.map((row) => (
                   <tr key={rowKey(row)} onClick={() => onRowClick?.(row)}>
-                    {visibleColumns.map((c) => (
-                      <td key={c.key} style={{ textAlign: c.align === "right" ? "right" : "left" }}>
+                    {visibleColumns.map((c, i) => (
+                      <td key={c.key} className={cellClass(c, i)} data-label={c.label} style={{ textAlign: c.align === "right" ? "right" : "left" }}>
                         {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? "")}
                       </td>
                     ))}

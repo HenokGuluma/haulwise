@@ -42,7 +42,7 @@ export function Topbar({
   return (
     <div className="topbar">
       <button type="button" className="topbar-menu-btn" onClick={onMenuClick} aria-label="Open menu" title="Open menu">
-        <Icon name="list" size={18} />
+        <Icon name="menu" size={20} />
       </button>
       <div className="topbar-heading">
         <div className="topbar-title">{meta.title}</div>

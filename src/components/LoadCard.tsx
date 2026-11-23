@@ -84,8 +84,7 @@ export function LoadCard({
           <span className="lc-rate mono">{fmtMoney(load.rate)}</span>
           <span className="dt-menu-anchor" onClick={(e) => e.stopPropagation()}>
             <button
-              className="icon-btn"
-              style={{ width: 20, height: 20 }}
+              className="icon-btn lc-move-btn"
               title="Move to… (keyboard alternative to drag-and-drop)"
               aria-label="Move to another status"
               onClick={() => setMoveMenuOpen((o) => !o)}
@@ -147,9 +146,9 @@ export function LoadCard({
           <>
             <button className="lc-unassigned" onClick={(e) => { e.stopPropagation(); setQuickOpen(true); }}>+ Assign driver</button>
             <button
-              className="icon-btn"
-              style={{ marginLeft: "auto", width: 24, height: 24 }}
+              className="icon-btn lc-assign-btn"
               title="Open full assign dialog"
+              aria-label="Open full assign dialog"
               onClick={(e) => { e.stopPropagation(); onAssign(); }}
             >
               <Icon name="arrowRight" size={11} />

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function LoginForm() {
   const router = useRouter();
@@ -61,38 +62,43 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div className="field">
-        <label>Email</label>
+        <label htmlFor="login-email">Email</label>
         <input
+          id="login-email"
           ref={emailRef}
           className="input"
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="next"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
       <div className="field">
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <label>Password</label>
-          <a href="/forgot-password" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--accent)" }}>Forgot password?</a>
+        <div className="field-label-row">
+          <label htmlFor="login-password">Password</label>
+          <a href="/forgot-password" className="auth-text-link">Forgot password?</a>
         </div>
-        <input
-          className="input"
-          type="password"
+        <PasswordInput
+          id="login-password"
           autoComplete="current-password"
+          enterKeyHint="go"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
       {error && (
-        <div className="banner banner-danger" style={{ marginBottom: 14 }}>
+        <div className="banner banner-danger" role="alert" style={{ marginBottom: 14 }}>
           {error}
         </div>
       )}
-      <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={loading}>
+      <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </button>
     </form>

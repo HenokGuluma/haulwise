@@ -8,14 +8,14 @@ export const metadata: Metadata = { title: "Set New Password" };
 export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
+      <AuthFormBrand />
       <AuthHero />
 
       <div className="auth-form-panel">
         <BackHomeLink />
         <div className="auth-form-card">
-          <AuthFormBrand />
           <div className="auth-form-header">
-            <div className="auth-form-title">Set a new password</div>
+            <h1 className="auth-form-title">Set a new password</h1>
             <div className="auth-form-sub">Choose a new password for your account.</div>
           </div>
 

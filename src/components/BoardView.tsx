@@ -225,30 +225,30 @@ export function BoardView({
 
   return (
     <div>
-      <div className="dt-toolbar" style={{ marginBottom: 12 }}>
+      <div className="dt-toolbar board-toolbar" style={{ marginBottom: 12 }}>
         <div className="search-box dt-search">
           <Icon name="search" size={14} />
           <input placeholder="Search board…" value={filters.q} onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} />
         </div>
-        <select className="input" style={{ width: 160 }} value={filters.customerId} onChange={(e) => setFilters((f) => ({ ...f, customerId: e.target.value }))}>
+        <select className="input board-filter" aria-label="Filter by customer" value={filters.customerId} onChange={(e) => setFilters((f) => ({ ...f, customerId: e.target.value }))}>
           <option value="">All customers</option>
           {customers.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
         </select>
-        <select className="input" style={{ width: 150 }} value={filters.driverId} onChange={(e) => setFilters((f) => ({ ...f, driverId: e.target.value }))}>
+        <select className="input board-filter" aria-label="Filter by driver" value={filters.driverId} onChange={(e) => setFilters((f) => ({ ...f, driverId: e.target.value }))}>
           <option value="">All drivers</option>
           {drivers.map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
         </select>
-        <select className="input" style={{ width: 140 }} value={filters.equipmentTypeCode} onChange={(e) => setFilters((f) => ({ ...f, equipmentTypeCode: e.target.value }))}>
+        <select className="input board-filter" aria-label="Filter by equipment" value={filters.equipmentTypeCode} onChange={(e) => setFilters((f) => ({ ...f, equipmentTypeCode: e.target.value }))}>
           <option value="">All equipment</option>
           {equipmentTypes.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
         </select>
         {hasFilters && <button className="btn btn-ghost btn-sm" onClick={() => setFilters(EMPTY_FILTERS)}>Clear</button>}
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="board-presets">
           {presets.map((p) => (
             <span key={p.name} className="dt-menu-anchor" style={{ display: "inline-flex" }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setFilters(p.filters)}>{p.name}</button>
-              <button className="icon-btn" style={{ width: 22, height: 22, marginLeft: 2 }} title="Remove preset" aria-label="Remove preset" onClick={() => deletePreset(p.name)}>
+              <button className="icon-btn board-preset-remove" title="Remove preset" aria-label="Remove preset" onClick={() => deletePreset(p.name)}>
                 <Icon name="x" size={10} />
               </button>
             </span>
@@ -264,12 +264,12 @@ export function BoardView({
         </div>
       </div>
 
-      <div className="card" style={{ padding: "10px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="card board-summary-bar">
         <span style={{ fontSize: 13, fontWeight: 600 }}>{visible.length} load{visible.length === 1 ? "" : "s"}</span>
         <span style={{ color: "var(--line)" }}>·</span>
         <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{fmtMoney(grandTotal)} total value</span>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          {hasFilters && <span style={{ color: "var(--muted)", fontSize: 12 }}>Filtered view</span>}
+        <div className="board-summary-bar-end">
+          {hasFilters && <span className="board-filtered-note">Filtered view</span>}
           <div className="board-view-toggle" role="tablist" aria-label="Board view">
             <button
               type="button"

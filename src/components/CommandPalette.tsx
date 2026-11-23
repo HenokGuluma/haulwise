@@ -132,6 +132,7 @@ export function CommandPalette() {
             }}
           />
           <kbd className="cmdk-esc">Esc</kbd>
+          <button type="button" className="cmdk-cancel" onClick={() => setOpen(false)}>Cancel</button>
         </div>
         <div className="cmdk-results">
           {query.trim() && flat.length === 0 && (

@@ -231,6 +231,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh; /* mobile Safari: 100vh includes the hidden URL bar */
 }
 
 /* The logo art is transparent + dark-optimized, so it sits straight on the
@@ -279,6 +280,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .role-name { font-size: 12.5px; color: var(--navy-ink-strong); font-weight: 600; line-height: 1.2; }
+.role-sub { font-size: 10.5px; color: var(--navy-ink-muted); }
+.sidebar-signout {
+  display: flex; align-items: center; justify-content: center; padding: 4px;
+  background: none; border: none; color: var(--navy-ink-muted); cursor: pointer; border-radius: 8px;
+}
+.sidebar-signout:hover { color: var(--navy-ink-strong); }
 .role-switch { font-size: 10.5px; color: var(--navy-ink-muted); background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
 .role-switch:hover { color: var(--amber); }
 
@@ -398,7 +405,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .kpi-body { flex: 1; min-width: 0; }
 .kpi-label { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: -0.005em; }
-.kpi-value { font-size: 32px; margin-top: 4px; line-height: 1.15; letter-spacing: -0.02em; }
+.kpi-value { font-size: var(--kpi-fit, 32px); margin-top: 4px; line-height: 1.15; letter-spacing: -0.02em; }
 .kpi-delta {
   font-size: 12px; margin-top: 9px; display: inline-flex; align-items: center; gap: 4px;
   font-weight: 700; padding: 3px 9px 3px 7px; border-radius: 20px; background: var(--slate-bg);
@@ -531,6 +538,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    the dashboard's KPI cards (same .kpi-card/.kpi-icon-badge/.kpi-value
    classes) so the two "click a count, land on filtered Loads" patterns
    read as the same feature everywhere in the app. */
+.board-toolbar .board-filter { width: 150px; }
+.board-presets { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.board-presets .board-preset-remove { width: 22px; height: 22px; margin-left: 2px; }
+.board-summary-bar { padding: 10px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.board-summary-bar-end { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.board-filtered-note { color: var(--muted); font-size: 12px; }
+.dash-period-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+.dash-period-label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+
 .board-summary-grid {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
 }
@@ -642,6 +658,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .load-card .lc-unassigned {
   font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 7px; padding: 3px 8px;
 }
+.load-card .lc-move-btn { width: 20px; height: 20px; }
+.load-card .lc-assign-btn { margin-left: auto; width: 24px; height: 24px; }
 .lc-quick-assign { display: flex; gap: 4px; align-items: center; width: 100%; }
 .lc-quick-assign select.input { font-size: 11px; padding: 4px 6px; flex: 1; min-width: 0; }
 .lc-quick-assign .icon-btn { width: 24px; height: 24px; flex-shrink: 0; }
@@ -670,6 +688,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .cmdk-input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; padding: 8px 16px; font-size: 16px; line-height: 1.5; color: var(--ink); font-weight: 500; }
 .cmdk-input::placeholder { color: var(--muted); font-weight: 400; }
 .cmdk-esc { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; font-family: var(--font-mono), monospace; }
+.cmdk-cancel { display: none; }
 .cmdk-results { overflow-y: auto; padding: 10px 12px; }
 .cmdk-empty {
   padding: 40px 16px; text-align: center; font-size: 12.5px; color: var(--muted);
@@ -735,6 +754,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 /* ---------------- DataTable ---------------- */
 .dt-wrap { display: flex; flex-direction: column; gap: 12px; }
 .dt-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dt-toolbar-end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.dt-mobile-sort { display: none; }
 .dt-search { width: 280px; }
 .dt-menu-anchor { position: relative; }
 .dt-menu {
@@ -769,7 +790,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .skel-text { height: 13px; border-radius: 4px; }
 
 .dt-pagination { display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
-.dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
+/* select.input (not bare .dt-pagesize) — otherwise the generic
+   `select.input { width: 100% }` wins and the page-size picker spans the row. */
+select.input.dt-pagesize { width: auto; padding: 5px 8px; font-size: 12px; }
 .dt-pagination-nav { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .dt-pagination-page { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; }
 
@@ -852,6 +875,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .tab.active { color: var(--ink); border-color: var(--accent); }
 
 /* ---------------- Misc ---------------- */
+.ledger-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ledger-range-label { font-size: 12px; color: var(--muted); }
+.ledger-range-dash { color: var(--muted); }
+.ledger-range .ledger-range-date { width: 150px; }
+.ledger-range-export { margin-left: auto; }
+.cust-board-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.cust-board-head .board-view-toggle { margin-left: auto; }
+.cust-board-intro { font-size: 13px; color: var(--muted); margin: 0; }
+.back-link { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; margin-bottom: 14px; text-decoration: none; }
+.back-link:hover { color: var(--ink); }
 .divider { height: 1px; background: var(--line); margin: 16px 0; }
 .section-title {
   font-family: var(--font-heading), var(--font-inter), sans-serif;
@@ -867,7 +900,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .doc-chip.filled { background: var(--success-bg); color: var(--success); }
 
 /* ---------------- Auth / landing page ---------------- */
-.auth-page { display: flex; min-height: 100vh; background: var(--bg); }
+.auth-page { display: flex; min-height: 100vh; min-height: 100dvh; background: var(--bg); }
+.auth-mobile-head { display: none; }
 
 .auth-hero {
   flex: 1.15; position: relative; overflow: hidden;
@@ -893,15 +927,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .auth-wordmark-img { height: 40px; width: auto; display: block; }
 .auth-wordmark-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy-ink-muted); padding-left: 2px; }
 
-/* Compact brand shown in the form panel only when the hero is hidden (mobile).
-   Sits on a small navy chip so the dark-optimized art reads regardless of the
-   form panel's (theme-reactive) background. */
-.auth-form-brand {
-  display: none; align-items: center; gap: 11px; margin-bottom: 26px;
-  background: var(--navy); padding: 10px 16px; border-radius: 14px; width: fit-content;
-  text-decoration: none; transition: opacity 0.15s ease;
-}
-.auth-form-brand:hover { opacity: 0.85; }
 .auth-wordmark-img-sm { height: 22px; }
 
 .auth-hero-title { font-size: 33px; color: #fff; line-height: 1.18; margin: 0 0 16px 0; }
@@ -929,7 +954,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 @keyframes auth-truck-drift { 0%, 100% { left: 6%; } 50% { left: 94%; } }
 
-.auth-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; position: relative; }
+/* min-width: 0 — without it the panel's min-content (the 400px card)
+   wins over max-width: 100% and the page lays out wider than a phone. */
+.auth-form-panel { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 40px 24px; position: relative; }
 .auth-back-home {
   position: absolute; top: 22px; right: 26px;
   display: inline-flex; align-items: center; gap: 5px;
@@ -938,13 +965,76 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .auth-back-home:hover { color: var(--ink); }
 .auth-form-card { width: 400px; max-width: 100%; }
 .auth-form-header { margin-bottom: 26px; }
-.auth-form-title { font-family: var(--font-heading); font-weight: 800; font-size: 25px; color: var(--ink); letter-spacing: -0.02em; }
+.auth-form-title { font-family: var(--font-heading); font-weight: 800; font-size: 25px; color: var(--ink); letter-spacing: -0.02em; margin: 0; }
+.auth-submit { width: 100%; justify-content: center; min-height: 42px; font-size: 14px; }
+.auth-text-link { font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.auth-alt-row { margin-top: 18px; text-align: center; }
+.field-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.field-label-row label { margin-bottom: 6px; }
+
+.password-field { position: relative; }
+.password-field .input { padding-right: 44px; }
+.password-toggle {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 42px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--muted); cursor: pointer; border-radius: 0 9px 9px 0;
+}
+.password-toggle:hover { color: var(--ink); }
 .auth-form-sub { font-size: 13px; color: var(--muted); margin-top: 5px; }
 
+/* Phones/small tablets: the hero is replaced by a compact navy brand band
+   (.auth-mobile-head), and the form sits on a sheet that overlaps its
+   bottom edge — same identity as the desktop hero and the landing page,
+   in about a third of the height, so the form stays above the keyboard. */
 @media (max-width: 860px) {
+  .auth-page { flex-direction: column; background: var(--navy); }
   .auth-hero { display: none; }
-  .auth-form-panel { padding: 32px 20px; }
-  .auth-form-brand { display: flex; }
+
+  .auth-mobile-head {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    position: relative; overflow: hidden;
+    padding: calc(env(safe-area-inset-top) + 34px) 20px 54px;
+    background: var(--navy);
+    background-image:
+      radial-gradient(420px 260px at 85% -20%, rgba(139, 127, 255, 0.30), transparent 70%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-grad-end) 100%);
+  }
+  .auth-mobile-head::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 20px 20px; mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), transparent 85%);
+  }
+  .auth-mobile-back {
+    position: absolute; z-index: 1;
+    top: calc(env(safe-area-inset-top) + 10px); left: calc(env(safe-area-inset-left) + 10px);
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--navy-ink); background: rgba(255, 255, 255, 0.06);
+  }
+  .auth-mobile-back:active { background: rgba(255, 255, 255, 0.12); }
+  .auth-mobile-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .auth-mobile-head .auth-wordmark-img-sm { height: 26px; }
+  .auth-mobile-head .auth-wordmark-tag { position: relative; z-index: 1; font-size: 11px; }
+
+  .auth-form-panel {
+    align-items: flex-start;
+    margin-top: -26px; border-radius: 26px 26px 0 0;
+    background: var(--bg);
+    padding: 30px calc(env(safe-area-inset-right) + 20px) calc(env(safe-area-inset-bottom) + 32px) calc(env(safe-area-inset-left) + 20px);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18);
+  }
+  .auth-back-home { display: none; }
+  .auth-form-card { width: 100%; max-width: 420px; margin: 0 auto; }
+  .auth-form-header { margin-bottom: 22px; }
+  .auth-form-title { font-size: 26px; }
+  .auth-form-sub { font-size: 14.5px; line-height: 1.5; margin-top: 6px; }
+  .auth-form-card .field { margin-bottom: 16px; }
+  .auth-form-card .field label { font-size: 13.5px; }
+  .auth-submit { min-height: 52px; font-size: 16px; border-radius: 14px; margin-top: 4px; }
+  /* Pad the inline links to a full tap target without moving the layout. */
+  .auth-text-link { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; font-size: 14px; }
+  .auth-alt-row { margin-top: 14px; }
+  .auth-form-card .banner { font-size: 14px; line-height: 1.45; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -959,51 +1049,285 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .sidebar-close { display: none; margin-left: auto; background: none; border: none; color: var(--navy-ink-muted); cursor: pointer; padding: 4px; }
 .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 85; animation: fadeIn 0.15s ease; }
 
+/* Touch devices: hover lifts stick after a tap and make cards look "stuck"
+   raised, so drop them where there's no real hover. */
+@media (hover: none) {
+  .kpi-card:hover, .load-card:hover, .banner-clickable:hover { transform: none; }
+}
+
+/* =========================================================================
+   TABLET + PHONE (≤900px) — off-canvas sidebar, touch-sized controls.
+   Desktop density is unchanged above this width.
+   ========================================================================= */
 @media (max-width: 900px) {
-  .sidebar { position: fixed; z-index: 90; transform: translateX(-100%); transition: transform 0.2s ease; }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-close { display: block; }
-  .topbar-menu-btn { display: flex; }
-  .content { padding: 16px; }
-  .field-row { grid-template-columns: 1fr; }
+  button, a { -webkit-tap-highlight-color: rgba(109, 94, 245, 0.12); }
+
+  /* ---- Off-canvas sidebar ---- */
+  .sidebar {
+    position: fixed; z-index: 90; width: 280px; max-width: 86vw;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
+    padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  /* visibility (not just transform) so the closed drawer's links aren't
+     reachable by keyboard / screen reader while off-screen. */
+  .sidebar.open { transform: translateX(0); visibility: visible; transition: transform 0.22s ease, visibility 0s; box-shadow: var(--shadow-lg); }
+  .sidebar-close { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -8px; border-radius: 10px; }
+  .nav-group { padding: 10px 12px; gap: 4px; }
+  .nav-item { min-height: 46px; padding: 11px 14px; font-size: 15px; gap: 12px; }
+  .nav-item svg { width: 18px; height: 18px; }
+  .nav-count { font-size: 12px; padding: 2px 8px; }
+  .sidebar-footer { padding: 14px 16px; }
+  .role-name { font-size: 14px; }
+  .role-sub { font-size: 12px; }
+  .theme-toggle, .sidebar-signout { width: 42px; height: 42px; border-radius: 10px; }
+  .theme-toggle svg, .sidebar-signout svg { width: 18px; height: 18px; }
+
+  /* ---- Topbar ---- */
+  .topbar {
+    height: calc(58px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px);
+    gap: 8px;
+  }
+  .topbar-menu-btn { display: flex; width: 44px; height: 44px; border-radius: 12px; margin-right: 2px; }
+  .topbar-title { font-size: 17px; }
+  .topbar .btn-primary { min-height: 44px; }
+
+  .content { padding: 16px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 40px) calc(env(safe-area-inset-left) + 16px); }
+
+  /* ---- Touch-sized controls (44px is Apple's / WCAG's comfortable target) ---- */
+  .btn { min-height: 44px; padding: 10px 16px; font-size: 14px; border-radius: 11px; justify-content: center; }
+  .btn-sm { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 10px; }
+  .icon-btn svg { width: 17px; height: 17px; }
+  .tab { min-height: 44px; padding: 12px 4px; font-size: 14px; }
+  .board-view-toggle-btn { min-height: 38px; padding: 8px 12px; font-size: 13px; justify-content: center; }
+
+  /* iOS Safari zooms the page when a focused control is under 16px. */
+  .input, select.input, textarea.input, .search-box input, select.input.dt-pagesize { font-size: 16px; }
+  .input, select.input { min-height: 48px; padding: 12px 14px; border-radius: 12px; }
+  textarea.input { padding: 12px 14px; border-radius: 12px; }
+  .password-field .input { padding-right: 50px; }
+  .password-toggle { width: 48px; border-radius: 0 12px 12px 0; }
+  .search-box { padding: 0 14px; min-height: 48px; border-radius: 12px; }
+  .search-box input { align-self: stretch; }
+  .field { margin-bottom: 16px; }
+  .field label { font-size: 13px; margin-bottom: 7px; }
+  .field .hint, .err-text { font-size: 12.5px; }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
+  .banner { font-size: 13.5px; padding: 12px 14px; }
+
   .dt-search { width: 100%; }
   .cmdk { width: 94vw; }
 
+  /* ---- Grids ---- */
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
   .panels-grid-uneven, .panels-grid-even, .customer-overview-grid { grid-template-columns: minmax(0, 1fr); }
   .stat-grid-3 { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .board-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
-  /* Prefer a horizontally-scrollable table over squeezing every column
-     until cells wrap to 2-3 lines each. nowrap forces table-layout:auto
-     to size every column to its natural single-line content width (some
-     tables run 8-9 columns, so a flat min-width guess isn't enough); the
-     table then grows past its container and .dt-scroll (overflow:auto)
-     picks up the horizontal scroll. */
+  /* Tablet: horizontally-scrollable table beats squeezing every column
+     into 2-3 wrapped lines. Phones get the card layout below instead. */
   .dt-scroll .data-table th, .dt-scroll .data-table td { white-space: nowrap; }
   .dt-scroll .data-table { min-width: 100%; }
 
-  /* iOS Safari zooms the whole page in when a focused input's computed
-     font-size is under 16px — bump every text control past that floor
-     only in touch/mobile layout, so desktop keeps its tighter density. */
-  .input, select.input, textarea.input, .search-box input {
-    font-size: 16px;
-  }
+  /* Board: no nested scroll areas inside columns on touch — scrolling a
+     column vs. the page is ambiguous with a finger. Columns grow instead. */
+  .board-col { max-height: none; }
+  .board-col-expand { display: none; }
+  .board-col-body { overflow: visible; }
+  .load-card { cursor: pointer; }
+  .load-card .lc-move-btn { width: 36px; height: 36px; }
+  .load-card .lc-assign-btn { width: 36px; height: 36px; }
+  .load-card .lc-unassigned { min-height: 36px; padding: 6px 12px; font-size: 12.5px; }
+  .lc-quick-assign select.input { min-height: 40px; font-size: 16px; }
+  .lc-quick-assign .icon-btn { width: 40px; height: 40px; }
+  .load-card .lc-customer { font-size: 12px; }
 
-  .topbar { padding: 0 14px; gap: 8px; }
+  .doc-slot-empty { min-height: 52px; font-size: 14px; }
+  .doc-slot-history-toggle { min-height: 36px; font-size: 12.5px; }
+  .dt-menu { max-height: 50vh; }
+  .dt-menu-item { min-height: 44px; font-size: 14px; padding: 10px 12px; }
+  .dt-menu-item input { width: 18px; height: 18px; }
 }
 
-@media (max-width: 560px) {
+/* =========================================================================
+   PHONE (≤640px)
+   ========================================================================= */
+@media (max-width: 640px) {
   .topbar-sub { display: none; }
-  .topbar-search-trigger { width: auto; padding: 9px; }
+  .topbar-search-trigger { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 12px; }
   .topbar-search-label, .topbar-search-trigger .cmdk-esc { display: none; }
   .btn-label-collapsible { display: none; }
-  .icon-btn { width: 36px; height: 36px; }
+  .topbar .btn-primary { width: 44px; padding: 0; }
+  .icon-btn { width: 44px; height: 44px; }
 
-  /* A wrapped tab bar looks broken; scroll sideways instead, same pattern
-     as the data table. */
-  .tabbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Wrapped tab bars look broken; scroll sideways instead. */
+  .tabbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px; }
+  .tabbar::-webkit-scrollbar { display: none; }
   .tab { flex-shrink: 0; }
+
+  .section-title { font-size: 16px; }
+  .card { border-radius: 14px; }
+  .chart-card { padding: 16px; }
+
+  /* ---- Toasts: full-width, under the notch ---- */
+  .toast-stack { top: calc(env(safe-area-inset-top) + 10px); left: 12px; right: 12px; }
+  .toast { width: auto; font-size: 14px; padding: 14px; border-radius: 14px; }
+  .toast-close { width: 32px; height: 32px; margin: -6px -6px -6px auto; display: flex; align-items: center; justify-content: center; }
+
+  /* ---- Drawers: full screen. A 92vw drawer left a useless 30px sliver. ---- */
+  .drawer {
+    width: 100vw !important; max-width: 100vw;
+    padding-top: env(safe-area-inset-top);
+    animation: drawerUp 0.24s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes drawerUp { from { transform: translateY(16px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+  .panel-head { padding: 12px 12px 12px 18px; }
+  .panel-title { font-size: 17px; }
+  .panel-body { padding: 18px; overscroll-behavior: contain; }
+  .panel-foot { padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px); gap: 8px; }
+  /* Footer actions as an even grid rather than ragged wrapped rows. Links
+     that wrap a Button (Invoice, Dispatch Paper) behave like grid cells too. */
+  .drawer .panel-foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .drawer .panel-foot > a { display: flex; min-width: 0; }
+  .drawer .panel-foot > a > .btn, .drawer .panel-foot > .btn { width: 100%; min-width: 0; }
+  /* Last action spans the row only when it would otherwise sit alone. */
+  .drawer .panel-foot > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  /* ---- Modals: bottom sheets ---- */
+  .overlay.center { align-items: flex-end; }
+  .modal-box {
+    width: 100vw !important; max-width: 100vw;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 16px);
+    border-radius: 22px 22px 0 0;
+    animation: sheetUp 0.24s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes sheetUp { from { transform: translateY(40px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+  .modal-box .panel-foot > .btn { flex: 1 1 0; min-width: 0; }
+
+  /* ---- Command palette ---- */
+  /* Search stays at the top on phones: the keyboard covers the bottom half,
+     so it must not inherit the bottom-sheet placement of .overlay.center. */
+  .overlay.center.cmdk-overlay { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 10px); }
+  .cmdk-input-row .cmdk-esc { display: none; }
+  .cmdk-cancel {
+    display: block; flex-shrink: 0; min-height: 44px; padding: 0 4px;
+    background: none; border: none; color: var(--accent); font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .cmdk { width: calc(100vw - 20px); max-width: none; max-height: 72dvh; }
+  .cmdk-input-row { padding: 12px 14px; gap: 10px; }
+  .cmdk-input { padding: 8px 4px; }
+  .cmdk-item { min-height: 48px; padding: 10px 12px; font-size: 14.5px; }
+
+  /* ---- KPI cards: icon above the figures, so a 2-up card isn't a
+     52px icon plus a label squeezed onto three lines. ---- */
+  .kpi-card { flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; min-width: 0; }
+  .kpi-icon-badge { width: 38px; height: 38px; border-radius: 11px; }
+  .kpi-icon-badge svg { width: 20px; height: 20px; }
+  .kpi-body { width: 100%; }
+  .kpi-label { font-size: 12.5px; line-height: 1.3; }
+  .kpi-value { font-size: 28px; overflow-wrap: anywhere; }
+  /* Money values set --kpi-fit (length-aware); scale it to the 2-up card width. */
+  .kpi-value[style*="--kpi-fit"] { font-size: calc(var(--kpi-fit) * 0.66); }
+  .kpi-delta { font-size: 11.5px; max-width: 100%; white-space: normal; line-height: 1.35; margin-top: 7px; }
+
+  .dash-period-row { flex-wrap: wrap; justify-content: stretch; }
+  .dash-period-label { flex-basis: 100%; }
+  .dash-period-row .board-view-toggle { flex: 1; }
+  .dash-period-row .board-view-toggle-btn { flex: 1; }
+  .dash-row { min-height: 44px; font-size: 14px; }
+
+  /* ---- Board ---- */
+  .board-toolbar .board-filter { width: auto; flex: 1 1 40%; min-width: 0; }
+  .board-presets { margin-left: 0; flex-basis: 100%; }
+  .board-presets .board-preset-remove { width: 32px; height: 32px; }
+  .board-summary-bar { padding: 10px 12px; }
+  .board-summary-bar-end { margin-left: 0; flex-basis: 100%; }
+  .board-summary-bar-end .board-view-toggle { flex: 1; }
+  .board-summary-bar-end .board-view-toggle-btn { flex: 1; }
+  .board-col-head { padding: 12px; }
+  .board-col-icon { width: 40px; height: 40px; border-radius: 12px; }
+
+  /* =======================================================================
+     DataTable → cards. Each row becomes a card: first column is the title,
+     unlabeled action buttons sit top-right, every other column is a small
+     labeled field in a 2-up grid. Sorting moves to .dt-mobile-sort since
+     headers are hidden. Same markup as desktop — see DataTable.tsx.
+     ======================================================================= */
+  .dt-toolbar .dt-search { order: -1; flex-basis: 100%; }
+  .dt-mobile-sort { display: block; width: auto; flex: 1 1 150px; min-width: 0; }
+  .dt-desktop-only { display: none; }
+  .dt-toolbar-end { margin-left: auto; }
+
+  .dt-table-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
+  .dt-scroll { overflow: visible; max-height: none; }
+  .dt-scroll .data-table, .dt-scroll .data-table tbody { display: block; min-width: 0; }
+  .dt-scroll .data-table thead { display: none; }
+  .dt-scroll .data-table tbody tr {
+    position: relative;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px;
+    padding: 14px 16px; margin-bottom: 10px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm);
+  }
+  .dt-scroll .data-table tbody tr:hover { background: var(--surface); }
+  .dt-scroll .data-table tbody tr:active { background: var(--surface-hover); }
+  .dt-scroll .data-table td,
+  .dt-compact .dt-scroll .data-table td {
+    display: block; padding: 0; border: none; min-width: 0;
+    text-align: left !important; white-space: normal; overflow-wrap: break-word;
+    font-size: 14px; line-height: 1.35;
+  }
+  .dt-scroll .data-table td::before {
+    content: attr(data-label); display: block; margin-bottom: 3px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  }
+  .dt-scroll .data-table td.dt-cell-primary { grid-column: 1 / -1; font-size: 15.5px; font-weight: 600; }
+  .dt-scroll .data-table td.dt-cell-primary::before,
+  .dt-scroll .data-table td.dt-cell-actions::before { display: none; }
+  .dt-scroll .data-table tr:has(.dt-cell-actions) td.dt-cell-primary { padding-right: 100px; min-height: 28px; display: flex; align-items: center; }
+  .dt-scroll .data-table td.dt-cell-actions { position: absolute; top: 6px; right: 6px; }
+  .dt-scroll .data-table td.dt-cell-actions > span { display: inline-flex; gap: 2px; }
+  .dt-scroll .data-table td.dt-cell-actions .icon-btn { border-color: transparent; background: transparent; }
+  .dt-table-card > .empty-state { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+
+  /* Phone toolbars: one consistent 44px control height. */
+  .dt-toolbar .btn-sm { min-height: 44px; }
+  select.input.dt-mobile-sort { min-height: 44px; padding: 8px 12px; }
+  .dt-scroll .data-table tbody tr { gap: 10px 14px; }
+
+  /* Totals strip (Documents): label left, figure right — three compact rows
+     instead of three tall, mostly-empty stacked cards. */
+  .stat-grid-3 { gap: 8px; }
+  .stat-grid-3 .kpi-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+  .stat-grid-3 .kpi-value { margin-top: 0; font-size: 20px; text-align: right; }
+  .stat-grid-3 .kpi-value[style*="--kpi-fit"] { font-size: 20px; }
+
+  .ledger-range { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .ledger-range-label { grid-column: 1 / -1; font-size: 13px; }
+  .ledger-range .ledger-range-date { width: 100%; min-width: 0; }
+  .ledger-range-export { grid-column: 1 / -1; margin-left: 0; }
+  .ledger-range-export a, .ledger-range-export .btn { display: flex; width: 100%; }
+
+  /* Checkbox rows in forms (role permissions, contact flags): full-height
+     tap rows and larger boxes. !important beats their inline font-size.
+     .switch also wraps a checkbox, so it's excluded. */
+  .panel-body label:not(.switch):has(> input[type="checkbox"]) { min-height: 42px; font-size: 14.5px !important; gap: 12px !important; }
+  .panel-body label:not(.switch) > input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--accent); }
+
+  .cust-board-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .cust-board-head .board-view-toggle { margin-left: 0; }
+  .cust-board-head .board-view-toggle-btn { flex: 1; }
+  .cust-board-intro { font-size: 14px; }
+  .back-link { min-height: 44px; margin: -8px 0 6px; font-size: 14px; }
+  .doc-slot-filename { font-size: 14px; padding: 4px 0; }
+  .doc-slot-meta { font-size: 12px; }
+  /* Recharts sets 11px axis labels as SVG attributes; CSS wins over those. */
+  .recharts-cartesian-axis-tick-value, .recharts-legend-item-text { font-size: 12px; }
+
+  .dt-pagination { gap: 10px; font-size: 13.5px; }
+  select.input.dt-pagesize { width: auto; min-height: 44px; padding: 8px 10px; }
+  .dt-pagination-page { font-size: 13.5px; }
 }
 
 /* =========================================================================
